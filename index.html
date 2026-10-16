@@ -74,8 +74,8 @@
           <!-- Быстрый виджет веса -->
           <button onclick="switchTab('weight')" class="flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-700/60 text-xs transition" title="Нажми, чтобы записать новый вес">
             <span>⚖️ Вес:</span>
-            <strong id="headerCurrentWeight" class="text-emerald-400">115 кг</strong>
-            <span id="headerTargetWeight" class="text-[11px] text-slate-400">→ 100 кг</span>
+            <strong id="headerCurrentWeight" class="text-emerald-400">75 кг</strong>
+            <span id="headerTargetWeight" class="text-[11px] text-slate-400">→ 70 кг</span>
           </button>
 
           <!-- Вода -->
@@ -96,7 +96,7 @@
           </div>
           <div class="flex items-baseline gap-1 mb-1.5">
             <span id="calCurrent" class="text-xl font-extrabold text-white">0</span>
-            <span class="text-[11px] text-slate-400">/ <span id="calTarget">2200</span></span>
+            <span class="text-[11px] text-slate-400">/ <span id="calTarget">2000</span></span>
           </div>
           <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
             <div id="calBar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
@@ -110,7 +110,7 @@
           </div>
           <div class="flex items-baseline gap-1 mb-1.5">
             <span id="pCurrent" class="text-lg font-bold text-white">0</span>
-            <span class="text-[11px] text-slate-400">/ <span id="pTarget">150</span> г</span>
+            <span class="text-[11px] text-slate-400">/ <span id="pTarget">140</span> г</span>
           </div>
           <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
             <div id="pBar" class="h-full bg-rose-500 transition-all duration-300" style="width: 0%"></div>
@@ -124,7 +124,7 @@
           </div>
           <div class="flex items-baseline gap-1 mb-1.5">
             <span id="fCurrent" class="text-lg font-bold text-white">0</span>
-            <span class="text-[11px] text-slate-400">/ <span id="fTarget">75</span> г</span>
+            <span class="text-[11px] text-slate-400">/ <span id="fTarget">65</span> г</span>
           </div>
           <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
             <div id="fBar" class="h-full bg-amber-500 transition-all duration-300" style="width: 0%"></div>
@@ -138,7 +138,7 @@
           </div>
           <div class="flex items-baseline gap-1 mb-1.5">
             <span id="cCurrent" class="text-lg font-bold text-white">0</span>
-            <span class="text-[11px] text-slate-400">/ <span id="cTarget">220</span> г</span>
+            <span class="text-[11px] text-slate-400">/ <span id="cTarget">200</span> г</span>
           </div>
           <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
             <div id="cBar" class="h-full bg-sky-500 transition-all duration-300" style="width: 0%"></div>
@@ -381,11 +381,11 @@
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-xs text-slate-400 mb-1">Новый вес (кг)</label>
-                <input type="number" step="0.1" id="weightValueInput" placeholder="114.5" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white" />
+                <input type="number" step="0.1" id="weightValueInput" placeholder="74.5" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white" />
               </div>
               <div>
                 <label class="block text-xs text-slate-400 mb-1">Цель (кг)</label>
-                <input type="number" step="0.5" id="weightTargetInput" placeholder="100" onchange="updateTargetWeightOnly()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400" />
+                <input type="number" step="0.5" id="weightTargetInput" placeholder="70" onchange="updateTargetWeightOnly()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400" />
               </div>
             </div>
 
@@ -411,11 +411,11 @@
             <div class="grid grid-cols-3 gap-3 text-center">
               <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
                 <div class="text-[11px] text-slate-400">Стартовый вес</div>
-                <div id="statStartWeight" class="text-base sm:text-lg font-bold text-white mt-0.5">115 кг</div>
+                <div id="statStartWeight" class="text-base sm:text-lg font-bold text-white mt-0.5">75 кг</div>
               </div>
               <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
                 <div class="text-[11px] text-slate-400">Текущий вес</div>
-                <div id="statCurrentWeight" class="text-base sm:text-lg font-extrabold text-emerald-400 mt-0.5">115 кг</div>
+                <div id="statCurrentWeight" class="text-base sm:text-lg font-extrabold text-emerald-400 mt-0.5">75 кг</div>
               </div>
               <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
                 <div class="text-[11px] text-slate-400">Изменение</div>
@@ -519,7 +519,7 @@
         <div>
           <label class="block text-slate-300 font-semibold mb-1">2. URL Облачной базы Firebase (необязательно)</label>
           <input type="text" id="firebaseUrlInput" placeholder="https://your-project-default-rtdb.firebaseio.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white" />
-          <p class="text-[11px] text-slate-400 mt-1">В Telegram базовые данные также автоматически дублируются в Telegram CloudStorage.</p>
+          <p class="text-[11px] text-slate-400 mt-1">В Telegram базовые данные также автоматически дублируются в личный Telegram CloudStorage пользователя.</p>
         </div>
       </div>
 
@@ -530,11 +530,11 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: БЭКАП -->
+  <!-- МОДАЛЬНОЕ ОКНО: БЭКАП И СБРОС -->
   <div id="backupModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between">
-        <h3 class="font-bold text-base text-white">💾 Быстрый перенос и сохранение данных</h3>
+        <h3 class="font-bold text-base text-white">💾 Управление данными и Бэкап</h3>
         <button onclick="closeBackupModal()" class="text-slate-400 hover:text-white">✕</button>
       </div>
 
@@ -552,6 +552,14 @@
         <textarea id="restoreCodeArea" rows="3" placeholder='{"profile":...}' class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono"></textarea>
         <button onclick="restoreFromText()" class="w-full mt-2 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-semibold text-xs">
           🔄 Восстановить данные из кода
+        </button>
+      </div>
+
+      <hr class="border-slate-800" />
+
+      <div class="pt-1">
+        <button onclick="resetAllUserData()" class="w-full py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-semibold text-xs transition">
+          🗑 Сбросить все мои данные (очистить дневник)
         </button>
       </div>
     </div>
@@ -603,7 +611,6 @@
       alert(msg);
     }
 
-    // Ограниченный по размеру слепок для Telegram CloudStorage (лимит 4096 символов на ключ)
     function saveToTelegramCloud(currentState) {
       return new Promise((resolve) => {
         if (!tg?.CloudStorage || !isTelegramMiniApp) return resolve(false);
@@ -692,18 +699,22 @@
       }
     ];
 
-    let state = {
-      profile: { gender: 'male', age: 30, height: 185, weight: 115, targetWeight: 100, activity: 1.375, goal: -20 },
-      foods: [...DEFAULT_FOODS],
-      days: {},
-      weightHistory: [
-        { id: 'w_init', date: new Date().toISOString().slice(0, 10), weight: 115, note: 'Стартовый вес' }
-      ],
-      aiProvider: 'gemini',
-      apiKey: '',
-      firebaseUrl: ''
-    };
+    function getCleanDefaultState() {
+      const today = new Date().toISOString().slice(0, 10);
+      return {
+        profile: { gender: 'male', age: 28, height: 178, weight: 75, targetWeight: 70, activity: 1.375, goal: -15 },
+        foods: [...DEFAULT_FOODS],
+        days: {},
+        weightHistory: [
+          { id: 'w_init', date: today, weight: 75, note: 'Стартовый вес' }
+        ],
+        aiProvider: 'gemini',
+        apiKey: '',
+        firebaseUrl: ''
+      };
+    }
 
+    let state = getCleanDefaultState();
     let currentDate = new Date().toISOString().slice(0, 10);
     let currentPhotoBase64 = null;
     let currentPhotoItems = [...PRESET_PLATES[0].items];
@@ -712,7 +723,7 @@
     async function loadState() {
       let loadedFromLocal = false;
       try {
-        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('nutribalance_pro_v2');
+        const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
           state = { ...state, ...parsed, profile: { ...state.profile, ...(parsed.profile || {}) } };
@@ -720,7 +731,6 @@
         }
       } catch (e) {}
 
-      // Если локально пусто, пробуем подтянуть из Telegram CloudStorage
       if (!loadedFromLocal && isTelegramMiniApp) {
         const tgCloud = await loadFromTelegramCloud();
         if (tgCloud && tgCloud.meta) {
@@ -736,7 +746,7 @@
       }
 
       if (!Array.isArray(state.weightHistory) || state.weightHistory.length === 0) {
-        state.weightHistory = [{ id: 'w_init', date: currentDate, weight: state.profile.weight || 115, note: 'Старт' }];
+        state.weightHistory = [{ id: 'w_init', date: currentDate, weight: state.profile.weight || 75, note: 'Старт' }];
       }
 
       if (state.firebaseUrl) {
@@ -784,6 +794,26 @@
       renderAll();
     }
 
+    function resetAllUserData() {
+      if (!confirm('Вы уверены, что хотите полностью очистить свой дневник, историю веса и настройки?')) return;
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem('nutribalance_pro_v2');
+      } catch (e) {}
+
+      if (tg?.CloudStorage && isTelegramMiniApp) {
+        try {
+          tg.CloudStorage.removeItems(['nb_meta_v2', 'nb_days_v2', 'nb_foods_v2']);
+        } catch (e) {}
+      }
+
+      state = getCleanDefaultState();
+      triggerHaptic('warning');
+      closeBackupModal();
+      renderAll();
+      showNotice('Все данные сброшены до начального состояния!');
+    }
+
     function updateBadge(text, ok) {
       const b = document.getElementById('syncStatusBadge');
       b.textContent = text;
@@ -819,7 +849,6 @@
       });
     }
 
-    // УНИВЕРСАЛЬНЫЙ ВЫЗОВ ИИ (ТЕКСТ ИЛИ ФОТО) С АВТООПРЕДЕЛЕНИЕМ МОДЕЛИ
     async function detectWorkingGeminiModel(apiKey) {
       try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
@@ -900,7 +929,6 @@
       }
     }
 
-    // ИИ-РАСЧЁТ БЛЮДА ПО ТЕКСТОВОМУ ОПИСАНИЮ
     async function analyzeTextDishWithAI() {
       const text = document.getElementById('aiTextFoodPrompt').value.trim();
       if (!text) {
@@ -1011,7 +1039,6 @@
       switchTab('diary');
     }
 
-    // ТРЕКЕР ВЕСА
     function addWeightEntry() {
       const dateVal = document.getElementById('weightDateInput').value || currentDate;
       const weightVal = parseFloat(document.getElementById('weightValueInput').value);
@@ -1067,7 +1094,7 @@
       const history = state.weightHistory || [];
       const startW = history.length > 0 ? history[0].weight : state.profile.weight;
       const currW = state.profile.weight;
-      const targetW = state.profile.targetWeight || 100;
+      const targetW = state.profile.targetWeight || 70;
 
       document.getElementById('headerCurrentWeight').textContent = `${currW} кг`;
       document.getElementById('headerTargetWeight').textContent = `→ ${targetW} кг`;
@@ -1385,11 +1412,11 @@
       state.profile = {
         ...state.profile,
         gender: document.getElementById('profGender').value,
-        age: Number(document.getElementById('profAge').value) || 30,
-        height: Number(document.getElementById('profHeight').value) || 185,
-        weight: parseFloat(document.getElementById('profWeight').value) || 115,
+        age: Number(document.getElementById('profAge').value) || 28,
+        height: Number(document.getElementById('profHeight').value) || 178,
+        weight: parseFloat(document.getElementById('profWeight').value) || 75,
         activity: Number(document.getElementById('profActivity').value) || 1.375,
-        goal: Number(document.getElementById('profGoal').value) || -20
+        goal: Number(document.getElementById('profGoal').value) || -15
       };
       saveState();
     }
