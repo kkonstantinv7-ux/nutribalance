@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>NutriBalance Pro — КБЖУ, Вес и ИИ-сканер</title>
+  <title>NutriBalance Pro — КБЖУ, Активность, Вес и ИИ-сканер</title>
   <!-- Telegram Mini Apps SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -41,6 +41,7 @@
         <button onclick="switchTab('diary')" id="tabBtn-diary" class="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap">📒 Дневник</button>
         <button onclick="switchTab('photo')" id="tabBtn-photo" class="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap">📸 По фото</button>
         <button onclick="switchTab('foods')" id="tabBtn-foods" class="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap">🥦 Продукты + ИИ</button>
+        <button onclick="switchTab('activity')" id="tabBtn-activity" class="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap">⌚ Активность</button>
         <button onclick="switchTab('weight')" id="tabBtn-weight" class="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap">📉 Вес</button>
         <button onclick="switchTab('calc')" id="tabBtn-calc" class="flex-1 sm:flex-initial px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap">⚖️ Норма</button>
       </nav>
@@ -71,11 +72,19 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
+          <!-- Быстрый виджет активности с часов -->
+          <button onclick="switchTab('activity')" class="flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-700/60 text-xs transition" title="Открыть дневник активности">
+            <span>⌚</span>
+            <strong id="headerSteps" class="text-amber-400">0 шаг.</strong>
+            <span class="text-slate-500">•</span>
+            <strong id="headerBurned" class="text-orange-400">0 ккал</strong>
+          </button>
+
           <!-- Быстрый виджет веса -->
           <button onclick="switchTab('weight')" class="flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-700/60 text-xs transition" title="Нажми, чтобы записать новый вес">
             <span>⚖️ Вес:</span>
-            <strong id="headerCurrentWeight" class="text-emerald-400">75 кг</strong>
-            <span id="headerTargetWeight" class="text-[11px] text-slate-400">→ 70 кг</span>
+            <strong id="headerCurrentWeight" class="text-emerald-400">115 кг</strong>
+            <span id="headerTargetWeight" class="text-[11px] text-slate-400">→ 100 кг</span>
           </button>
 
           <!-- Вода -->
@@ -96,7 +105,7 @@
           </div>
           <div class="flex items-baseline gap-1 mb-1.5">
             <span id="calCurrent" class="text-xl font-extrabold text-white">0</span>
-            <span class="text-[11px] text-slate-400">/ <span id="calTarget">2000</span></span>
+            <span class="text-[11px] text-slate-400">/ <span id="calTarget">2200</span></span>
           </div>
           <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
             <div id="calBar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
@@ -110,7 +119,7 @@
           </div>
           <div class="flex items-baseline gap-1 mb-1.5">
             <span id="pCurrent" class="text-lg font-bold text-white">0</span>
-            <span class="text-[11px] text-slate-400">/ <span id="pTarget">140</span> г</span>
+            <span class="text-[11px] text-slate-400">/ <span id="pTarget">150</span> г</span>
           </div>
           <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
             <div id="pBar" class="h-full bg-rose-500 transition-all duration-300" style="width: 0%"></div>
@@ -124,7 +133,7 @@
           </div>
           <div class="flex items-baseline gap-1 mb-1.5">
             <span id="fCurrent" class="text-lg font-bold text-white">0</span>
-            <span class="text-[11px] text-slate-400">/ <span id="fTarget">65</span> г</span>
+            <span class="text-[11px] text-slate-400">/ <span id="fTarget">75</span> г</span>
           </div>
           <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
             <div id="fBar" class="h-full bg-amber-500 transition-all duration-300" style="width: 0%"></div>
@@ -138,7 +147,7 @@
           </div>
           <div class="flex items-baseline gap-1 mb-1.5">
             <span id="cCurrent" class="text-lg font-bold text-white">0</span>
-            <span class="text-[11px] text-slate-400">/ <span id="cTarget">200</span> г</span>
+            <span class="text-[11px] text-slate-400">/ <span id="cTarget">220</span> г</span>
           </div>
           <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
             <div id="cBar" class="h-full bg-sky-500 transition-all duration-300" style="width: 0%"></div>
@@ -361,7 +370,116 @@
       </div>
     </section>
 
-    <!-- ВКЛАДКА 4: ТРЕКЕР ВЕСА И ПРОГРЕССА -->
+    <!-- ВКЛАДКА 4: АКТИВНОСТЬ И ЧАСЫ -->
+    <section id="tab-activity" class="hidden space-y-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- Левая колонка: Ввод данных с часов / тренировок -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="font-bold text-sm sm:text-base text-white">⌚ Данные активности за день</h2>
+                <p class="text-[11px] text-slate-400">Перенеси показатели с часов или добавь тренировку</p>
+              </div>
+              <span id="activityDateLabel" class="text-xs font-semibold text-emerald-400">Сегодня</span>
+            </div>
+
+            <!-- Шаги -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">👟 Шаги за день</span>
+                <span id="stepsGoalText" class="text-amber-400 font-semibold">0 / 10 000</span>
+              </div>
+              <div class="flex gap-1.5">
+                <input type="number" id="actStepsInput" min="0" max="100000" step="100" placeholder="0" oninput="saveActivityFromInputs()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white" />
+                <button onclick="quickAddSteps(1000)" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-amber-300">+1к</button>
+                <button onclick="quickAddSteps(3000)" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-amber-300">+3к</button>
+              </div>
+              <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div id="stepsProgressBar" class="h-full bg-amber-400 transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- Активные калории и минуты -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">🔥 Активные ккал (часы)</label>
+                <div class="flex gap-1">
+                  <input type="number" id="actBurnedInput" min="0" max="10000" step="10" placeholder="0" oninput="saveActivityFromInputs()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-orange-400" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">⏱️ Активность (мин)</label>
+                <input type="number" id="actMinutesInput" min="0" max="1440" step="5" placeholder="0" oninput="saveActivityFromInputs()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white" />
+              </div>
+            </div>
+
+            <!-- Быстрые кнопки добавления ккал -->
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="quickAddBurned(100)" class="flex-1 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-orange-300">+100 ккал</button>
+              <button onclick="quickAddBurned(250)" class="flex-1 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-orange-300">+250 ккал</button>
+              <button onclick="quickAddBurned(500)" class="flex-1 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-orange-300">+500 ккал</button>
+            </div>
+
+            <!-- Заметка о тренировке -->
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">🏋️ Заметка / тип тренировки</label>
+              <input type="text" id="actNoteInput" placeholder="Например: Силовая в зале, ходьба, велосипед..." oninput="saveActivityFromInputs()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+            </div>
+
+            <!-- Настройка влияния на дневную норму -->
+            <label class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 cursor-pointer">
+              <input type="checkbox" id="addBurnedToTargetCheckbox" onchange="toggleBurnedToTarget(this.checked)" class="mt-0.5 rounded accent-emerald-500" />
+              <div class="text-xs">
+                <div class="font-semibold text-slate-200">Прибавлять 50% активных ккал к дневной норме еды</div>
+                <div class="text-[11px] text-slate-400">Если включено, в дни высокой нагрузки лимит калорий плавно растёт, чтобы не срываться</div>
+              </div>
+            </label>
+          </div>
+
+          <!-- ИИ-расчёт тренировки текстом -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <h3 class="font-bold text-xs sm:text-sm text-white">🤖 Оценить расход тренировки через ИИ</h3>
+            <div class="flex gap-2">
+              <input type="text" id="aiWorkoutPrompt" placeholder="Напр.: 45 мин силовая тренировка в зале" class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+              <button onclick="estimateWorkoutWithAI()" id="btnAiWorkout" class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs whitespace-nowrap">
+                Посчитать
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Правая колонка: Сводка баланса энергии и история за 7 дней -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <h3 class="font-bold text-sm sm:text-base text-white">⚡ Энергетический баланс дня</h3>
+            <div class="grid grid-cols-3 gap-3 text-center">
+              <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
+                <div class="text-[11px] text-slate-400">Съедено за день</div>
+                <div id="actSummaryEaten" class="text-base sm:text-lg font-bold text-white mt-0.5">0 ккал</div>
+              </div>
+              <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
+                <div class="text-[11px] text-slate-400">Активное сжигание</div>
+                <div id="actSummaryBurned" class="text-base sm:text-lg font-extrabold text-orange-400 mt-0.5">0 ккал</div>
+              </div>
+              <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
+                <div class="text-[11px] text-slate-400">Реальный дефицит</div>
+                <div id="actSummaryDeficit" class="text-base sm:text-lg font-bold text-emerald-400 mt-0.5">0 ккал</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+            <h3 class="font-bold text-sm sm:text-base text-white">📅 История активности по дням</h3>
+            <div id="activityHistoryList" class="divide-y divide-slate-800 max-h-[340px] overflow-y-auto"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ВКЛАДКА 5: ТРЕКЕР ВЕСА И ПРОГРЕССА -->
     <section id="tab-weight" class="hidden space-y-5">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
@@ -381,11 +499,11 @@
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-xs text-slate-400 mb-1">Новый вес (кг)</label>
-                <input type="number" step="0.1" id="weightValueInput" placeholder="74.5" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white" />
+                <input type="number" step="0.1" id="weightValueInput" placeholder="114.5" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white" />
               </div>
               <div>
                 <label class="block text-xs text-slate-400 mb-1">Цель (кг)</label>
-                <input type="number" step="0.5" id="weightTargetInput" placeholder="70" onchange="updateTargetWeightOnly()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400" />
+                <input type="number" step="0.5" id="weightTargetInput" placeholder="100" onchange="updateTargetWeightOnly()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400" />
               </div>
             </div>
 
@@ -411,11 +529,11 @@
             <div class="grid grid-cols-3 gap-3 text-center">
               <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
                 <div class="text-[11px] text-slate-400">Стартовый вес</div>
-                <div id="statStartWeight" class="text-base sm:text-lg font-bold text-white mt-0.5">75 кг</div>
+                <div id="statStartWeight" class="text-base sm:text-lg font-bold text-white mt-0.5">115 кг</div>
               </div>
               <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
                 <div class="text-[11px] text-slate-400">Текущий вес</div>
-                <div id="statCurrentWeight" class="text-base sm:text-lg font-extrabold text-emerald-400 mt-0.5">75 кг</div>
+                <div id="statCurrentWeight" class="text-base sm:text-lg font-extrabold text-emerald-400 mt-0.5">115 кг</div>
               </div>
               <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
                 <div class="text-[11px] text-slate-400">Изменение</div>
@@ -443,7 +561,7 @@
       </div>
     </section>
 
-    <!-- ВКЛАДКА 5: НОРМА КБЖУ -->
+    <!-- ВКЛАДКА 6: НОРМА КБЖУ -->
     <section id="tab-calc" class="hidden">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-2xl mx-auto space-y-4">
         <h2 class="font-bold text-base text-white">⚖️ Расчёт суточной нормы (Миффлин — Сан Жеор)</h2>
@@ -519,7 +637,7 @@
         <div>
           <label class="block text-slate-300 font-semibold mb-1">2. URL Облачной базы Firebase (необязательно)</label>
           <input type="text" id="firebaseUrlInput" placeholder="https://your-project-default-rtdb.firebaseio.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white" />
-          <p class="text-[11px] text-slate-400 mt-1">В Telegram базовые данные также автоматически дублируются в личный Telegram CloudStorage пользователя.</p>
+          <p class="text-[11px] text-slate-400 mt-1">В Telegram базовые данные также автоматически дублируются в Telegram CloudStorage.</p>
         </div>
       </div>
 
@@ -530,11 +648,11 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: БЭКАП И СБРОС -->
+  <!-- МОДАЛЬНОЕ ОКНО: БЭКАП -->
   <div id="backupModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between">
-        <h3 class="font-bold text-base text-white">💾 Управление данными и Бэкап</h3>
+        <h3 class="font-bold text-base text-white">💾 Быстрый перенос и сохранение данных</h3>
         <button onclick="closeBackupModal()" class="text-slate-400 hover:text-white">✕</button>
       </div>
 
@@ -552,14 +670,6 @@
         <textarea id="restoreCodeArea" rows="3" placeholder='{"profile":...}' class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono"></textarea>
         <button onclick="restoreFromText()" class="w-full mt-2 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-semibold text-xs">
           🔄 Восстановить данные из кода
-        </button>
-      </div>
-
-      <hr class="border-slate-800" />
-
-      <div class="pt-1">
-        <button onclick="resetAllUserData()" class="w-full py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-semibold text-xs transition">
-          🗑 Сбросить все мои данные (очистить дневник)
         </button>
       </div>
     </div>
@@ -699,22 +809,27 @@
       }
     ];
 
-    function getCleanDefaultState() {
-      const today = new Date().toISOString().slice(0, 10);
-      return {
-        profile: { gender: 'male', age: 28, height: 178, weight: 75, targetWeight: 70, activity: 1.375, goal: -15 },
-        foods: [...DEFAULT_FOODS],
-        days: {},
-        weightHistory: [
-          { id: 'w_init', date: today, weight: 75, note: 'Стартовый вес' }
-        ],
-        aiProvider: 'gemini',
-        apiKey: '',
-        firebaseUrl: ''
-      };
-    }
+    let state = {
+      profile: {
+        gender: 'male',
+        age: 30,
+        height: 185,
+        weight: 115,
+        targetWeight: 100,
+        activity: 1.375,
+        goal: -20,
+        addBurnedToTarget: false
+      },
+      foods: [...DEFAULT_FOODS],
+      days: {},
+      weightHistory: [
+        { id: 'w_init', date: new Date().toISOString().slice(0, 10), weight: 115, note: 'Стартовый вес' }
+      ],
+      aiProvider: 'gemini',
+      apiKey: '',
+      firebaseUrl: ''
+    };
 
-    let state = getCleanDefaultState();
     let currentDate = new Date().toISOString().slice(0, 10);
     let currentPhotoBase64 = null;
     let currentPhotoItems = [...PRESET_PLATES[0].items];
@@ -723,7 +838,7 @@
     async function loadState() {
       let loadedFromLocal = false;
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('nutribalance_pro_v2');
         if (raw) {
           const parsed = JSON.parse(raw);
           state = { ...state, ...parsed, profile: { ...state.profile, ...(parsed.profile || {}) } };
@@ -746,7 +861,7 @@
       }
 
       if (!Array.isArray(state.weightHistory) || state.weightHistory.length === 0) {
-        state.weightHistory = [{ id: 'w_init', date: currentDate, weight: state.profile.weight || 75, note: 'Старт' }];
+        state.weightHistory = [{ id: 'w_init', date: currentDate, weight: state.profile.weight || 115, note: 'Старт' }];
       }
 
       if (state.firebaseUrl) {
@@ -794,26 +909,6 @@
       renderAll();
     }
 
-    function resetAllUserData() {
-      if (!confirm('Вы уверены, что хотите полностью очистить свой дневник, историю веса и настройки?')) return;
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem('nutribalance_pro_v2');
-      } catch (e) {}
-
-      if (tg?.CloudStorage && isTelegramMiniApp) {
-        try {
-          tg.CloudStorage.removeItems(['nb_meta_v2', 'nb_days_v2', 'nb_foods_v2']);
-        } catch (e) {}
-      }
-
-      state = getCleanDefaultState();
-      triggerHaptic('warning');
-      closeBackupModal();
-      renderAll();
-      showNotice('Все данные сброшены до начального состояния!');
-    }
-
     function updateBadge(text, ok) {
       const b = document.getElementById('syncStatusBadge');
       b.textContent = text;
@@ -823,24 +918,38 @@
     }
 
     function ensureDay(dateStr) {
-      if (!state.days[dateStr]) state.days[dateStr] = { water: 0, items: [] };
+      if (!state.days[dateStr]) {
+        state.days[dateStr] = {
+          water: 0,
+          items: [],
+          activity: { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' }
+        };
+      }
+      if (!state.days[dateStr].activity) {
+        state.days[dateStr].activity = { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' };
+      }
       return state.days[dateStr];
     }
 
     function calculateTargets() {
-      const { gender, age, height, weight, activity, goal } = state.profile;
+      const { gender, age, height, weight, activity, goal, addBurnedToTarget } = state.profile;
       const bmr = Math.round(10 * weight + 6.25 * height - 5 * age + (gender === 'male' ? 5 : -161));
       const tdee = Math.round(bmr * Number(activity));
-      const targetKcal = Math.round(tdee * (1 + Number(goal) / 100));
+      let baseTargetKcal = Math.round(tdee * (1 + Number(goal) / 100));
+
+      const day = ensureDay(currentDate);
+      const burnedBonus = addBurnedToTarget ? Math.round((day.activity?.burnedKcal || 0) * 0.5) : 0;
+      const targetKcal = baseTargetKcal + burnedBonus;
+
       const p = Math.round((targetKcal * 0.30) / 4);
       const f = Math.round((targetKcal * 0.28) / 9);
       const c = Math.round((targetKcal * 0.42) / 4);
-      return { bmr, tdee, targetKcal, p, f, c };
+      return { bmr, tdee, baseTargetKcal, targetKcal, burnedBonus, p, f, c };
     }
 
     function switchTab(tabId) {
       triggerHaptic('light');
-      ['diary', 'photo', 'foods', 'weight', 'calc'].forEach(t => {
+      ['diary', 'photo', 'foods', 'activity', 'weight', 'calc'].forEach(t => {
         document.getElementById('tab-' + t).classList.toggle('hidden', t !== tabId);
         const btn = document.getElementById('tabBtn-' + t);
         btn.className = t === tabId
@@ -849,6 +958,7 @@
       });
     }
 
+    // УНИВЕРСАЛЬНЫЙ ВЫЗОВ ИИ (ТЕКСТ ИЛИ ФОТО)
     async function detectWorkingGeminiModel(apiKey) {
       try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
@@ -929,6 +1039,141 @@
       }
     }
 
+    // === ФУНКЦИИ РАЗДЕЛА АКТИВНОСТИ ===
+    function saveActivityFromInputs() {
+      const day = ensureDay(currentDate);
+      day.activity = {
+        steps: Math.max(0, parseInt(document.getElementById('actStepsInput').value) || 0),
+        burnedKcal: Math.max(0, parseInt(document.getElementById('actBurnedInput').value) || 0),
+        activeMinutes: Math.max(0, parseInt(document.getElementById('actMinutesInput').value) || 0),
+        note: document.getElementById('actNoteInput').value.trim()
+      };
+      saveState();
+    }
+
+    function quickAddSteps(delta) {
+      triggerHaptic('light');
+      const day = ensureDay(currentDate);
+      day.activity.steps = Math.max(0, (day.activity.steps || 0) + delta);
+      saveState();
+    }
+
+    function quickAddBurned(delta) {
+      triggerHaptic('light');
+      const day = ensureDay(currentDate);
+      day.activity.burnedKcal = Math.max(0, (day.activity.burnedKcal || 0) + delta);
+      saveState();
+    }
+
+    function toggleBurnedToTarget(checked) {
+      triggerHaptic('light');
+      state.profile.addBurnedToTarget = Boolean(checked);
+      saveState();
+    }
+
+    async function estimateWorkoutWithAI() {
+      const text = document.getElementById('aiWorkoutPrompt').value.trim();
+      if (!text) {
+        showNotice('Опишите активность — например: "Бег трусцой 30 минут" или "Силовая в зале 1 час"');
+        return;
+      }
+      triggerHaptic('light');
+      const btn = document.getElementById('btnAiWorkout');
+      btn.disabled = true;
+      btn.textContent = '⏳...';
+
+      const prompt = `Пользователь с весом ${state.profile.weight} кг выполнил активность: "${text}".
+Оцени количество сожжённых активных калорий (ккал) и длительность в минутах.
+Верни ТОЛЬКО валидный JSON:
+{"burnedKcal":320,"minutes":45,"shortTitle":"Силовая тренировка (45 мин)"}`;
+
+      try {
+        const { parsed } = await callAIJson(prompt, null);
+        const day = ensureDay(currentDate);
+        day.activity.burnedKcal = (day.activity.burnedKcal || 0) + (Number(parsed.burnedKcal) || 0);
+        day.activity.activeMinutes = (day.activity.activeMinutes || 0) + (Number(parsed.minutes) || 0);
+        day.activity.note = day.activity.note
+          ? `${day.activity.note}, ${parsed.shortTitle || text}`
+          : (parsed.shortTitle || text);
+
+        document.getElementById('aiWorkoutPrompt').value = '';
+        triggerHaptic('success');
+        saveState();
+      } catch (err) {
+        triggerHaptic('error');
+        showNotice('Ошибка ИИ: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Посчитать';
+      }
+    }
+
+    function renderActivityTab() {
+      const day = ensureDay(currentDate);
+      const act = day.activity || { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' };
+      const targets = calculateTargets();
+
+      document.getElementById('headerSteps').textContent = `${act.steps} шаг.`;
+      document.getElementById('headerBurned').textContent = `${act.burnedKcal} ккал`;
+      document.getElementById('activityDateLabel').textContent = currentDate;
+
+      const stepsInput = document.getElementById('actStepsInput');
+      if (document.activeElement !== stepsInput) stepsInput.value = act.steps || '';
+      const burnedInput = document.getElementById('actBurnedInput');
+      if (document.activeElement !== burnedInput) burnedInput.value = act.burnedKcal || '';
+      const minInput = document.getElementById('actMinutesInput');
+      if (document.activeElement !== minInput) minInput.value = act.activeMinutes || '';
+      const noteInput = document.getElementById('actNoteInput');
+      if (document.activeElement !== noteInput) noteInput.value = act.note || '';
+
+      document.getElementById('addBurnedToTargetCheckbox').checked = Boolean(state.profile.addBurnedToTarget);
+
+      document.getElementById('stepsGoalText').textContent = `${act.steps.toLocaleString('ru-RU')} / 10 000`;
+      const stepsPct = Math.min(100, Math.round((act.steps / 10000) * 100));
+      document.getElementById('stepsProgressBar').style.width = stepsPct + '%';
+
+      const eatenKcal = Math.round(day.items.reduce((s, x) => s + x.kcal, 0));
+      const totalExpenditure = targets.tdee + (act.burnedKcal || 0);
+      const deficit = totalExpenditure - eatenKcal;
+
+      document.getElementById('actSummaryEaten').textContent = `${eatenKcal} ккал`;
+      document.getElementById('actSummaryBurned').textContent = `${act.burnedKcal} ккал`;
+      const defEl = document.getElementById('actSummaryDeficit');
+      defEl.textContent = deficit >= 0 ? `-${deficit} ккал` : `+${Math.abs(deficit)} профицит`;
+      defEl.className = deficit >= 0
+        ? 'text-base sm:text-lg font-bold text-emerald-400 mt-0.5'
+        : 'text-base sm:text-lg font-bold text-amber-400 mt-0.5';
+
+      // История активности по дням
+      const histContainer = document.getElementById('activityHistoryList');
+      const datesWithAct = Object.keys(state.days)
+        .filter(d => {
+          const a = state.days[d]?.activity;
+          return a && (a.steps > 0 || a.burnedKcal > 0 || a.activeMinutes > 0 || a.note);
+        })
+        .sort()
+        .reverse()
+        .slice(0, 14);
+
+      if (datesWithAct.length === 0) {
+        histContainer.innerHTML = `<p class="text-xs text-slate-500 py-2">Пока нет записей активности</p>`;
+      } else {
+        histContainer.innerHTML = datesWithAct.map(d => {
+          const a = state.days[d].activity;
+          return `
+            <div class="py-2.5 flex items-center justify-between text-xs">
+              <div>
+                <div class="font-bold text-white">${d} ${a.note ? `<span class="text-emerald-400 font-normal">• ${a.note}</span>` : ''}</div>
+                <div class="text-[11px] text-slate-400">👟 ${a.steps} шагов • ⏱️ ${a.activeMinutes} мин</div>
+              </div>
+              <div class="font-bold text-orange-400">🔥 ${a.burnedKcal} ккал</div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // ИИ-РАСЧЁТ БЛЮДА ПО ТЕКСТОВОМУ ОПИСАНИЮ
     async function analyzeTextDishWithAI() {
       const text = document.getElementById('aiTextFoodPrompt').value.trim();
       if (!text) {
@@ -1039,6 +1284,7 @@
       switchTab('diary');
     }
 
+    // ТРЕКЕР ВЕСА
     function addWeightEntry() {
       const dateVal = document.getElementById('weightDateInput').value || currentDate;
       const weightVal = parseFloat(document.getElementById('weightValueInput').value);
@@ -1094,7 +1340,7 @@
       const history = state.weightHistory || [];
       const startW = history.length > 0 ? history[0].weight : state.profile.weight;
       const currW = state.profile.weight;
-      const targetW = state.profile.targetWeight || 70;
+      const targetW = state.profile.targetWeight || 100;
 
       document.getElementById('headerCurrentWeight').textContent = `${currW} кг`;
       document.getElementById('headerTargetWeight').textContent = `→ ${targetW} кг`;
@@ -1405,18 +1651,18 @@
 
       const t = calculateTargets();
       document.getElementById('calcResultSummary').innerHTML =
-        `Базовый обмен (BMR): <b>${t.bmr} ккал</b> • Поддержание (TDEE): <b>${t.tdee} ккал</b><br>Ваша дневная цель (на вес ${p.weight} кг): <b class="text-emerald-400">${t.targetKcal} ккал</b> (Белки: ${t.p}г, Жиры: ${t.f}г, Углеводы: ${t.c}г)`;
+        `Базовый обмен (BMR): <b>${t.bmr} ккал</b> • Поддержание (TDEE): <b>${t.tdee} ккал</b><br>Ваша дневная цель (на вес ${p.weight} кг): <b class="text-emerald-400">${t.targetKcal} ккал</b> ${t.burnedBonus > 0 ? `(включая +${t.burnedBonus} ккал за активность)` : ''} (Белки: ${t.p}г, Жиры: ${t.f}г, Углеводы: ${t.c}г)`;
     }
 
     function saveProfileAndRecalc() {
       state.profile = {
         ...state.profile,
         gender: document.getElementById('profGender').value,
-        age: Number(document.getElementById('profAge').value) || 28,
-        height: Number(document.getElementById('profHeight').value) || 178,
-        weight: parseFloat(document.getElementById('profWeight').value) || 75,
+        age: Number(document.getElementById('profAge').value) || 30,
+        height: Number(document.getElementById('profHeight').value) || 185,
+        weight: parseFloat(document.getElementById('profWeight').value) || 115,
         activity: Number(document.getElementById('profActivity').value) || 1.375,
-        goal: Number(document.getElementById('profGoal').value) || -15
+        goal: Number(document.getElementById('profGoal').value) || -20
       };
       saveState();
     }
@@ -1548,6 +1794,7 @@
       renderProfileForm();
       renderFoodsList();
       renderPhotoIngredients();
+      renderActivityTab();
       renderWeightTracker();
     }
 
