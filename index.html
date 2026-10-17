@@ -156,49 +156,131 @@
       </div>
     </section>
 
-    <!-- ВКЛАДКА 1: ДНЕВНИК -->
-    <section id="tab-diary" class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 h-fit space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="font-bold text-sm sm:text-base text-white">➕ Добавить продукт</h2>
-          <div class="flex gap-1">
-            <button onclick="switchTab('foods')" class="text-[11px] px-2 py-1 rounded-lg bg-teal-500/15 text-teal-300 border border-teal-500/30">
-              ✍️ Текстом (ИИ)
-            </button>
-            <button onclick="switchTab('photo')" class="text-[11px] px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              📸 По фото
-            </button>
+    <!-- ВКЛАДКА 1: ДНЕВНИК + ИТОГИ ДНЯ И РЕКОМЕНДАЦИИ ИИ -->
+    <section id="tab-diary" class="space-y-5">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 h-fit space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-sm sm:text-base text-white">➕ Добавить продукт</h2>
+            <div class="flex gap-1">
+              <button onclick="switchTab('foods')" class="text-[11px] px-2 py-1 rounded-lg bg-teal-500/15 text-teal-300 border border-teal-500/30">
+                ✍️ Текстом (ИИ)
+              </button>
+              <button onclick="switchTab('photo')" class="text-[11px] px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                📸 По фото
+              </button>
+            </div>
           </div>
+
+          <select id="diaryMealSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white">
+            <option value="breakfast">🍳 Завтрак</option>
+            <option value="lunch">🍲 Обед</option>
+            <option value="dinner">🥗 Ужин</option>
+            <option value="snack">🍎 Перекус</option>
+          </select>
+
+          <input type="text" id="diaryFoodSearch" oninput="renderDiaryFoodSelect()" placeholder="Поиск продукта в базе..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white" />
+          <select id="diaryFoodSelect" size="5" onchange="updateQuickPreview()" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-xs sm:text-sm text-white"></select>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-400">Вес порции (г)</span>
+              <span id="quickPreviewKcal" class="text-emerald-400 font-semibold">0 ккал</span>
+            </div>
+            <div class="flex gap-1.5">
+              <input type="number" id="diaryFoodGrams" value="150" min="1" max="3000" oninput="updateQuickPreview()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-white" />
+              <button onclick="setQuickGrams(100)" class="px-2.5 py-1 text-xs bg-slate-800 rounded-lg border border-slate-700">100г</button>
+              <button onclick="setQuickGrams(200)" class="px-2.5 py-1 text-xs bg-slate-800 rounded-lg border border-slate-700">200г</button>
+            </div>
+          </div>
+
+          <button onclick="addSelectedFoodToDiary()" class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition">
+            Добавить в приём пищи
+          </button>
         </div>
 
-        <select id="diaryMealSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white">
-          <option value="breakfast">🍳 Завтрак</option>
-          <option value="lunch">🍲 Обед</option>
-          <option value="dinner">🥗 Ужин</option>
-          <option value="snack">🍎 Перекус</option>
-        </select>
-
-        <input type="text" id="diaryFoodSearch" oninput="renderDiaryFoodSelect()" placeholder="Поиск продукта в базе..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white" />
-        <select id="diaryFoodSelect" size="5" onchange="updateQuickPreview()" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-xs sm:text-sm text-white"></select>
-
-        <div>
-          <div class="flex justify-between text-xs mb-1">
-            <span class="text-slate-400">Вес порции (г)</span>
-            <span id="quickPreviewKcal" class="text-emerald-400 font-semibold">0 ккал</span>
-          </div>
-          <div class="flex gap-1.5">
-            <input type="number" id="diaryFoodGrams" value="150" min="1" max="3000" oninput="updateQuickPreview()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-white" />
-            <button onclick="setQuickGrams(100)" class="px-2.5 py-1 text-xs bg-slate-800 rounded-lg border border-slate-700">100г</button>
-            <button onclick="setQuickGrams(200)" class="px-2.5 py-1 text-xs bg-slate-800 rounded-lg border border-slate-700">200г</button>
-          </div>
-        </div>
-
-        <button onclick="addSelectedFoodToDiary()" class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition">
-          Добавить в приём пищи
-        </button>
+        <div class="lg:col-span-2 space-y-3" id="mealsContainer"></div>
       </div>
 
-      <div class="lg:col-span-2 space-y-3" id="mealsContainer"></div>
+      <!-- НОВЫЙ БЛОК: ИТОГИ ДНЯ И РЕКОМЕНДАЦИИ ИИ -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/25 border border-emerald-500/30 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-lg">
+              📊
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="font-bold text-sm sm:text-base text-white">Итоги дня и рекомендации ИИ</h2>
+                <span id="dayScoreBadge" class="text-[11px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Оценка: —/10
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-400">Автоматическая сводка баланса + персональный разбор рациона от нейросети</p>
+            </div>
+          </div>
+
+          <button onclick="generateDailyAIReview()" id="btnGenerateReview" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition shadow-lg shadow-emerald-500/15 flex items-center gap-1.5">
+            ✨ Запросить разбор у ИИ
+          </button>
+        </div>
+
+        <!-- 4 карточки быстрых итогов -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
+            <div class="text-[11px] text-slate-400">Итог по калориям</div>
+            <div id="summaryCalStatus" class="text-xs sm:text-sm font-bold text-white mt-0.5">Нет записей</div>
+            <div id="summaryCalSub" class="text-[10px] text-slate-400 mt-0.5">Добавь приёмы пищи</div>
+          </div>
+          <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
+            <div class="text-[11px] text-slate-400">Норма белка</div>
+            <div id="summaryProteinStatus" class="text-xs sm:text-sm font-bold text-white mt-0.5">0 г</div>
+            <div id="summaryProteinSub" class="text-[10px] text-slate-400 mt-0.5">Для мышц и сытости</div>
+          </div>
+          <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
+            <div class="text-[11px] text-slate-400">Реальный дефицит</div>
+            <div id="summaryRealDeficit" class="text-xs sm:text-sm font-bold text-emerald-400 mt-0.5">0 ккал</div>
+            <div id="summaryRealDeficitSub" class="text-[10px] text-slate-400 mt-0.5">С учётом часов</div>
+          </div>
+          <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
+            <div class="text-[11px] text-slate-400">Вода и шаги</div>
+            <div id="summaryHabitsStatus" class="text-xs sm:text-sm font-bold text-sky-400 mt-0.5">0 мл • 0 шаг.</div>
+            <div id="summaryHabitsSub" class="text-[10px] text-slate-400 mt-0.5">Цель: 2.5л и 10к шагов</div>
+          </div>
+        </div>
+
+        <!-- Мгновенные алгоритмические подсказки (работают всегда и без интернета) -->
+        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 space-y-2">
+          <div class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+            <span>💡</span> Быстрая сводка по текущим цифрам:
+          </div>
+          <ul id="instantTipsList" class="space-y-1.5 text-xs text-slate-300 list-disc list-inside"></ul>
+        </div>
+
+        <!-- Развернутый ответ от ИИ (появляется после нажатия кнопки или загружается из памяти дня) -->
+        <div id="aiDailyReviewBox" class="hidden bg-slate-800/80 border border-emerald-500/40 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🤖</span>
+              <h3 id="aiReviewTitle" class="font-bold text-xs sm:text-sm text-emerald-300">Персональный разбор от Gemini AI</h3>
+            </div>
+            <span id="aiReviewTime" class="text-[10px] text-slate-400"></span>
+          </div>
+
+          <p id="aiReviewVerdict" class="text-xs sm:text-sm text-slate-100 leading-relaxed"></p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            <div class="bg-slate-900/90 border border-slate-700/70 rounded-xl p-3 space-y-1.5">
+              <div class="text-xs font-bold text-emerald-400">🍽️ Что лучше съесть дальше / на ужин:</div>
+              <p id="aiReviewNextMeal" class="text-xs text-slate-200 leading-relaxed"></p>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-700/70 rounded-xl p-3 space-y-1.5">
+              <div class="text-xs font-bold text-sky-400">🎯 Главные рекомендации:</div>
+              <ul id="aiReviewBullets" class="space-y-1 text-xs text-slate-200 list-disc list-inside"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ВКЛАДКА 2: КБЖУ ПО ФОТО -->
@@ -620,7 +702,7 @@
 
       <div class="space-y-3 text-xs">
         <div>
-          <label class="block text-slate-300 font-semibold mb-1">1. Провайдер ИИ (для фото и текста)</label>
+          <label class="block text-slate-300 font-semibold mb-1">1. Провайдер ИИ (для фото, текста и рекомендаций)</label>
           <select id="aiProviderSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white">
             <option value="gemini">Google Gemini API (Автовыбор рабочей модели)</option>
             <option value="openrouter">OpenRouter API (Работает без VPN в РФ)</option>
@@ -922,7 +1004,8 @@
         state.days[dateStr] = {
           water: 0,
           items: [],
-          activity: { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' }
+          activity: { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' },
+          aiReview: null
         };
       }
       if (!state.days[dateStr].activity) {
@@ -1036,6 +1119,202 @@
           }
         }
         throw new Error(lastErr || 'Ошибка запроса к Gemini API');
+      }
+    }
+
+    // === ИТОГИ ДНЯ И РЕКОМЕНДАЦИИ ИИ ===
+    function renderDailyInsights() {
+      const day = ensureDay(currentDate);
+      const targets = calculateTargets();
+      const act = day.activity || { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' };
+
+      let totKcal = 0, totP = 0, totF = 0, totC = 0;
+      day.items.forEach(it => { totKcal += it.kcal; totP += it.p; totF += it.f; totC += it.c; });
+      totKcal = Math.round(totKcal);
+      totP = Math.round(totP);
+      totF = Math.round(totF);
+      totC = Math.round(totC);
+
+      const calDiff = targets.targetKcal - totKcal;
+      const totalExpenditure = targets.tdee + (act.burnedKcal || 0);
+      const realDeficit = totalExpenditure - totKcal;
+
+      // 1. Карточка калорий
+      const calStatusEl = document.getElementById('summaryCalStatus');
+      const calSubEl = document.getElementById('summaryCalSub');
+      if (totKcal === 0) {
+        calStatusEl.textContent = '0 ккал';
+        calStatusEl.className = 'text-xs sm:text-sm font-bold text-slate-400 mt-0.5';
+        calSubEl.textContent = `Цель: ${targets.targetKcal} ккал`;
+      } else if (Math.abs(calDiff) <= 150) {
+        calStatusEl.textContent = 'Идеально в норме';
+        calStatusEl.className = 'text-xs sm:text-sm font-bold text-emerald-400 mt-0.5';
+        calSubEl.textContent = `${totKcal} из ${targets.targetKcal} ккал`;
+      } else if (calDiff > 150) {
+        calStatusEl.textContent = `В запасе ${calDiff} ккал`;
+        calStatusEl.className = 'text-xs sm:text-sm font-bold text-sky-400 mt-0.5';
+        calSubEl.textContent = `Съедено ${totKcal} ккал`;
+      } else {
+        calStatusEl.textContent = `Перебор +${Math.abs(calDiff)} ккал`;
+        calStatusEl.className = 'text-xs sm:text-sm font-bold text-amber-400 mt-0.5';
+        calSubEl.textContent = `${totKcal} из ${targets.targetKcal} ккал`;
+      }
+
+      // 2. Карточка белка
+      const pStatusEl = document.getElementById('summaryProteinStatus');
+      const pSubEl = document.getElementById('summaryProteinSub');
+      const pRemain = targets.p - totP;
+      pStatusEl.textContent = `${totP} / ${targets.p} г`;
+      if (totP >= targets.p * 0.9) {
+        pStatusEl.className = 'text-xs sm:text-sm font-bold text-emerald-400 mt-0.5';
+        pSubEl.textContent = 'Отлично! Мышцы защищены';
+      } else {
+        pStatusEl.className = 'text-xs sm:text-sm font-bold text-rose-400 mt-0.5';
+        pSubEl.textContent = `Добрать ещё ${Math.max(0, pRemain)} г`;
+      }
+
+      // 3. Реальный дефицит
+      const defEl = document.getElementById('summaryRealDeficit');
+      const defSubEl = document.getElementById('summaryRealDeficitSub');
+      if (totKcal === 0) {
+        defEl.textContent = '—';
+        defEl.className = 'text-xs sm:text-sm font-bold text-slate-400 mt-0.5';
+        defSubEl.textContent = 'Заполни дневник еды';
+      } else if (realDeficit >= 0) {
+        defEl.textContent = `-${realDeficit} ккал`;
+        defEl.className = 'text-xs sm:text-sm font-bold text-emerald-400 mt-0.5';
+        defSubEl.textContent = `Приблизительно -${Math.round((realDeficit / 7700) * 1000)} г жира`;
+      } else {
+        defEl.textContent = `+${Math.abs(realDeficit)} профицит`;
+        defEl.className = 'text-xs sm:text-sm font-bold text-amber-400 mt-0.5';
+        defSubEl.textContent = 'Сегодня профицит энергии';
+      }
+
+      // 4. Вода и шаги
+      document.getElementById('summaryHabitsStatus').textContent = `${day.water} мл • ${act.steps} шаг.`;
+      document.getElementById('summaryHabitsSub').textContent =
+        `${day.water >= 2000 ? '💧 Вода в норме' : '💧 Выпей воды'} • ${act.steps >= 8000 ? '👟 Активность супер' : '👟 Прогуляйся'}`;
+
+      // Вычисление оценки дня (из 10 баллов)
+      let score = 0;
+      if (totKcal > 0) {
+        const calRatio = totKcal / targets.targetKcal;
+        if (calRatio >= 0.85 && calRatio <= 1.08) score += 4;
+        else if (calRatio >= 0.70 && calRatio <= 1.20) score += 2.5;
+        else score += 1;
+
+        const pRatio = totP / targets.p;
+        if (pRatio >= 0.85) score += 3;
+        else if (pRatio >= 0.6) score += 1.5;
+
+        if (day.water >= 2000) score += 1.5;
+        else if (day.water >= 1000) score += 0.8;
+
+        if (act.steps >= 7000 || act.burnedKcal >= 250) score += 1.5;
+        else if (act.steps >= 3500 || act.burnedKcal >= 100) score += 0.7;
+      }
+      const finalScore = totKcal === 0 ? '—' : Math.min(10, Math.round(score * 10) / 10);
+      document.getElementById('dayScoreBadge').textContent = `Оценка дня: ${finalScore}/10`;
+
+      // Алгоритмические быстрые советы
+      const tips = [];
+      if (totKcal === 0) {
+        tips.push('Запиши хотя бы один приём пищи за сегодня, чтобы увидеть аналитику баланса КБЖУ и рекомендации.');
+      } else {
+        if (pRemain > 25) {
+          tips.push(`Не хватает <b>${pRemain} г белка</b> до дневной цели. Отлично подойдут: куриная грудка (150г = ~46г белка), пачка творога 5% или яйца.`);
+        } else {
+          tips.push(`Норма по белку почти закрыта (<b>${totP} г</b>) — это отлично удерживает сытость и сохраняет мышцы при снижении веса.`);
+        }
+
+        if (totF > targets.f + 15) {
+          tips.push(`Жиры немного превышены (<b>${totF} г</b> из ${targets.f} г). В оставшиеся приёмы пищи выбирай нежирные белковые продукты и овощи без масла.`);
+        } else if (calDiff > 250) {
+          tips.push(`У тебя остаётся ещё <b>${calDiff} ккал</b> в запасе — не урезай рацион слишком сильно, чтобы не было вечернего голода.`);
+        } else if (calDiff < -150) {
+          tips.push(`Лимит калорий превышен на <b>${Math.abs(calDiff)} ккал</b>. Ничего страшного:20-30 минут спокойной прогулки легко компенсируют эту разницу.`);
+        }
+
+        if (day.water < 1500) {
+          tips.push(`Выпито всего <b>${day.water} мл воды</b>. Выпей 1–2 стакана чистой воды — при похудении это напрямую помогает обмену веществ.`);
+        }
+      }
+
+      document.getElementById('instantTipsList').innerHTML = tips.map(t => `<li>${t}</li>`).join('');
+
+      // Отображение сохранённого ИИ-разбора за этот день (если уже запрашивали)
+      const reviewBox = document.getElementById('aiDailyReviewBox');
+      if (day.aiReview && day.aiReview.verdict) {
+        reviewBox.classList.remove('hidden');
+        document.getElementById('aiReviewTime').textContent = day.aiReview.time || '';
+        document.getElementById('aiReviewVerdict').textContent = day.aiReview.verdict;
+        document.getElementById('aiReviewNextMeal').textContent = day.aiReview.nextMeal || '';
+        document.getElementById('aiReviewBullets').innerHTML = (day.aiReview.tips || [])
+          .map(b => `<li>${b}</li>`)
+          .join('');
+      } else {
+        reviewBox.classList.add('hidden');
+      }
+    }
+
+    async function generateDailyAIReview() {
+      const day = ensureDay(currentDate);
+      const targets = calculateTargets();
+      const act = day.activity || { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' };
+
+      let totKcal = 0, totP = 0, totF = 0, totC = 0;
+      day.items.forEach(it => { totKcal += it.kcal; totP += it.p; totF += it.f; totC += it.c; });
+
+      if (day.items.length === 0) {
+        showNotice('Сначала добавьте хотя бы один продукт в дневник за сегодня, чтобы ИИ смог проанализировать ваш рацион!');
+        return;
+      }
+
+      triggerHaptic('light');
+      const btn = document.getElementById('btnGenerateReview');
+      btn.disabled = true;
+      btn.textContent = '⏳ ИИ анализирует день...';
+
+      const mealNames = { breakfast: 'Завтрак', lunch: 'Обед', dinner: 'Ужин', snack: 'Перекус' };
+      const eatenListStr = day.items
+        .map(i => `${mealNames[i.meal] || i.meal}: ${i.name} (${i.grams}г — ${i.kcal} ккал, Б:${i.p}, Ж:${i.f}, У:${i.c})`)
+        .join('; ');
+
+      const prompt = `Ты — персональный спортивный нутрициолог и тренер. Проанализируй текущий день пользователя (${currentDate}):
+- Параметры: вес ${state.profile.weight} кг, целевой вес ${state.profile.targetWeight || 100} кг, цель по калориям: ${targets.targetKcal} ккал (Норма Б: ${targets.p}г, Ж: ${targets.f}г, У: ${targets.c}г).
+- Фактически съедено за день: ${Math.round(totKcal)} ккал (Белки: ${Math.round(totP)}г, Жиры: ${Math.round(totF)}г, Углеводы: ${Math.round(totC)}г).
+- Выпито воды: ${day.water} мл из 2500 мл.
+- Активность с часов: ${act.steps} шагов, сожжено активных калорий: ${act.burnedKcal} ккал, тренировка: "${act.note || 'не указана'}".
+- Список съеденных продуктов: ${eatenListStr}.
+
+Дай конкретный, дружелюбный и практичный разбор без воды.
+Верни ТОЛЬКО валидный JSON строго в формате:
+{
+  "verdict": "Общая оценка дня в 2-3 предложениях (похвали за сильные стороны и укажи перекосы по БЖУ или режиму)",
+  "nextMeal": "Конкретный вариант, что лучше съесть в оставшийся приём пищи сегодня (или на завтрак завтра, если норма калорий уже выбрана) с указанием примерной граммовки",
+  "tips": [
+    "Короткий практический совет 1",
+    "Короткий практический совет 2",
+    "Короткий практический совет 3"
+  ]
+}`;
+
+      try {
+        const { parsed, model } = await callAIJson(prompt, null);
+        day.aiReview = {
+          verdict: parsed.verdict || 'Рацион проанализирован.',
+          nextMeal: parsed.nextMeal || 'Сделайте упор на нежирный белок и свежие овощи.',
+          tips: Array.isArray(parsed.tips) ? parsed.tips : [],
+          time: `Обновлено в ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} (${model})`
+        };
+        triggerHaptic('success');
+        saveState();
+      } catch (err) {
+        triggerHaptic('error');
+        showNotice('Ошибка ИИ: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✨ Запросить разбор у ИИ';
       }
     }
 
@@ -1791,6 +2070,7 @@
       renderSummary();
       renderDiaryFoodSelect();
       renderMeals();
+      renderDailyInsights();
       renderProfileForm();
       renderFoodsList();
       renderPhotoIngredients();
