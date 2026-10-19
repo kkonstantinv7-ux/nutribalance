@@ -455,7 +455,7 @@
           <div class="flex items-center justify-between">
             <div>
               <h2 class="font-bold text-sm text-white">📸 Сфотографируй тарелку</h2>
-              <p class="text-[10px] text-slate-400">Снимок остаётся только внутри приложения</p>
+              <p class="text-[10px] text-slate-400">Снимок сохраняется сразу внутри приложения</p>
             </div>
             <div class="flex items-center gap-1.5">
               <button type="button" id="btnSwitchCam" onclick="switchCameraFacing()" class="hidden text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700" title="Переключить камеру">
@@ -480,7 +480,7 @@
             <div id="photoPlaceholder" class="p-4 text-center space-y-1.5">
               <div class="text-3xl">🍽️</div>
               <div class="text-xs font-medium text-slate-200">Нажми «Включить камеру» и сфотографируй еду</div>
-              <p class="text-[11px] text-slate-400">Фото сразу попадёт в приложение без сохранения в память телефона</p>
+              <p class="text-[11px] text-slate-400">Фото сразу попадёт в приложение без сохранения в галерею телефона</p>
             </div>
           </div>
 
@@ -743,7 +743,7 @@
         <div>
           <label class="block text-slate-300 font-semibold mb-1">1. Провайдер ИИ</label>
           <select id="aiProviderSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white">
-            <option value="gemini">Google Gemini API (Автовыбор 3.0 Flash)</option>
+            <option value="gemini">Google Gemini API (Автовыбор 3.8 / 3.0 Flash)</option>
             <option value="openrouter">OpenRouter API (Работает без VPN в РФ)</option>
           </select>
         </div>
@@ -1401,14 +1401,13 @@
         : 'flex-1 py-2 rounded-xl text-xs font-medium text-slate-300 transition';
 
       if (mode === 'photo') {
-        // Сразу включаем камеру при переходе в режим фото, если ещё нет активного потока
         startLiveCamera();
       } else {
         stopLiveCamera();
       }
     }
 
-    // === 7. НАДЁЖНЫЙ ВЫЗОВ ИИ (GEMINI 3.0 FLASH + ИСКЛЮЧЕНИЕ УСТАРЕВШЕЙ 2.5) ===
+    // === 7. НАДЁЖНЫЙ ВЫЗОВ ИИ (GEMINI 3.8 / 3.0 FLASH + ИСКЛЮЧЕНИЕ УСТАРЕВШИХ 2.0/2.5) ===
     async function detectWorkingGeminiModel(apiKey) {
       try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
@@ -1417,14 +1416,14 @@
           const supported = data.models
             .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
             .map(m => m.name.replace('models/', ''))
-            .filter(name => !name.includes('2.5') && !name.includes('1.5'));
+            .filter(name => !name.includes('2.5') && !name.includes('2.0') && !name.includes('1.5'));
 
           const priority = [
+            'gemini-3.8-flash',
             'gemini-3.0-flash',
             'gemini-3-flash',
             'gemini-3-flash-preview',
-            'gemini-flash-latest',
-            'gemini-2.0-flash'
+            'gemini-flash-latest'
           ];
           for (const pref of priority) {
             const match = supported.find(s => s === pref || s.startsWith(pref));
@@ -1435,7 +1434,7 @@
           if (supported.length > 0) return supported[0];
         }
       } catch (e) {}
-      return 'gemini-3.0-flash';
+      return 'gemini-3.8-flash';
     }
 
     async function callAIJson(promptText, base64ImageOrNull = null) {
@@ -1450,7 +1449,7 @@
         const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.apiKey}` },
-          body: JSON.stringify({ model: 'google/gemini-2.0-flash-001', messages: [{ role: 'user', content: contentParts }] })
+          body: JSON.stringify({ model: 'google/gemini-2.5-flash', messages: [{ role: 'user', content: contentParts }] })
         });
         const data = await resp.json();
         const raw = data?.choices?.[0]?.message?.content || '';
@@ -1461,19 +1460,21 @@
         const detectedModel = await detectWorkingGeminiModel(state.apiKey);
         const candidateModels = [...new Set([
           detectedModel,
+          'gemini-3.8-flash',
           'gemini-3.0-flash',
+          'gemini-3-flash',
           'gemini-3-flash-preview',
-          'gemini-flash-latest',
-          'gemini-2.0-flash'
-        ])].filter(m => !m.includes('2.5') && !m.includes('1.5'));
+          'gemini-flash-latest'
+        ])].filter(m => !m.includes('2.5') && !m.includes('2.0') && !m.includes('1.5'));
 
         const parts = [{ text: promptText }];
         if (base64ImageOrNull) {
           parts.push({ inline_data: { mime_type: 'image/jpeg', data: base64ImageOrNull.split(',')[1] } });
         }
 
-        let lastErr = '';
-        for (const modelName of candidateModels) {
+        let firstRealErr = '';
+        for (let i = 0; i < candidateModels.length; i++) {
+          const modelName = candidateModels[i];
           try {
             const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${state.apiKey}`, {
               method: 'POST',
@@ -1489,13 +1490,31 @@
               const cleanJson = rawText.replace(/```json|```/g, '').trim();
               return { parsed: JSON.parse(cleanJson), model: modelName };
             } else {
-              lastErr = data?.error?.message || `Модель ${modelName} не ответила`;
+              const errMsg = data?.error?.message || `Модель ${modelName} не ответила`;
+              if (!firstRealErr) firstRealErr = errMsg;
+
+              // Если Google прямо в тексте ошибки рекомендует конкретную модель (например, models/gemini-3.8-flash),
+              // автоматически подхватываем её в список кандидатов
+              const suggestedMatch = errMsg.match(/use models\/([a-zA-Z0-9._-]+)/i);
+              if (suggestedMatch && suggestedMatch[1]) {
+                const suggestedModel = suggestedMatch[1].trim();
+                if (!candidateModels.includes(suggestedModel)) {
+                  candidateModels.splice(i + 1, 0, suggestedModel);
+                }
+              }
+
+              if (errMsg.includes('API key not valid') || errMsg.includes('User location is not supported')) {
+                throw new Error(errMsg);
+              }
             }
           } catch (netErr) {
-            lastErr = netErr.message;
+            if (!firstRealErr) firstRealErr = netErr.message;
+            if (netErr.message.includes('API key not valid') || netErr.message.includes('User location is not supported')) {
+              throw netErr;
+            }
           }
         }
-        throw new Error(lastErr || 'Ошибка запроса к Gemini API');
+        throw new Error(firstRealErr || 'Ошибка запроса к Gemini API');
       }
     }
 
