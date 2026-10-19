@@ -14,7 +14,6 @@
     ::-webkit-scrollbar-track { background: #111827; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
     input[type="range"] { accent-color: #10b981; }
-    /* Фикс фокуса клавиатуры в мобильном WebView */
     input, textarea, select { -webkit-user-select: text !important; user-select: text !important; }
   </style>
 </head>
@@ -262,7 +261,7 @@
             <button type="button" onclick="selectMealType('snack')" id="mealBtn-snack" class="py-1.5 rounded-lg font-medium text-slate-300">🍎 Перек.</button>
           </div>
 
-          <!-- Поле живого поиска (без бага потери фокуса!) -->
+          <!-- Поле живого поиска -->
           <div class="relative">
             <input
               type="search"
@@ -281,7 +280,7 @@
             <span id="onlineSearchSpinner" class="hidden text-emerald-400">⏳ поиск в онлайн-базе...</span>
           </div>
 
-          <!-- Интерактивный список найденных продуктов (вместо глючного select size=5) -->
+          <!-- Интерактивный список найденных продуктов -->
           <div id="foodSearchResults" class="space-y-1.5 max-h-[210px] overflow-y-auto pr-1"></div>
 
           <!-- Карточка выбранного продукта и выбор граммов -->
@@ -391,7 +390,6 @@
     <!-- ВКЛАДКА 2: ИИ-СКАНЕР (ФОТО + ТЕКСТ В ОДНОМ МЕСТЕ) -->
     <!-- ========================================== -->
     <section id="tab-ai" class="hidden space-y-4">
-      <!-- Переключатель режима: По тексту или По фото -->
       <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-1.5 rounded-2xl max-w-md mx-auto">
         <button onclick="switchAiMode('text')" id="aiModeBtn-text" class="flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 transition">
           ✍️ Описать текстом
@@ -411,7 +409,7 @@
           <button onclick="openSettingsModal()" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700">🔑 Ключ</button>
         </div>
 
-        <textarea id="aiTextFoodPrompt" rows="3" placeholder="Например: шаурма в лаваше с курицей 320г&#10;Или: тарелка борща со сметаной и 2 куска хлеба" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs sm:text-sm text-white focus:border-emerald-500 outline-none"></textarea>
+        <textarea id="aiTextFoodPrompt" rows="3" placeholder="Например: бутерброд с тунцом и яйцом&#10;Или: тарелка борща со сметаной и 2 куска хлеба" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs sm:text-sm text-white focus:border-emerald-500 outline-none"></textarea>
 
         <button onclick="analyzeTextDishWithAI()" id="btnAnalyzeTextAI" class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition">
           🤖 Рассчитать КБЖУ через ИИ
@@ -713,7 +711,7 @@
         <div>
           <label class="block text-slate-300 font-semibold mb-1">1. Провайдер ИИ</label>
           <select id="aiProviderSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white">
-            <option value="gemini">Google Gemini API (Автовыбор модели)</option>
+            <option value="gemini">Google Gemini API (Автовыбор 3.x / Flash)</option>
             <option value="openrouter">OpenRouter API (Работает без VPN в РФ)</option>
           </select>
         </div>
@@ -812,7 +810,6 @@
 
     // === 2. ПРОВЕРЕННАЯ БАЗА ПРОДУКТОВ РФ (110+ ПОЗИЦИЙ НА 100 Г) ===
     const VERIFIED_FOODS_DB = [
-      // Птица и Мясо
       { id: 'v1', name: 'Куриная грудка (филе отварное/гриль)', kcal: 165, p: 31, f: 3.6, c: 0 },
       { id: 'v2', name: 'Куриное филе (сырое)', kcal: 113, p: 23.6, f: 1.9, c: 0.4 },
       { id: 'v3', name: 'Куриное бедро (без кожи, запеченное)', kcal: 185, p: 24, f: 9.5, c: 0 },
@@ -825,8 +822,6 @@
       { id: 'v10', name: 'Печень куриная тушеная', kcal: 160, p: 21, f: 7.5, c: 1.5 },
       { id: 'v11', name: 'Ветчина из индейки', kcal: 120, p: 16, f: 5, c: 2 },
       { id: 'v12', name: 'Сосиски молочные', kcal: 260, p: 11, f: 23, c: 1.5 },
-
-      // Рыба и Морепродукты
       { id: 'v13', name: 'Семга / Лосось (филе запеченное)', kcal: 208, p: 20, f: 13, c: 0 },
       { id: 'v14', name: 'Форель слабосоленая', kcal: 202, p: 21.5, f: 12.5, c: 0 },
       { id: 'v15', name: 'Минтай (запеченный/на пару)', kcal: 85, p: 18.5, f: 1, c: 0 },
@@ -835,8 +830,6 @@
       { id: 'v18', name: 'Креветки отварные очищенные', kcal: 95, p: 20.5, f: 1.2, c: 0 },
       { id: 'v19', name: 'Кальмар отварной', kcal: 110, p: 21, f: 2.2, c: 1.5 },
       { id: 'v20', name: 'Сельдь слабосоленая', kcal: 215, p: 18, f: 15.5, c: 0 },
-
-      // Яйца и Молочные продукты
       { id: 'v21', name: 'Яйцо куриное вареное (1 шт ≈ 55г)', kcal: 155, p: 12.7, f: 11.5, c: 0.7 },
       { id: 'v22', name: 'Яичница-глазунья (без масла)', kcal: 160, p: 13, f: 11.8, c: 0.8 },
       { id: 'v23', name: 'Омлет с молоком на сковороде', kcal: 184, p: 11.5, f: 14.5, c: 2.1 },
@@ -857,8 +850,6 @@
       { id: 'v38', name: 'Сыр творожный (Almette / Хохланд)', kcal: 240, p: 6.5, f: 22, c: 3.5 },
       { id: 'v39', name: 'Протеиновый коктейль (сывороточный порошок)', kcal: 390, p: 76, f: 5.5, c: 8 },
       { id: 'v40', name: 'Экспонента (Exponenta High-Pro напиток)', kcal: 60, p: 12, f: 0, c: 2.5 },
-
-      // Крупы, Гарниры и Хлеб
       { id: 'v41', name: 'Гречка отварная на воде (готовая)', kcal: 110, p: 4.2, f: 1.1, c: 21.3 },
       { id: 'v42', name: 'Гречневая крупа (сухая)', kcal: 330, p: 12.6, f: 3.3, c: 64 },
       { id: 'v43', name: 'Рис белый отварной (готовый)', kcal: 130, p: 2.7, f: 0.3, c: 28 },
@@ -877,8 +868,6 @@
       { id: 'v56', name: 'Хлеб белый пшеничный / тостовый', kcal: 265, p: 8, f: 3.2, c: 51 },
       { id: 'v57', name: 'Хлебцы цельнозерновые (Dr.Korner)', kcal: 310, p: 10, f: 2.5, c: 62 },
       { id: 'v58', name: 'Лаваш тонкий армянский', kcal: 275, p: 8.5, f: 1, c: 57 },
-
-      // Овощи и Зелень
       { id: 'v59', name: 'Огурцы свежие', kcal: 15, p: 0.8, f: 0.1, c: 2.8 },
       { id: 'v60', name: 'Помидоры (томаты) свежие', kcal: 20, p: 0.9, f: 0.2, c: 3.8 },
       { id: 'v61', name: 'Салат из огурцов и помидоров с маслом', kcal: 65, p: 0.9, f: 5.2, c: 3.5 },
@@ -890,16 +879,12 @@
       { id: 'v67', name: 'Авокадо', kcal: 160, p: 2, f: 14.7, c: 1.8 },
       { id: 'v68', name: 'Кабачки тушеные / гриль', kcal: 45, p: 0.9, f: 2.2, c: 5.2 },
       { id: 'v69', name: 'Грибы шампиньоны жареные', kcal: 75, p: 4.5, f: 5, c: 2.5 },
-
-      // Фрукты и Ягоды
       { id: 'v70', name: 'Банан (1 шт без кожуры ≈ 120г)', kcal: 89, p: 1.1, f: 0.3, c: 22.8 },
       { id: 'v71', name: 'Яблоко (1 шт ≈ 160г)', kcal: 47, p: 0.4, f: 0.4, c: 10.8 },
       { id: 'v72', name: 'Апельсин / Мандарин', kcal: 43, p: 0.9, f: 0.2, c: 8.5 },
       { id: 'v73', name: 'Груша', kcal: 52, p: 0.4, f: 0.3, c: 11.5 },
       { id: 'v74', name: 'Киви', kcal: 48, p: 1, f: 0.5, c: 10 },
       { id: 'v75', name: 'Клубника / Голубика / Малина', kcal: 41, p: 0.8, f: 0.4, c: 8.2 },
-
-      // Готовые блюда, Супы и Фастфуд
       { id: 'v76', name: 'Борщ домашний с мясом', kcal: 65, p: 4.2, f: 3.1, c: 5.2 },
       { id: 'v77', name: 'Суп куриный с лапшой и картофелем', kcal: 54, p: 4, f: 1.8, c: 5.5 },
       { id: 'v78', name: 'Солянка сборная мясная', kcal: 95, p: 6.5, f: 6.8, c: 2.5 },
@@ -912,8 +897,6 @@
       { id: 'v85', name: 'Салат Цезарь с курицей', kcal: 195, p: 13.5, f: 12, c: 8 },
       { id: 'v86', name: 'Салат Оливье классический', kcal: 185, p: 6.5, f: 14, c: 8.5 },
       { id: 'v87', name: 'Роллы Филадельфия', kcal: 185, p: 8, f: 7.5, c: 21 },
-
-      // Масла, Орехи, Соусы и Сладости
       { id: 'v88', name: 'Масло подсолнечное / оливковое (1 ст.л ≈ 12г)', kcal: 898, p: 0, f: 99.8, c: 0 },
       { id: 'v89', name: 'Масло сливочное 82.5%', kcal: 748, p: 0.6, f: 82.5, c: 0.8 },
       { id: 'v90', name: 'Майонез классический 67%', kcal: 620, p: 2.5, f: 67, c: 2.6 },
@@ -927,8 +910,7 @@
       { id: 'v98', name: 'Капучино / Латте на обычном молоке (250 мл)', kcal: 48, p: 2.4, f: 2.2, c: 4.5 }
     ];
 
-    // === 3. СОСТОЯНИЕ ПОЛЬЗОВАТЕЛЯ (БЕЗ ЧУЖИХ ДАННЫХ) ===
-    // Изолированный ключ под каждого пользователя Telegram
+    // === 3. СОСТОЯНИЕ ПОЛЬЗОВАТЕЛЯ ===
     const STORAGE_KEY = `nutribalance_user_v3_${tgUserId}`;
 
     let state = {
@@ -1040,7 +1022,6 @@
       }
 
       if (!loaded) {
-        // Показываем экран знакомства новому пользователю, чтобы не было чужих данных!
         document.getElementById('onboardingModal').classList.remove('hidden');
       } else {
         document.getElementById('onboardingModal').classList.add('hidden');
@@ -1117,17 +1098,14 @@
         : 'text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30';
     }
 
-    // === 5. ЖИВОЙ ПОИСК ПРОДУКТОВ + АВТОПОДГРУЗКА OPENFOODFACTS (БЕЗ БАГА ФОКУСА) ===
+    // === 5. ЖИВОЙ ПОИСК ПРОДУКТОВ + АВТОПОДГРУЗКА OPENFOODFACTS ===
     const searchInputEl = document.getElementById('diaryFoodSearch');
 
     searchInputEl.addEventListener('input', (e) => {
       const val = e.target.value;
       document.getElementById('clearSearchBtn').classList.toggle('hidden', !val);
-
-      // Мгновенно фильтруем встроенную базу (110+ продуктов) без потери фокуса инпута
       renderFoodSearchResults();
 
-      // Если введено >= 3 букв, через 450 мс догружаем продукты из онлайн-базы OpenFoodFacts
       clearTimeout(searchDebounceTimer);
       if (val.trim().length >= 3) {
         searchDebounceTimer = setTimeout(() => {
@@ -1177,7 +1155,6 @@
           renderFoodSearchResults();
         }
       } catch (e) {
-        // Если нет сети или таймаут — спокойно работаем на встроенной базе из 110+ продуктов
       } finally {
         spinner.classList.add('hidden');
       }
@@ -1188,7 +1165,6 @@
       const container = document.getElementById('foodSearchResults');
       const all = getAllFoods();
 
-      // Убираем дубликаты по имени
       const seen = new Set();
       const filtered = all.filter(item => {
         const key = item.name.toLowerCase();
@@ -1371,23 +1347,35 @@
         : 'flex-1 py-2 rounded-xl text-xs font-medium text-slate-300 transition';
     }
 
-    // === 7. ВЫЗОВ ИИ (GEMINI / OPENROUTER) ===
+    // === 7. НАДЁЖНЫЙ ВЫЗОВ ИИ (ИСКЛЮЧАЕМ УСТАРЕВШУЮ 2.5 + АВТОПЕРЕБОР МОДЕЛЕЙ) ===
     async function detectWorkingGeminiModel(apiKey) {
       try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
         const data = await res.json();
         if (data && Array.isArray(data.models)) {
+          // Исключаем любые модели 2.5 и 1.5, которые отключены для новых пользователей
           const supported = data.models
             .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
-            .map(m => m.name.replace('models/', ''));
-          for (const pref of ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest']) {
+            .map(m => m.name.replace('models/', ''))
+            .filter(name => !name.includes('2.5') && !name.includes('1.5'));
+
+          const priority = [
+            'gemini-3.0-flash',
+            'gemini-3-flash',
+            'gemini-3-flash-preview',
+            'gemini-flash-latest',
+            'gemini-2.0-flash'
+          ];
+          for (const pref of priority) {
             const match = supported.find(s => s === pref || s.startsWith(pref));
             if (match) return match;
           }
+          const anyFlash = supported.find(s => s.includes('flash'));
+          if (anyFlash) return anyFlash;
           if (supported.length > 0) return supported[0];
         }
       } catch (e) {}
-      return 'gemini-2.0-flash';
+      return 'gemini-3-flash-preview';
     }
 
     async function callAIJson(promptText, base64ImageOrNull = null) {
@@ -1411,18 +1399,43 @@
         return { parsed: JSON.parse(jsonMatch[0]), model: 'OpenRouter' };
       } else {
         const detectedModel = await detectWorkingGeminiModel(state.apiKey);
-        const parts = [{ text: promptText }];
-        if (base64ImageOrNull) parts.push({ inline_data: { mime_type: 'image/jpeg', data: base64ImageOrNull.split(',')[1] } });
+        const candidateModels = [...new Set([
+          detectedModel,
+          'gemini-3-flash-preview',
+          'gemini-3.0-flash',
+          'gemini-flash-latest',
+          'gemini-2.0-flash'
+        ])].filter(m => !m.includes('2.5'));
 
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${detectedModel}:generateContent?key=${state.apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts }], generationConfig: { response_mime_type: 'application/json' } })
-        });
-        const data = await resp.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!rawText) throw new Error(data?.error?.message || 'Ошибка ответа Gemini API');
-        return { parsed: JSON.parse(rawText.replace(/```json|```/g, '').trim()), model: detectedModel };
+        const parts = [{ text: promptText }];
+        if (base64ImageOrNull) {
+          parts.push({ inline_data: { mime_type: 'image/jpeg', data: base64ImageOrNull.split(',')[1] } });
+        }
+
+        let lastErr = '';
+        for (const modelName of candidateModels) {
+          try {
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${state.apiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts }],
+                generationConfig: { response_mime_type: 'application/json' }
+              })
+            });
+            const data = await resp.json();
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawText) {
+              const cleanJson = rawText.replace(/```json|```/g, '').trim();
+              return { parsed: JSON.parse(cleanJson), model: modelName };
+            } else {
+              lastErr = data?.error?.message || `Модель ${modelName} не ответила`;
+            }
+          } catch (netErr) {
+            lastErr = netErr.message;
+          }
+        }
+        throw new Error(lastErr || 'Ошибка запроса к Gemini API');
       }
     }
 
@@ -1475,7 +1488,6 @@
 
       document.getElementById('summaryHabitsStatus').textContent = `${day.water} мл • ${act.steps} шаг.`;
 
-      // Оценка дня
       let score = 0;
       if (totKcal > 0) {
         const calRatio = totKcal / targets.targetKcal;
@@ -1663,8 +1675,9 @@
 Верни ТОЛЬКО JSON: {"title":"Блюдо","items":[{"name":"Ингредиент","grams":150,"kcal100":165,"p100":31,"f100":3.6,"c100":0}]}`;
 
       try {
-        const { parsed } = await callAIJson(promptText, currentPhotoBase64);
+        const { parsed, model } = await callAIJson(promptText, currentPhotoBase64);
         document.getElementById('recognizedDishTitle').textContent = parsed.title || 'Распознано';
+        document.getElementById('recognizedDishStatus').textContent = `✓ Распознано (${model})`;
         currentPhotoItems = parsed.items || [];
         renderPhotoIngredients();
         triggerHaptic('success');
@@ -1737,7 +1750,6 @@
         activeMinutes: Math.max(0, parseInt(document.getElementById('actMinutesInput').value) || 0),
         note: document.getElementById('actNoteInput').value.trim()
       };
-      // Сохраняем без перерисовки инпута под пальцем
       saveState(true);
       renderSummary();
       renderDailyInsights();
