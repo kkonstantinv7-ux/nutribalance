@@ -449,29 +449,61 @@
         </div>
       </div>
 
-      <!-- РЕЖИМ 2: РАСПОЗНАВАНИЕ ПО ФОТОГРАФИИ -->
+      <!-- РЕЖИМ 2: РАСПОЗНАВАНИЕ ПО ФОТОГРАФИИ (ПРЯМАЯ КАМЕРА БЕЗ СОХРАНЕНИЯ В ТЕЛЕФОН) -->
       <div id="aiSubTab-photo" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
           <div class="flex items-center justify-between">
-            <h2 class="font-bold text-sm text-white">📸 Сфотографируй тарелку</h2>
-            <button onclick="openSettingsModal()" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700">🔑 Ключ</button>
-          </div>
-
-          <div class="relative rounded-2xl border-2 border-dashed border-slate-700 bg-slate-950/60 overflow-hidden min-h-[190px] flex flex-col items-center justify-center">
-            <img id="photoPreviewImg" class="hidden w-full max-h-[260px] object-cover" alt="Фото блюда" />
-            <div id="photoPlaceholder" class="p-4 text-center space-y-1.5">
-              <div class="text-3xl">🍽️</div>
-              <div class="text-xs font-medium text-slate-200">Загрузи фото блюда или сделай снимок</div>
-              <p class="text-[11px] text-slate-400">ИИ определит ингредиенты и их вес на тарелке</p>
+            <div>
+              <h2 class="font-bold text-sm text-white">📸 Сфотографируй тарелку</h2>
+              <p class="text-[10px] text-slate-400">Снимок остаётся только внутри приложения</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" id="btnSwitchCam" onclick="switchCameraFacing()" class="hidden text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700" title="Переключить камеру">
+                🔄 Камера
+              </button>
+              <button onclick="openSettingsModal()" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700">🔑 Ключ</button>
             </div>
           </div>
 
-          <div class="flex gap-2">
-            <label class="flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs text-center cursor-pointer transition">
-              📷 Камера / Галерея
+          <!-- Область видоискателя камеры и превью снимка -->
+          <div class="relative rounded-2xl border-2 border-dashed border-slate-700 bg-slate-950/80 overflow-hidden min-h-[220px] flex flex-col items-center justify-center">
+            <!-- Прямой видеопоток с камеры -->
+            <video id="cameraVideoStream" autoplay playsinline muted class="hidden w-full max-h-[280px] object-cover bg-black"></video>
+
+            <!-- Скрытый canvas для захвата кадра в оперативную память -->
+            <canvas id="cameraCaptureCanvas" class="hidden"></canvas>
+
+            <!-- Превью готового снимка в приложении -->
+            <img id="photoPreviewImg" class="hidden w-full max-h-[280px] object-cover" alt="Фото блюда" />
+
+            <!-- Заглушка до включения камеры -->
+            <div id="photoPlaceholder" class="p-4 text-center space-y-1.5">
+              <div class="text-3xl">🍽️</div>
+              <div class="text-xs font-medium text-slate-200">Нажми «Включить камеру» и сфотографируй еду</div>
+              <p class="text-[11px] text-slate-400">Фото сразу попадёт в приложение без сохранения в память телефона</p>
+            </div>
+          </div>
+
+          <!-- Кнопки управления прямой камерой -->
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="btnStartCamera" onclick="startLiveCamera()" class="flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs text-center transition shadow-md shadow-emerald-500/10">
+              📷 Включить камеру
+            </button>
+
+            <button type="button" id="btnTakeSnap" onclick="capturePhotoFromStream()" class="hidden flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs text-center transition shadow-lg shadow-emerald-500/20">
+              ⚡ Сделать снимок
+            </button>
+
+            <button type="button" id="btnRetakePhoto" onclick="startLiveCamera()" class="hidden py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition">
+              🔄 Переснять
+            </button>
+
+            <label class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium text-xs text-center cursor-pointer transition" title="Загрузить готовое фото из галереи">
+              🖼️ Из галереи
               <input type="file" accept="image/*" onchange="handlePhotoUpload(event)" class="hidden" />
             </label>
-            <button onclick="analyzeCurrentPhotoWithAI()" id="btnAnalyzeAI" class="py-2.5 px-4 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/30 font-semibold text-xs transition">
+
+            <button type="button" onclick="analyzeCurrentPhotoWithAI()" id="btnAnalyzeAI" class="py-2.5 px-4 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/30 font-semibold text-xs transition">
               ✨ Распознать
             </button>
           </div>
@@ -711,7 +743,7 @@
         <div>
           <label class="block text-slate-300 font-semibold mb-1">1. Провайдер ИИ</label>
           <select id="aiProviderSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white">
-            <option value="gemini">Google Gemini API (Автовыбор 3.x / Flash)</option>
+            <option value="gemini">Google Gemini API (Автовыбор 3.0 Flash)</option>
             <option value="openrouter">OpenRouter API (Работает без VPN в РФ)</option>
           </select>
         </div>
@@ -912,6 +944,7 @@
 
     // === 3. СОСТОЯНИЕ ПОЛЬЗОВАТЕЛЯ ===
     const STORAGE_KEY = `nutribalance_user_v3_${tgUserId}`;
+    const LAST_PHOTO_KEY = `nutribalance_last_photo_${tgUserId}`;
 
     let state = {
       isConfigured: false,
@@ -941,6 +974,10 @@
     let currentPhotoBase64 = null;
     let currentPhotoItems = [];
     let lastAiTextFood = null;
+
+    // Переменные прямой камеры
+    let liveCameraStream = null;
+    let currentCameraFacing = 'environment';
 
     function getAllFoods() {
       return [...(state.customFoods || []), ...onlineFoundFoods, ...VERIFIED_FOODS_DB];
@@ -1020,6 +1057,20 @@
           loaded = true;
         }
       }
+
+      // Подгружаем последний снимок из внутренней памяти приложения (если есть)
+      try {
+        const savedPhoto = localStorage.getItem(LAST_PHOTO_KEY);
+        if (savedPhoto) {
+          currentPhotoBase64 = savedPhoto;
+          const preview = document.getElementById('photoPreviewImg');
+          if (preview) {
+            preview.src = currentPhotoBase64;
+            preview.classList.remove('hidden');
+            document.getElementById('photoPlaceholder')?.classList.add('hidden');
+          }
+        }
+      } catch (e) {}
 
       if (!loaded) {
         document.getElementById('onboardingModal').classList.remove('hidden');
@@ -1316,6 +1367,9 @@
 
     function switchTab(tabId) {
       triggerHaptic('light');
+      if (tabId !== 'ai') {
+        stopLiveCamera();
+      }
       ['diary', 'ai', 'progress', 'profile'].forEach(t => {
         document.getElementById('tab-' + t).classList.toggle('hidden', t !== tabId);
 
@@ -1345,15 +1399,21 @@
       document.getElementById('aiModeBtn-photo').className = mode === 'photo'
         ? 'flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 transition'
         : 'flex-1 py-2 rounded-xl text-xs font-medium text-slate-300 transition';
+
+      if (mode === 'photo') {
+        // Сразу включаем камеру при переходе в режим фото, если ещё нет активного потока
+        startLiveCamera();
+      } else {
+        stopLiveCamera();
+      }
     }
 
-    // === 7. НАДЁЖНЫЙ ВЫЗОВ ИИ (ИСКЛЮЧАЕМ УСТАРЕВШУЮ 2.5 + АВТОПЕРЕБОР МОДЕЛЕЙ) ===
+    // === 7. НАДЁЖНЫЙ ВЫЗОВ ИИ (GEMINI 3.0 FLASH + ИСКЛЮЧЕНИЕ УСТАРЕВШЕЙ 2.5) ===
     async function detectWorkingGeminiModel(apiKey) {
       try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
         const data = await res.json();
         if (data && Array.isArray(data.models)) {
-          // Исключаем любые модели 2.5 и 1.5, которые отключены для новых пользователей
           const supported = data.models
             .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
             .map(m => m.name.replace('models/', ''))
@@ -1375,7 +1435,7 @@
           if (supported.length > 0) return supported[0];
         }
       } catch (e) {}
-      return 'gemini-3-flash-preview';
+      return 'gemini-3.0-flash';
     }
 
     async function callAIJson(promptText, base64ImageOrNull = null) {
@@ -1401,11 +1461,11 @@
         const detectedModel = await detectWorkingGeminiModel(state.apiKey);
         const candidateModels = [...new Set([
           detectedModel,
-          'gemini-3-flash-preview',
           'gemini-3.0-flash',
+          'gemini-3-flash-preview',
           'gemini-flash-latest',
           'gemini-2.0-flash'
-        ])].filter(m => !m.includes('2.5'));
+        ])].filter(m => !m.includes('2.5') && !m.includes('1.5'));
 
         const parts = [{ text: promptText }];
         if (base64ImageOrNull) {
@@ -1561,7 +1621,7 @@
       }
     }
 
-    // === 9. ИИ ПО ТЕКСТУ И ПО ФОТО ===
+    // === 9. ИИ ПО ТЕКСТУ + ПРЯМАЯ КАМЕРА В ПРИЛОЖЕНИИ ===
     async function analyzeTextDishWithAI() {
       const text = document.getElementById('aiTextFoodPrompt').value.trim();
       if (!text) return showNotice('Опиши блюдо текстом!');
@@ -1635,15 +1695,155 @@
       switchTab('diary');
     }
 
+    // --- Прямая работа с камерой внутри приложения (без сохранения в галерею) ---
+    async function startLiveCamera() {
+      stopLiveCamera();
+      const videoEl = document.getElementById('cameraVideoStream');
+      const previewEl = document.getElementById('photoPreviewImg');
+      const placeholderEl = document.getElementById('photoPlaceholder');
+      const btnStart = document.getElementById('btnStartCamera');
+      const btnSnap = document.getElementById('btnTakeSnap');
+      const btnRetake = document.getElementById('btnRetakePhoto');
+      const btnSwitch = document.getElementById('btnSwitchCam');
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showNotice('Прямой доступ к камере не поддерживается в этом окне. Используйте кнопку «Из галереи».');
+        return;
+      }
+
+      try {
+        liveCameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: currentCameraFacing },
+            width: { ideal: 1280 },
+            height: { ideal: 960 }
+          },
+          audio: false
+        });
+
+        videoEl.srcObject = liveCameraStream;
+        await videoEl.play().catch(() => {});
+
+        videoEl.classList.remove('hidden');
+        previewEl.classList.add('hidden');
+        placeholderEl.classList.add('hidden');
+
+        btnStart.classList.add('hidden');
+        btnRetake.classList.add('hidden');
+        btnSnap.classList.remove('hidden');
+        btnSwitch.classList.remove('hidden');
+
+        document.getElementById('recognizedDishStatus').textContent = 'Наведи камеру на тарелку и нажми «Сделать снимок»';
+      } catch (err) {
+        showNotice('Не удалось включить камеру напрямую: ' + (err.message || 'нет доступа'));
+      }
+    }
+
+    function switchCameraFacing() {
+      triggerHaptic('light');
+      currentCameraFacing = currentCameraFacing === 'environment' ? 'user' : 'environment';
+      startLiveCamera();
+    }
+
+    function capturePhotoFromStream() {
+      const videoEl = document.getElementById('cameraVideoStream');
+      const canvasEl = document.getElementById('cameraCaptureCanvas');
+      const previewEl = document.getElementById('photoPreviewImg');
+      const placeholderEl = document.getElementById('photoPlaceholder');
+      const btnStart = document.getElementById('btnStartCamera');
+      const btnSnap = document.getElementById('btnTakeSnap');
+      const btnRetake = document.getElementById('btnRetakePhoto');
+      const btnSwitch = document.getElementById('btnSwitchCam');
+
+      if (!videoEl.videoWidth || !videoEl.videoHeight) {
+        showNotice('Камера ещё фокусируется, подождите секунду...');
+        return;
+      }
+
+      const maxDim = 960;
+      let w = videoEl.videoWidth;
+      let h = videoEl.videoHeight;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+
+      canvasEl.width = w;
+      canvasEl.height = h;
+      const ctx = canvasEl.getContext('2d');
+      ctx.drawImage(videoEl, 0, 0, w, h);
+
+      // Сжимаем в JPEG прямо в оперативной памяти (без создания файла на телефоне)
+      currentPhotoBase64 = canvasEl.toDataURL('image/jpeg', 0.84);
+
+      // Останавливаем видеопоток
+      stopLiveCamera();
+
+      // Показываем снимок внутри приложения
+      previewEl.src = currentPhotoBase64;
+      previewEl.classList.remove('hidden');
+      placeholderEl.classList.add('hidden');
+
+      btnSnap.classList.add('hidden');
+      btnStart.classList.add('hidden');
+      btnSwitch.classList.add('hidden');
+      btnRetake.classList.remove('hidden');
+
+      // Сохраняем снимок во внутренней памяти приложения (localStorage)
+      try {
+        localStorage.setItem(LAST_PHOTO_KEY, currentPhotoBase64);
+      } catch (e) {}
+
+      triggerHaptic('success');
+      document.getElementById('recognizedDishStatus').textContent = 'Снимок готов в приложении! Нажми «Распознать»';
+    }
+
+    function stopLiveCamera() {
+      if (liveCameraStream) {
+        liveCameraStream.getTracks().forEach(track => track.stop());
+        liveCameraStream = null;
+      }
+      const videoEl = document.getElementById('cameraVideoStream');
+      if (videoEl) {
+        videoEl.srcObject = null;
+        videoEl.classList.add('hidden');
+      }
+      const btnSnap = document.getElementById('btnTakeSnap');
+      const btnSwitch = document.getElementById('btnSwitchCam');
+      const btnStart = document.getElementById('btnStartCamera');
+      const btnRetake = document.getElementById('btnRetakePhoto');
+
+      if (btnSnap) btnSnap.classList.add('hidden');
+      if (btnSwitch) btnSwitch.classList.add('hidden');
+
+      if (currentPhotoBase64) {
+        document.getElementById('photoPreviewImg')?.classList.remove('hidden');
+        document.getElementById('photoPlaceholder')?.classList.add('hidden');
+        btnStart?.classList.add('hidden');
+        btnRetake?.classList.remove('hidden');
+      } else {
+        document.getElementById('photoPlaceholder')?.classList.remove('hidden');
+        btnStart?.classList.remove('hidden');
+        btnRetake?.classList.add('hidden');
+      }
+    }
+
+    // Резервная загрузка из галереи
     function handlePhotoUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
+      stopLiveCamera();
       const reader = new FileReader();
       reader.onload = (ev) => {
         const imgObj = new Image();
         imgObj.onload = () => {
           const canvas = document.createElement('canvas');
-          const maxDim = 900;
+          const maxDim = 960;
           let w = imgObj.width, h = imgObj.height;
           if (w > maxDim || h > maxDim) {
             if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
@@ -1651,12 +1851,18 @@
           }
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(imgObj, 0, 0, w, h);
-          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.82);
+          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.84);
+
+          try {
+            localStorage.setItem(LAST_PHOTO_KEY, currentPhotoBase64);
+          } catch (err) {}
 
           const preview = document.getElementById('photoPreviewImg');
           preview.src = currentPhotoBase64;
           preview.classList.remove('hidden');
           document.getElementById('photoPlaceholder').classList.add('hidden');
+          document.getElementById('btnStartCamera').classList.add('hidden');
+          document.getElementById('btnRetakePhoto').classList.remove('hidden');
           document.getElementById('recognizedDishStatus').textContent = 'Фото загружено. Нажми «Распознать»';
         };
         imgObj.src = ev.target.result;
@@ -1665,7 +1871,7 @@
     }
 
     async function analyzeCurrentPhotoWithAI() {
-      if (!currentPhotoBase64) return showNotice('Сначала выбери фото блюда!');
+      if (!currentPhotoBase64) return showNotice('Сначала сделай снимок камерой!');
       const btn = document.getElementById('btnAnalyzeAI');
       const hint = document.getElementById('aiCustomPrompt').value || '';
       btn.disabled = true;
