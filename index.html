@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>NutriBalance Pro — Liquid Glass Edition</title>
   <!-- Telegram Mini Apps SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -70,6 +70,7 @@
     .liquid-btn-primary:hover {
       filter: brightness(1.06);
     }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
 
     /* === 3. СВЕЧЕНИЕ ВЕКТОРНЫХ ИЛЛЮСТРАЦИЙ (SVG GLOW) === */
     .svg-glow-emerald { filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.75)); }
@@ -135,6 +136,12 @@
       filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.7));
       pointer-events: none;
       z-index: 15;
+    }
+
+    /* Уважаем настройку «уменьшить движение» */
+    @media (prefers-reduced-motion: reduce) {
+      .animate-card, .water-wave-top, .scanner-laser { animation: none !important; }
+      .ring-progress, .water-fill { transition: none !important; }
     }
   </style>
 </head>
@@ -205,6 +212,8 @@
           <option value="1.725" class="bg-slate-900">Высокая нагрузка / спорт почти каждый день (1.725)</option>
         </select>
       </div>
+
+      <p class="text-[10px] text-slate-400 leading-snug">Расчёты ориентировочные и не являются медицинской рекомендацией. При хронических заболеваниях, беременности или резком снижении веса проконсультируйся с врачом.</p>
 
       <button onclick="completeOnboarding()" class="btn-spring liquid-btn-primary w-full py-3 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2">
         <span>Рассчитать мою норму и начать</span>
@@ -459,7 +468,7 @@
           </div>
 
           <div class="flex items-center justify-between text-[11px] text-slate-300 px-0.5">
-            <span id="searchStatusText">База 110+ продуктов + Онлайн</span>
+            <span id="searchStatusText">База 20+ продуктов + Онлайн</span>
             <span id="onlineSearchSpinner" class="hidden text-emerald-300 animate-pulse">поиск онлайн...</span>
           </div>
 
@@ -525,7 +534,7 @@
           <div class="liquid-pill rounded-2xl p-2.5">
             <div class="text-[10px] text-slate-300">Баланс энергии</div>
             <div id="summaryRealDeficit" class="text-xs font-bold text-emerald-300 mt-0.5">0 ккал</div>
-            <div id="summaryRealDeficitSub" class="text-[10px] text-slate-300">С учётом активности</div>
+            <div id="summaryRealDeficitSub" class="text-[10px] text-slate-300">Активность учтена на 50%</div>
           </div>
           <div class="liquid-pill rounded-2xl p-2.5">
             <div class="text-[10px] text-slate-300">Вода и шаги</div>
@@ -617,7 +626,7 @@
           <div class="flex items-center justify-between">
             <div>
               <h2 class="font-bold text-sm text-white">Сфотографируй тарелку</h2>
-              <p class="text-[10px] text-slate-300">Снимок сохраняется сразу внутри приложения</p>
+              <p class="text-[10px] text-slate-300">Снимок хранится только в памяти, на устройстве не сохраняется</p>
             </div>
             <div class="flex items-center gap-1.5">
               <button type="button" id="btnSwitchCam" onclick="switchCameraFacing()" class="hidden btn-spring liquid-pill text-xs px-2.5 py-1 rounded-xl text-slate-200">Камера</button>
@@ -789,7 +798,7 @@
 
         <label class="flex items-start gap-2 p-2.5 rounded-2xl liquid-pill cursor-pointer">
           <input type="checkbox" id="addBurnedToTargetCheckbox" onchange="toggleBurnedToTarget(this.checked)" class="mt-0.5 rounded accent-emerald-500" />
-          <span class="text-[11px] text-slate-200">Прибавлять 50% сожжённых ккал к дневной норме еды</span>
+          <span class="text-[11px] text-slate-200">Прибавлять 50% сожжённых ккал к дневной норме еды (дневной множитель активности уже заложен в норму, поэтому берётся только половина)</span>
         </label>
       </div>
     </section>
@@ -841,6 +850,7 @@
             </div>
           </div>
           <div id="calcResultSummary" class="p-3 rounded-2xl liquid-pill text-xs text-slate-200 leading-relaxed"></div>
+          <p class="text-[10px] text-slate-400 leading-snug">Расчёты ориентировочные и не являются медицинской рекомендацией. Не опускай калорийность ниже безопасного минимума и при сомнениях обратись к врачу или диетологу.</p>
         </div>
 
         <div class="liquid-glass rounded-3xl p-4 space-y-3 h-fit">
@@ -918,64 +928,16 @@
   </div>
 
   <script>
-    // === АНИМИРОВАННЫЙ ФОН ПЛАЗМЫ ===
-    (function initPlasmaBackground() {
-      const canvas = document.getElementById('plasmaCanvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      let width = (canvas.width = window.innerWidth);
-      let height = (canvas.height = window.innerHeight);
-
-      window.addEventListener('resize', () => {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-      });
-
-      const orbs = [
-        { x: 0.2, y: 0.2, r: 340, color: '16, 185, 129', vx: 0.0004, vy: 0.0003, phase: 0 },
-        { x: 0.8, y: 0.3, r: 380, color: '14, 165, 233', vx: -0.0003, vy: 0.0005, phase: 2 },
-        { x: 0.5, y: 0.75, r: 360, color: '20, 184, 166', vx: 0.00035, vy: -0.0004, phase: 4 },
-        { x: 0.15, y: 0.8, r: 300, color: '99, 102, 241', vx: 0.0005, vy: 0.0002, phase: 1 },
-        { x: 0.85, y: 0.85, r: 320, color: '52, 211, 153', vx: -0.0004, vy: -0.0003, phase: 3 }
-      ];
-
-      let tick = 0;
-      function drawPlasma() {
-        if (!document.hidden) {
-          tick += 1;
-          ctx.clearRect(0, 0, width, height);
-          ctx.globalCompositeOperation = 'screen';
-
-          orbs.forEach((orb, idx) => {
-            const cx = (orb.x + Math.sin(tick * orb.vx * 18 + orb.phase) * 0.18) * width;
-            const cy = (orb.y + Math.cos(tick * orb.vy * 18 + idx) * 0.18) * height;
-            const radius = Math.min(width, height) * 0.48 + (orb.r * 0.35);
-
-            const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, radius);
-            grad.addColorStop(0, `rgba(${orb.color}, 0.32)`);
-            grad.addColorStop(0.5, `rgba(${orb.color}, 0.11)`);
-            grad.addColorStop(1, `rgba(${orb.color}, 0)`);
-
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-            ctx.fill();
-          });
-        }
-        requestAnimationFrame(drawPlasma);
-      }
-      requestAnimationFrame(drawPlasma);
-    })();
-
-    function getMealSvgIcon(mealKey) {
-      const icons = {
-        breakfast: `<svg class="w-4 h-4 text-amber-300 svg-glow-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>`,
-        lunch: `<svg class="w-4 h-4 text-emerald-300 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11h18a8 8 0 0 1-8 8h-2a8 8 0 0 1-8-8z"/><path d="M7 7c0-1.5 1.5-2 1.5-3.5"/><path d="M12 7c0-1.5 1.5-2 1.5-3.5"/><path d="M17 7c0-1.5 1.5-2 1.5-3.5"/></svg>`,
-        dinner: `<svg class="w-4 h-4 text-cyan-300 svg-glow-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`,
-        snack: `<svg class="w-4 h-4 text-rose-300 svg-glow-rose" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"/><path d="M10 2c1 .5 2 2 2 5"/></svg>`
-      };
-      return icons[mealKey] || icons.breakfast;
-    }
+    // =====================================================================
+    // 0. УТИЛИТЫ
+    // =====================================================================
+    const num = (v, min, max, def = 0) => {
+      const n = Number(v);
+      if (!isFinite(n)) return def;
+      return Math.min(max, Math.max(min, n));
+    };
+    const round1 = (n) => Math.round(n * 10) / 10;
+    const uid = (prefix = 'id') => prefix + '_' + ((typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)));
 
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
@@ -987,6 +949,94 @@
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
       const day = String(dateObj.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
+    }
+
+    async function fetchWithTimeout(url, opts = {}, ms = 45000) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      try {
+        return await fetch(url, { ...opts, signal: ctrl.signal });
+      } catch (e) {
+        if (e.name === 'AbortError') throw new Error('Превышено время ожидания ответа');
+        throw e;
+      } finally { clearTimeout(t); }
+    }
+
+    function extractJson(raw) {
+      if (!raw) throw new Error('Пустой ответ ИИ');
+      const t = String(raw).replace(/```json|```/gi, '').trim();
+      try { return JSON.parse(t); } catch (e) {}
+      const a = t.indexOf('{'), b = t.lastIndexOf('}');
+      if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e) {} }
+      throw new Error('ИИ вернул ответ в неверном формате. Попробуй ещё раз.');
+    }
+
+    // =====================================================================
+    // 1. АНИМИРОВАННЫЙ ФОН ПЛАЗМЫ (30 fps, учитывает «уменьшить движение»)
+    // =====================================================================
+    (function initPlasmaBackground() {
+      const canvas = document.getElementById('plasmaCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let width = (canvas.width = window.innerWidth);
+      let height = (canvas.height = window.innerHeight);
+
+      const orbs = [
+        { x: 0.2, y: 0.2, r: 340, color: '16, 185, 129', vx: 0.0004, vy: 0.0003, phase: 0 },
+        { x: 0.8, y: 0.3, r: 380, color: '14, 165, 233', vx: -0.0003, vy: 0.0005, phase: 2 },
+        { x: 0.5, y: 0.75, r: 360, color: '20, 184, 166', vx: 0.00035, vy: -0.0004, phase: 4 },
+        { x: 0.15, y: 0.8, r: 300, color: '99, 102, 241', vx: 0.0005, vy: 0.0002, phase: 1 },
+        { x: 0.85, y: 0.85, r: 320, color: '52, 211, 153', vx: -0.0004, vy: -0.0003, phase: 3 }
+      ];
+
+      let tick = 0;
+      function paint() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.globalCompositeOperation = 'screen';
+        orbs.forEach((orb, idx) => {
+          const cx = (orb.x + Math.sin(tick * orb.vx * 18 + orb.phase) * 0.18) * width;
+          const cy = (orb.y + Math.cos(tick * orb.vy * 18 + idx) * 0.18) * height;
+          const radius = Math.min(width, height) * 0.48 + (orb.r * 0.35);
+          const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, radius);
+          grad.addColorStop(0, `rgba(${orb.color}, 0.32)`);
+          grad.addColorStop(0.5, `rgba(${orb.color}, 0.11)`);
+          grad.addColorStop(1, `rgba(${orb.color}, 0)`);
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        if (reduceMotion) paint();
+      });
+
+      if (reduceMotion) { paint(); return; }
+
+      let last = 0;
+      function loop(now) {
+        requestAnimationFrame(loop);
+        if (document.hidden) return;
+        if (now - last < 33) return; // ~30 fps
+        last = now;
+        tick += 2;
+        paint();
+      }
+      requestAnimationFrame(loop);
+    })();
+
+    function getMealSvgIcon(mealKey) {
+      const icons = {
+        breakfast: `<svg class="w-4 h-4 text-amber-300 svg-glow-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>`,
+        lunch: `<svg class="w-4 h-4 text-emerald-300 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11h18a8 8 0 0 1-8 8h-2a8 8 0 0 1-8-8z"/><path d="M7 7c0-1.5 1.5-2 1.5-3.5"/><path d="M12 7c0-1.5 1.5-2 1.5-3.5"/><path d="M17 7c0-1.5 1.5-2 1.5-3.5"/></svg>`,
+        dinner: `<svg class="w-4 h-4 text-cyan-300 svg-glow-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`,
+        snack: `<svg class="w-4 h-4 text-rose-300 svg-glow-rose" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"/><path d="M10 2c1 .5 2 2 2 5"/></svg>`
+      };
+      return icons[mealKey] || icons.breakfast;
     }
 
     const animatedValuesMap = {};
@@ -1012,6 +1062,8 @@
     function launchGoalConfetti() {
       const canvas = document.getElementById('celebrationCanvas');
       if (!canvas) return;
+      triggerHaptic('success');
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const ctx = canvas.getContext('2d');
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -1022,7 +1074,6 @@
         size: Math.random() * 6 + 3, color: colors[Math.floor(Math.random() * colors.length)],
         alpha: 1, gravity: 0.28
       }));
-      triggerHaptic('success');
       function renderParticles() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         let alive = false;
@@ -1039,6 +1090,9 @@
       requestAnimationFrame(renderParticles);
     }
 
+    // =====================================================================
+    // 2. TELEGRAM
+    // =====================================================================
     const tg = window.Telegram?.WebApp;
     const isTelegramMiniApp = Boolean(tg && tg.initDataUnsafe && tg.initDataUnsafe.user);
     const tgUser = tg?.initDataUnsafe?.user || null;
@@ -1075,6 +1129,9 @@
       alert(msg);
     }
 
+    // =====================================================================
+    // 3. БАЗА ПРОДУКТОВ
+    // =====================================================================
     const VERIFIED_FOODS_DB = [
       { id: 'v1', name: 'Куриная грудка (филе отварное/гриль)', kcal: 165, p: 31, f: 3.6, c: 0 },
       { id: 'v2', name: 'Куриное филе (сырое)', kcal: 113, p: 23.6, f: 1.9, c: 0.4 },
@@ -1099,27 +1156,47 @@
     ];
 
     const STORAGE_KEY = `nutribalance_user_v3_${tgUserId}`;
-    const LAST_PHOTO_KEY = `nutribalance_last_photo_${tgUserId}`;
+    const LEGACY_PHOTO_KEY = `nutribalance_last_photo_${tgUserId}`;
 
-    let state = {
-      isConfigured: false,
-      profile: { gender: 'male', age: 28, height: 175, weight: 80, targetWeight: 72, activity: 1.375, goal: -20, addBurnedToTarget: false },
-      customFoods: [],
-      days: {},
-      weightHistory: [],
-      aiProvider: 'gemini',
-      apiKey: '',
-      firebaseUrl: ''
-    };
+    function defaultState() {
+      return {
+        isConfigured: false,
+        profile: { gender: 'male', age: 28, height: 175, weight: 80, targetWeight: 72, activity: 1.375, goal: -20, addBurnedToTarget: false },
+        customFoods: [],
+        days: {},
+        weightHistory: [],
+        aiProvider: 'gemini',
+        apiKey: '',
+        firebaseUrl: ''
+      };
+    }
+
+    let state = defaultState();
+
+    // Приводит любые входные данные к безопасной структуре
+    function normalizeState(obj) {
+      const base = defaultState();
+      const src = (obj && typeof obj === 'object') ? obj : {};
+      const out = { ...base, ...src };
+      out.profile = { ...base.profile, ...((src.profile && typeof src.profile === 'object') ? src.profile : {}) };
+      out.customFoods = Array.isArray(src.customFoods) ? src.customFoods.filter(f => f && f.name) : [];
+      out.days = (src.days && typeof src.days === 'object' && !Array.isArray(src.days)) ? src.days : {};
+      out.weightHistory = Array.isArray(src.weightHistory) ? src.weightHistory.filter(w => w && isFinite(Number(w.weight))) : [];
+      out.aiProvider = out.aiProvider === 'openrouter' ? 'openrouter' : 'gemini';
+      out.apiKey = typeof out.apiKey === 'string' ? out.apiKey : '';
+      out.firebaseUrl = typeof out.firebaseUrl === 'string' ? out.firebaseUrl : '';
+      return out;
+    }
 
     let currentDate = getLocalDateString();
+    let lastKnownToday = currentDate;
     let selectedMeal = 'breakfast';
     let selectedFoodObj = VERIFIED_FOODS_DB[0];
     let onlineFoundFoods = [];
     let searchDebounceTimer = null;
     let searchAbortController = null;
     let cachedGeminiModel = null;
-    let currentPhotoBase64 = null;
+    let currentPhotoBase64 = null; // только в памяти
     let currentPhotoItems = [];
     let lastAiTextFood = null;
 
@@ -1130,34 +1207,106 @@
       return [...(state.customFoods || []), ...onlineFoundFoods, ...VERIFIED_FOODS_DB];
     }
 
-    async function saveToTelegramCloud(currentState) {
-      return new Promise((resolve) => {
-        if (!tg?.CloudStorage || !isTelegramMiniApp) return resolve(false);
-        try {
-          const compactDays = {};
-          Object.keys(currentState.days || {}).sort().slice(-20).forEach(d => { compactDays[d] = currentState.days[d]; });
-          const metaPayload = JSON.stringify({ isConfigured: currentState.isConfigured, profile: currentState.profile, weightHistory: (currentState.weightHistory || []).slice(-30), aiProvider: currentState.aiProvider, apiKey: currentState.apiKey, firebaseUrl: currentState.firebaseUrl });
-          if (metaPayload.length < 4000) tg.CloudStorage.setItem('nb_meta_v3', metaPayload);
-          resolve(true);
-        } catch (e) { resolve(false); }
-      });
+    // =====================================================================
+    // 4. ХРАНЕНИЕ: localStorage (debounce) + Telegram CloudStorage (по ключам)
+    // =====================================================================
+    const CLOUD_LIMIT = 4000;     // лимит значения в CloudStorage — 4096 символов
+    const CLOUD_DAYS_KEEP = 14;
+    const FOOD_CHUNK = 3500;
+
+    const cloudSet = (key, value) => new Promise(res => {
+      try { tg.CloudStorage.setItem(key, value, (err, ok) => res(!err && ok !== false)); } catch (e) { res(false); }
+    });
+    const cloudGet = (keys) => new Promise(res => {
+      try { tg.CloudStorage.getItems(keys, (err, vals) => res(err ? null : (vals || {}))); } catch (e) { res(null); }
+    });
+    const cloudRemove = (keys) => new Promise(res => {
+      if (!keys.length) return res(true);
+      try { tg.CloudStorage.removeItems(keys, (err) => res(!err)); } catch (e) { res(false); }
+    });
+
+    let cloudKnownDayKeys = [];
+    let cloudKnownFoodChunks = 0;
+    let cloudSaveTimer = null;
+    let cloudSaving = false;
+
+    async function saveToTelegramCloud(s) {
+      if (!tg?.CloudStorage || !isTelegramMiniApp || cloudSaving) return false;
+      cloudSaving = true;
+      try {
+        // 1) мета: профиль + история веса (укорачиваем, пока не влезет в лимит)
+        let history = (s.weightHistory || []).slice(-30);
+        let metaStr = '';
+        while (true) {
+          metaStr = JSON.stringify({ isConfigured: s.isConfigured, profile: s.profile, weightHistory: history, aiProvider: s.aiProvider, apiKey: s.apiKey, firebaseUrl: s.firebaseUrl });
+          if (metaStr.length <= CLOUD_LIMIT || history.length <= 2) break;
+          history = history.slice(1);
+        }
+        if (metaStr.length <= CLOUD_LIMIT) await cloudSet('nb_meta_v3', metaStr);
+
+        // 2) дни: каждый день — отдельный ключ, храним последние N
+        const dates = Object.keys(s.days || {}).sort().slice(-CLOUD_DAYS_KEEP);
+        const newDayKeys = [];
+        for (const d of dates) {
+          const day = s.days[d];
+          let str = JSON.stringify(day);
+          if (str.length > CLOUD_LIMIT) { const { aiReview, ...rest } = day; str = JSON.stringify(rest); }
+          if (str.length > CLOUD_LIMIT) continue; // слишком большой день остаётся только локально
+          const key = 'nb_d_' + d;
+          await cloudSet(key, str);
+          newDayKeys.push(key);
+        }
+        await cloudSet('nb_didx', JSON.stringify(newDayKeys));
+        const staleDays = cloudKnownDayKeys.filter(k => !newDayKeys.includes(k));
+        await cloudRemove(staleDays);
+        cloudKnownDayKeys = newDayKeys;
+
+        // 3) свои продукты: режем JSON на куски
+        const foodsStr = JSON.stringify(s.customFoods || []);
+        const chunks = [];
+        for (let i = 0; i < foodsStr.length; i += FOOD_CHUNK) chunks.push(foodsStr.slice(i, i + FOOD_CHUNK));
+        for (let i = 0; i < chunks.length; i++) await cloudSet('nb_f_' + i, chunks[i]);
+        await cloudSet('nb_fcount', String(chunks.length));
+        const staleFoods = [];
+        for (let i = chunks.length; i < cloudKnownFoodChunks; i++) staleFoods.push('nb_f_' + i);
+        await cloudRemove(staleFoods);
+        cloudKnownFoodChunks = chunks.length;
+        return true;
+      } catch (e) {
+        return false;
+      } finally { cloudSaving = false; }
+    }
+
+    function scheduleCloudSave(delay = 2000) {
+      if (!isTelegramMiniApp) return;
+      clearTimeout(cloudSaveTimer);
+      cloudSaveTimer = setTimeout(() => saveToTelegramCloud(state), delay);
     }
 
     async function loadFromTelegramCloud() {
-      return new Promise((resolve) => {
-        if (!tg?.CloudStorage || !isTelegramMiniApp) return resolve(null);
+      if (!tg?.CloudStorage || !isTelegramMiniApp) return null;
+      const base = await cloudGet(['nb_meta_v3', 'nb_didx', 'nb_fcount']);
+      if (!base || !base.nb_meta_v3) return null;
+      try {
+        const meta = JSON.parse(base.nb_meta_v3);
+        let dayKeys = [];
+        try { dayKeys = JSON.parse(base.nb_didx || '[]'); } catch (e) {}
+        const foodChunks = Math.max(0, parseInt(base.nb_fcount || '0', 10) || 0);
+        const foodKeys = Array.from({ length: foodChunks }, (_, i) => 'nb_f_' + i);
+        const extra = (dayKeys.length || foodKeys.length) ? await cloudGet([...dayKeys, ...foodKeys]) : {};
+        const days = {};
+        dayKeys.forEach(k => {
+          try { if (extra?.[k]) days[k.replace('nb_d_', '')] = JSON.parse(extra[k]); } catch (e) {}
+        });
+        let customFoods = [];
         try {
-          tg.CloudStorage.getItems(['nb_meta_v3', 'nb_days_v3', 'nb_foods_v3'], (err, values) => {
-            if (err || !values || !values.nb_meta_v3) return resolve(null);
-            try {
-              const meta = JSON.parse(values.nb_meta_v3);
-              const days = values.nb_days_v3 ? JSON.parse(values.nb_days_v3) : {};
-              const customFoods = values.nb_foods_v3 ? JSON.parse(values.nb_foods_v3) : [];
-              resolve({ meta, days, customFoods });
-            } catch (parseErr) { resolve(null); }
-          });
-        } catch (e) { resolve(null); }
-      });
+          const joined = foodKeys.map(k => extra?.[k] || '').join('');
+          if (joined) customFoods = JSON.parse(joined);
+        } catch (e) {}
+        cloudKnownDayKeys = dayKeys;
+        cloudKnownFoodChunks = foodChunks;
+        return { meta, days, customFoods };
+      } catch (e) { return null; }
     }
 
     async function loadState() {
@@ -1165,8 +1314,7 @@
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
-          const parsed = JSON.parse(raw);
-          state = { ...state, ...parsed, profile: { ...state.profile, ...(parsed.profile || {}) } };
+          state = normalizeState(JSON.parse(raw));
           loaded = Boolean(state.isConfigured);
         }
       } catch (e) {}
@@ -1174,19 +1322,14 @@
       if (!loaded && isTelegramMiniApp) {
         const tgCloud = await loadFromTelegramCloud();
         if (tgCloud && tgCloud.meta && tgCloud.meta.isConfigured) {
-          state = { ...state, ...tgCloud.meta, profile: { ...state.profile, ...(tgCloud.meta.profile || {}) }, days: { ...(tgCloud.days || {}) }, customFoods: tgCloud.customFoods || [] };
+          state = normalizeState({ ...tgCloud.meta, days: tgCloud.days, customFoods: tgCloud.customFoods });
           loaded = true;
+          persistLocal();
         }
       }
 
-      try {
-        const savedPhoto = localStorage.getItem(LAST_PHOTO_KEY);
-        if (savedPhoto) {
-          currentPhotoBase64 = savedPhoto;
-          const preview = document.getElementById('photoPreviewImg');
-          if (preview) { preview.src = currentPhotoBase64; preview.classList.remove('hidden'); document.getElementById('photoPlaceholder')?.classList.add('hidden'); }
-        }
-      } catch (e) {}
+      // Фото больше не храним в localStorage — чистим старое значение, чтобы освободить квоту
+      try { localStorage.removeItem(LEGACY_PHOTO_KEY); } catch (e) {}
 
       if (!loaded) document.getElementById('onboardingModal').classList.remove('hidden');
       else document.getElementById('onboardingModal').classList.add('hidden');
@@ -1196,31 +1339,49 @@
     }
 
     function completeOnboarding() {
-      const gender = document.getElementById('obGender').value;
-      const age = Number(document.getElementById('obAge').value) || 28;
-      const height = Number(document.getElementById('obHeight').value) || 175;
+      const gender = document.getElementById('obGender').value === 'female' ? 'female' : 'male';
+      const age = num(document.getElementById('obAge').value, 12, 100, 28);
+      const height = num(document.getElementById('obHeight').value, 120, 230, 175);
       const weight = parseFloat(document.getElementById('obWeight').value);
-      const targetWeight = parseFloat(document.getElementById('obTargetWeight').value);
+      const targetWeightRaw = parseFloat(document.getElementById('obTargetWeight').value);
       const goal = Number(document.getElementById('obGoal').value);
       const activity = Number(document.getElementById('obActivity').value) || 1.375;
 
       if (!weight || weight < 30 || weight > 280) { showNotice('Пожалуйста, укажи свой текущий вес в килограммах'); return; }
 
       state.isConfigured = true;
-      state.profile = { gender, age, height, weight, targetWeight: targetWeight && targetWeight > 30 ? targetWeight : Math.max(45, weight - 5), activity, goal, addBurnedToTarget: false };
-      state.weightHistory = [{ id: 'w_init', date: currentDate, weight, note: 'Стартовый вес' }];
+      state.profile = { gender, age, height, weight, targetWeight: targetWeightRaw && targetWeightRaw > 30 ? targetWeightRaw : Math.max(45, weight - 5), activity, goal, addBurnedToTarget: false };
+      state.weightHistory = [{ id: uid('w'), date: currentDate, weight, note: 'Стартовый вес' }];
 
       document.getElementById('onboardingModal').classList.add('hidden');
       launchGoalConfetti();
       saveState();
     }
 
-    async function saveState(skipFullRender = false) {
+    // --- Сохранение ---
+    let persistTimer = null;
+    function persistLocal() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         updateBadge(isTelegramMiniApp ? 'В памяти TG' : 'Сохранено', true);
       } catch (e) { updateBadge('Ошибка памяти', false); }
-      if (isTelegramMiniApp) saveToTelegramCloud(state);
+    }
+
+    function flushPending() {
+      if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; persistLocal(); }
+      if (isTelegramMiniApp && cloudSaveTimer) { clearTimeout(cloudSaveTimer); cloudSaveTimer = null; saveToTelegramCloud(state); }
+    }
+
+    // debounced=true — для полей, где сохранение идёт на каждое нажатие клавиши
+    function saveState(skipFullRender = false, debounced = false) {
+      if (debounced) {
+        clearTimeout(persistTimer);
+        persistTimer = setTimeout(() => { persistTimer = null; persistLocal(); }, 400);
+      } else {
+        clearTimeout(persistTimer); persistTimer = null;
+        persistLocal();
+      }
+      scheduleCloudSave();
       if (!skipFullRender) renderAll();
     }
 
@@ -1230,6 +1391,9 @@
       b.className = ok ? 'text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-500/20 text-amber-300 border border-amber-400/30';
     }
 
+    // =====================================================================
+    // 5. ПОИСК ПРОДУКТОВ
+    // =====================================================================
     const searchInputEl = document.getElementById('diaryFoodSearch');
     searchInputEl.addEventListener('input', (e) => {
       const val = e.target.value;
@@ -1241,11 +1405,26 @@
       }
     });
 
+    // Делегирование: id продукта берём из data-атрибута, а не из inline-JS
+    document.getElementById('foodSearchResults').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-food-id]');
+      if (btn) selectFoodFromList(btn.dataset.foodId);
+    });
+
     function clearFoodSearch() {
       searchInputEl.value = '';
       document.getElementById('clearSearchBtn').classList.add('hidden');
       renderFoodSearchResults();
       searchInputEl.focus();
+    }
+
+    // Отсекаем явно мусорные записи Open Food Facts: нет макросов или калории не сходятся с БЖУ
+    function isPlausibleFood(kcal, p, f, c) {
+      if (!(kcal > 0 && kcal <= 900)) return false;
+      if (p + f + c <= 0) return false;
+      if (p > 100 || f > 100 || c > 100 || p + f + c > 110) return false;
+      const calc = p * 4 + f * 9 + c * 4;
+      return Math.abs(kcal - calc) <= Math.max(40, kcal * 0.35);
     }
 
     async function fetchOnlineFoods(query) {
@@ -1255,8 +1434,9 @@
       searchAbortController = new AbortController();
 
       try {
-        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=12&lc=ru`;
+        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20&lc=ru&fields=code,product_name,product_name_ru,brands,nutriments`;
         const res = await fetch(url, { signal: searchAbortController.signal });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         if (data && Array.isArray(data.products)) {
           const fetched = [];
@@ -1264,15 +1444,15 @@
             const name = (p.product_name_ru || p.product_name || '').trim();
             const nut = p.nutriments || {};
             const kcal = Math.round(Number(nut['energy-kcal_100g'] || (nut['energy_100g'] ? nut['energy_100g'] / 4.184 : 0)));
-            const prot = +(Number(nut.proteins_100g) || 0).toFixed(1);
-            const fat = +(Number(nut.fat_100g) || 0).toFixed(1);
-            const carb = +(Number(nut.carbohydrates_100g) || 0).toFixed(1);
-            if (name && kcal > 0 && kcal <= 900) {
+            const prot = round1(Number(nut.proteins_100g) || 0);
+            const fat = round1(Number(nut.fat_100g) || 0);
+            const carb = round1(Number(nut.carbohydrates_100g) || 0);
+            if (name && isPlausibleFood(kcal, prot, fat, carb)) {
               const brand = p.brands ? ` (${p.brands.split(',')[0].trim()})` : '';
-              fetched.push({ id: `off_${p.code || idx}_${Date.now()}`, name: `${name}${brand}`, kcal, p: prot, f: fat, c: carb, isOnline: true });
+              fetched.push({ id: `off_${p.code || idx}`, name: `${name}${brand}`.slice(0, 90), kcal, p: prot, f: fat, c: carb, isOnline: true });
             }
           });
-          onlineFoundFoods = fetched;
+          onlineFoundFoods = fetched.slice(0, 12);
           renderFoodSearchResults();
         }
       } catch (e) {
@@ -1296,12 +1476,13 @@
 
       if (filtered.length === 0) {
         container.innerHTML = `<div class="p-3 rounded-2xl liquid-pill text-center space-y-2"><div class="text-xs text-slate-300">Ничего не найдено по запросу «${escapeHtml(q)}»</div><button type="button" onclick="openAiTextWithQuery()" class="btn-spring liquid-btn-primary px-3 py-1.5 rounded-xl text-xs font-bold">Рассчитать через ИИ</button></div>`;
+        updateQuickPreview();
         return;
       }
 
       container.innerHTML = filtered.map(f => {
         const isSelected = selectedFoodObj && selectedFoodObj.id === f.id;
-        return `<button type="button" onclick="selectFoodFromList('${escapeHtml(f.id)}')" class="w-full text-left px-3 py-2 rounded-2xl border transition flex items-center justify-between gap-2 ${isSelected ? 'bg-emerald-500/25 border-emerald-400/60 text-white' : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-200'}"><div class="min-w-0 flex-1"><div class="text-xs font-semibold truncate">${escapeHtml(f.name)}${f.isOnline ? '<span class="text-[9px] ml-1 px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300">Онлайн</span>' : ''}</div><div class="text-[10px] text-slate-300">Б: ${Number(f.p)}г • Ж: ${Number(f.f)}г • У: ${Number(f.c)}г (на 100г)</div></div><div class="text-xs font-bold text-emerald-300 whitespace-nowrap">${Number(f.kcal)} ккал</div></button>`;
+        return `<button type="button" data-food-id="${escapeHtml(f.id)}" class="w-full text-left px-3 py-2 rounded-2xl border transition flex items-center justify-between gap-2 ${isSelected ? 'bg-emerald-500/25 border-emerald-400/60 text-white' : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-200'}"><div class="min-w-0 flex-1"><div class="text-xs font-semibold truncate">${escapeHtml(f.name)}${f.isOnline ? '<span class="text-[9px] ml-1 px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300">Онлайн</span>' : ''}</div><div class="text-[10px] text-slate-300">Б: ${Number(f.p)}г • Ж: ${Number(f.f)}г • У: ${Number(f.c)}г (на 100г)</div></div><div class="text-xs font-bold text-emerald-300 whitespace-nowrap">${Number(f.kcal)} ккал</div></button>`;
       }).join('');
       updateQuickPreview();
     }
@@ -1339,17 +1520,21 @@
 
     function setQuickGrams(val) { triggerHaptic('light'); document.getElementById('diaryFoodGrams').value = val; updateQuickPreview(); }
 
+    function makeDiaryItem(meal, name, grams, kcal100, p100, f100, c100) {
+      return {
+        id: uid('item'), meal, name: String(name).slice(0, 90), grams,
+        kcal: Math.round((kcal100 * grams) / 100),
+        p: round1((p100 * grams) / 100),
+        f: round1((f100 * grams) / 100),
+        c: round1((c100 * grams) / 100)
+      };
+    }
+
     function addSelectedFoodToDiary() {
       if (!selectedFoodObj) return;
-      const grams = Number(document.getElementById('diaryFoodGrams').value) || 100;
+      const grams = num(document.getElementById('diaryFoodGrams').value, 1, 3000, 100);
       const day = ensureDay(currentDate);
-      day.items.push({
-        id: 'item_' + Date.now() + Math.random(), meal: selectedMeal, name: selectedFoodObj.name, grams,
-        kcal: Math.round((selectedFoodObj.kcal * grams) / 100),
-        p: +((selectedFoodObj.p * grams) / 100).toFixed(1),
-        f: +((selectedFoodObj.f * grams) / 100).toFixed(1),
-        c: +((selectedFoodObj.c * grams) / 100).toFixed(1)
-      });
+      day.items.push(makeDiaryItem(selectedMeal, selectedFoodObj.name, grams, selectedFoodObj.kcal, selectedFoodObj.p, selectedFoodObj.f, selectedFoodObj.c));
       triggerHaptic('success'); checkAndCelebrateGoals(day); saveState();
     }
 
@@ -1365,22 +1550,40 @@
       if (!state.days[dateStr]) {
         state.days[dateStr] = { water: 0, items: [], activity: { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' }, aiReview: null };
       }
-      if (!state.days[dateStr].activity) state.days[dateStr].activity = { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' };
-      return state.days[dateStr];
+      const d = state.days[dateStr];
+      if (!Array.isArray(d.items)) d.items = [];
+      if (typeof d.water !== 'number') d.water = 0;
+      if (!d.activity) d.activity = { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' };
+      return d;
     }
 
+    // =====================================================================
+    // 6. РАСЧЁТ НОРМЫ
+    // =====================================================================
     function calculateTargets() {
       const { gender, age, height, weight, activity, goal, addBurnedToTarget } = state.profile;
       const bmr = Math.round(10 * weight + 6.25 * height - 5 * age + (gender === 'male' ? 5 : -161));
       const tdee = Math.round(bmr * Number(activity));
-      const baseTargetKcal = Math.round(tdee * (1 + Number(goal) / 100));
+      const rawTarget = Math.round(tdee * (1 + Number(goal) / 100));
+
+      // Нижний порог при дефиците: не ниже BMR и не ниже 1500 (м) / 1200 (ж)
+      const minSafe = Math.max(bmr, gender === 'male' ? 1500 : 1200);
+      const floorApplied = Number(goal) < 0 && rawTarget < minSafe;
+      const baseTargetKcal = Number(goal) < 0 ? Math.max(rawTarget, minSafe) : rawTarget;
+
       const day = ensureDay(currentDate);
+      // TDEE уже содержит множитель активности, поэтому учитываем только половину активных ккал
       const burnedBonus = addBurnedToTarget ? Math.round((day.activity?.burnedKcal || 0) * 0.5) : 0;
       const targetKcal = baseTargetKcal + burnedBonus;
-      const p = Math.round((targetKcal * 0.30) / 4);
+
+      // Белок от веса тела (1.8 г/кг при дефиците, 1.6 г/кг иначе), в разумных рамках по калориям
+      const perKg = Number(goal) < 0 ? 1.8 : 1.6;
+      let p = Math.round(weight * perKg);
+      p = Math.min(p, Math.round((targetKcal * 0.35) / 4));
+      p = Math.max(p, Math.round((targetKcal * 0.15) / 4));
       const f = Math.round((targetKcal * 0.28) / 9);
-      const c = Math.round((targetKcal * 0.42) / 4);
-      return { bmr, tdee, baseTargetKcal, targetKcal, burnedBonus, p, f, c };
+      const c = Math.max(0, Math.round((targetKcal - p * 4 - f * 9) / 4));
+      return { bmr, tdee, baseTargetKcal, targetKcal, burnedBonus, p, f, c, floorApplied, minSafe };
     }
 
     function switchTab(tabId) {
@@ -1410,11 +1613,13 @@
       if (mode === 'photo') startLiveCamera(); else stopLiveCamera();
     }
 
-    // === ИИ С ИСПРАВЛЕННОЙ МОДЕЛЬЮ gemini-3.8-flash ===
+    // =====================================================================
+    // 7. ИИ (провайдеры, ключ и модели — без изменений; ключ теперь в заголовке)
+    // =====================================================================
     async function detectWorkingGeminiModel(apiKey) {
       if (cachedGeminiModel) return cachedGeminiModel;
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const res = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': apiKey } }, 15000);
         const data = await res.json();
         if (data && Array.isArray(data.models)) {
           const supported = data.models.filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace('models/', ''));
@@ -1435,15 +1640,14 @@
       if (state.aiProvider === 'openrouter') {
         const contentParts = [{ type: 'text', text: promptText }];
         if (base64ImageOrNull) contentParts.push({ type: 'image_url', image_url: { url: base64ImageOrNull } });
-        const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        const resp = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.apiKey}` },
           body: JSON.stringify({ model: 'google/gemini-2.5-flash', messages: [{ role: 'user', content: contentParts }] })
         });
-        const data = await resp.json();
+        const data = await resp.json().catch(() => null);
+        if (!resp.ok) throw new Error(data?.error?.message || `Ошибка OpenRouter (HTTP ${resp.status})`);
         const raw = data?.choices?.[0]?.message?.content || '';
-        const jsonMatch = raw.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error(data?.error?.message || 'Ошибка ответа OpenRouter');
-        return { parsed: JSON.parse(jsonMatch[0]), model: 'OpenRouter' };
+        return { parsed: extractJson(raw), model: 'OpenRouter' };
       } else {
         const detectedModel = await detectWorkingGeminiModel(state.apiKey);
         const candidateModels = [...new Set([detectedModel, 'gemini-3.8-flash', 'gemini-3.0-flash'])];
@@ -1454,15 +1658,15 @@
         for (let i = 0; i < candidateModels.length; i++) {
           const modelName = candidateModels[i];
           try {
-            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${state.apiKey}`, {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
+            const resp = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': state.apiKey },
               body: JSON.stringify({ contents: [{ parts }], generationConfig: { response_mime_type: 'application/json' } })
             });
-            const data = await resp.json();
+            const data = await resp.json().catch(() => null);
             const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (rawText) {
-              const cleanJson = rawText.replace(/```json|```/g, '').trim();
-              return { parsed: JSON.parse(cleanJson), model: modelName };
+            if (resp.ok && rawText) {
+              return { parsed: extractJson(rawText), model: modelName };
             } else {
               const errMsg = data?.error?.message || `Модель ${modelName} не ответила`;
               if (!firstRealErr) firstRealErr = errMsg;
@@ -1478,6 +1682,16 @@
       }
     }
 
+    // --- Валидация числовых данных от ИИ ---
+    function sanitizePer100(o) {
+      const p100 = round1(num(o.p100, 0, 100));
+      const f100 = round1(num(o.f100, 0, 100));
+      const c100 = round1(num(o.c100, 0, 100));
+      let kcal100 = Math.round(num(o.kcal100, 0, 900));
+      if (kcal100 === 0) kcal100 = Math.round(p100 * 4 + f100 * 9 + c100 * 4);
+      return { kcal100, p100, f100, c100 };
+    }
+
     function renderDailyInsights() {
       const day = ensureDay(currentDate);
       const targets = calculateTargets();
@@ -1487,11 +1701,13 @@
       totKcal = Math.round(totKcal); totP = Math.round(totP); totF = Math.round(totF); totC = Math.round(totC);
 
       const calDiff = targets.targetKcal - totKcal;
-      const realDeficit = (targets.tdee + (act.burnedKcal || 0)) - totKcal;
+      // Энергобаланс: TDEE (уже включает обычную активность) + половина активных ккал с часов
+      const energyOut = targets.tdee + Math.round((act.burnedKcal || 0) * 0.5);
+      const realDeficit = energyOut - totKcal;
       const calStatusEl = document.getElementById('summaryCalStatus');
       const calSubEl = document.getElementById('summaryCalSub');
 
-      if (totKcal === 0) { calStatusEl.textContent = '0 ккал'; calSubEl.textContent = `Цель: ${targets.targetKcal} ккал`; }
+      if (totKcal === 0) { calStatusEl.textContent = '0 ккал'; calStatusEl.className = 'text-xs font-bold text-white mt-0.5'; calSubEl.textContent = `Цель: ${targets.targetKcal} ккал`; }
       else if (Math.abs(calDiff) <= 150) { calStatusEl.textContent = 'Точно в цели'; calStatusEl.className = 'text-xs font-bold text-emerald-300 mt-0.5'; calSubEl.textContent = `${totKcal} из ${targets.targetKcal} ккал`; }
       else if (calDiff > 150) { calStatusEl.textContent = `Осталось ${calDiff} ккал`; calStatusEl.className = 'text-xs font-bold text-cyan-300 mt-0.5'; calSubEl.textContent = `Съедено ${totKcal} ккал`; }
       else { calStatusEl.textContent = `Перебор +${Math.abs(calDiff)}`; calStatusEl.className = 'text-xs font-bold text-amber-300 mt-0.5'; calSubEl.textContent = `${totKcal} из ${targets.targetKcal} ккал`; }
@@ -1500,7 +1716,7 @@
       document.getElementById('summaryProteinStatus').textContent = `${totP} / ${targets.p} г`;
       document.getElementById('summaryProteinSub').textContent = pRemain <= 15 ? 'Норма выполнена!' : `Ещё ${pRemain} г белка`;
       const defEl = document.getElementById('summaryRealDeficit');
-      if (totKcal === 0) defEl.textContent = '—';
+      if (totKcal === 0) { defEl.textContent = '—'; defEl.className = 'text-xs font-bold text-slate-300 mt-0.5'; }
       else if (realDeficit >= 0) { defEl.textContent = `-${realDeficit} ккал`; defEl.className = 'text-xs font-bold text-emerald-300 mt-0.5'; }
       else { defEl.textContent = `+${Math.abs(realDeficit)} профицит`; defEl.className = 'text-xs font-bold text-amber-300 mt-0.5'; }
 
@@ -1537,23 +1753,30 @@
 
     async function generateDailyAIReview() {
       const day = ensureDay(currentDate);
-      if (day.items.length === 0) { showNotice('Сначала добавь хотя бы один приём пищи за сегодня!'); return; }
+      if (day.items.length === 0) { showNotice('Сначала добавь хотя бы один приём пищи за этот день!'); return; }
       const targets = calculateTargets();
       const act = day.activity || { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' };
-      let totKcal = 0, totP = 0, totF = 0, totC = 0;
-      day.items.forEach(it => { totKcal += it.kcal; totP += it.p; totF += it.f; totC += it.c; });
+      let totKcal = 0;
+      day.items.forEach(it => { totKcal += it.kcal; });
 
       const btn = document.getElementById('btnGenerateReview');
+      const btnOriginalHtml = btn.innerHTML;
       btn.disabled = true; btn.textContent = 'Анализируем...';
       const eatenListStr = day.items.map(i => `${i.name} (${i.grams}г, ${i.kcal} ккал)`).join('; ');
       const prompt = `Проанализируй день пользователя: вес ${state.profile.weight} кг, цель ${state.profile.targetWeight} кг. Норма: ${targets.targetKcal} ккал (Б:${targets.p}, Ж:${targets.f}, У:${targets.c}). Съедено: ${Math.round(totKcal)} ккал. Вода: ${day.water} мл. Шаги: ${act.steps}. Продукты: ${eatenListStr}. Верни ТОЛЬКО JSON: {"verdict":"Оценка дня в 2 предложениях","nextMeal":"Что конкретно съесть дальше с граммовкой","tips":["Совет 1","Совет 2"]}`;
 
       try {
         const { parsed, model } = await callAIJson(prompt, null);
-        day.aiReview = { verdict: parsed.verdict || '', nextMeal: parsed.nextMeal || '', tips: parsed.tips || [], time: `${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} (${model})` };
+        const tipsArr = Array.isArray(parsed.tips) ? parsed.tips.map(t => String(t).slice(0, 220)).slice(0, 5) : [];
+        day.aiReview = {
+          verdict: String(parsed.verdict || '').slice(0, 600),
+          nextMeal: String(parsed.nextMeal || '').slice(0, 400),
+          tips: tipsArr,
+          time: `${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} (${model})`
+        };
         triggerHaptic('success'); saveState();
       } catch (err) { showNotice('Ошибка ИИ: ' + err.message); }
-      finally { btn.disabled = false; btn.textContent = 'Разбор дня от ИИ'; }
+      finally { btn.disabled = false; btn.innerHTML = btnOriginalHtml; }
     }
 
     async function analyzeTextDishWithAI() {
@@ -1565,7 +1788,13 @@
 
       try {
         const { parsed } = await callAIJson(prompt, null);
-        lastAiTextFood = { name: parsed.name || text, portionGrams: Number(parsed.portionGrams) || 200, kcal100: Math.round(Number(parsed.kcal100) || 150), p100: +(Number(parsed.p100) || 0).toFixed(1), f100: +(Number(parsed.f100) || 0).toFixed(1), c100: +(Number(parsed.c100) || 0).toFixed(1) };
+        const per = sanitizePer100(parsed);
+        if (per.kcal100 <= 0) throw new Error('ИИ не смог определить калорийность. Уточни описание блюда.');
+        lastAiTextFood = {
+          name: String(parsed.name || text).slice(0, 90),
+          portionGrams: Math.round(num(parsed.portionGrams, 1, 3000, 200)),
+          ...per
+        };
         document.getElementById('aiTextResName').textContent = lastAiTextFood.name;
         document.getElementById('aiTextResPer100').textContent = `На 100 г: ${lastAiTextFood.kcal100} ккал`;
         document.getElementById('aiTextPortionGrams').value = lastAiTextFood.portionGrams;
@@ -1578,36 +1807,39 @@
 
     function updateAiTextPortionPreview() {
       if (!lastAiTextFood) return;
-      const g = Number(document.getElementById('aiTextPortionGrams').value) || 100;
+      const g = num(document.getElementById('aiTextPortionGrams').value, 0, 3000, 100);
       document.getElementById('aiTextPortionKcal').textContent = `${Math.round((lastAiTextFood.kcal100 * g) / 100)} ккал`;
       document.getElementById('aiTextPortionMacros').textContent = `Б: ${((lastAiTextFood.p100 * g) / 100).toFixed(1)} • Ж: ${((lastAiTextFood.f100 * g) / 100).toFixed(1)} • У: ${((lastAiTextFood.c100 * g) / 100).toFixed(1)}`;
     }
 
     function addAiTextFoodDirectlyToDiary() {
       if (!lastAiTextFood) return;
-      const grams = Number(document.getElementById('aiTextPortionGrams').value) || 100;
+      const grams = num(document.getElementById('aiTextPortionGrams').value, 1, 3000, 100);
       const meal = document.getElementById('aiTextMealSelect').value;
       const day = ensureDay(currentDate);
-      day.items.push({
-        id: 'item_' + Date.now() + Math.random(), meal, name: lastAiTextFood.name, grams,
-        kcal: Math.round((lastAiTextFood.kcal100 * grams) / 100),
-        p: +((lastAiTextFood.p100 * grams) / 100).toFixed(1),
-        f: +((lastAiTextFood.f100 * grams) / 100).toFixed(1),
-        c: +((lastAiTextFood.c100 * grams) / 100).toFixed(1)
-      });
+      day.items.push(makeDiaryItem(meal, lastAiTextFood.name, grams, lastAiTextFood.kcal100, lastAiTextFood.p100, lastAiTextFood.f100, lastAiTextFood.c100));
       triggerHaptic('success'); checkAndCelebrateGoals(day); saveState(); switchTab('diary');
+    }
+
+    // =====================================================================
+    // 8. КАМЕРА И ФОТО
+    // =====================================================================
+    function syncCameraButtons() {
+      const hasPhoto = Boolean(currentPhotoBase64);
+      const streaming = Boolean(liveCameraStream);
+      const previewEl = document.getElementById('photoPreviewImg');
+      document.getElementById('btnStartCamera').classList.toggle('hidden', streaming || hasPhoto);
+      document.getElementById('btnTakeSnap').classList.toggle('hidden', !streaming);
+      document.getElementById('btnSwitchCam').classList.toggle('hidden', !streaming);
+      document.getElementById('btnRetakePhoto').classList.toggle('hidden', streaming || !hasPhoto);
+      previewEl.classList.toggle('hidden', streaming || !hasPhoto);
+      document.getElementById('photoPlaceholder').classList.toggle('hidden', streaming || hasPhoto);
     }
 
     async function startLiveCamera() {
       stopLiveCamera();
       const videoEl = document.getElementById('cameraVideoStream');
-      const previewEl = document.getElementById('photoPreviewImg');
-      const placeholderEl = document.getElementById('photoPlaceholder');
       const laserEl = document.getElementById('scannerLaserLine');
-      const btnStart = document.getElementById('btnStartCamera');
-      const btnSnap = document.getElementById('btnTakeSnap');
-      const btnRetake = document.getElementById('btnRetakePhoto');
-      const btnSwitch = document.getElementById('btnSwitchCam');
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showNotice('Камера недоступна. Используйте кнопку «Из галереи».'); return; }
 
@@ -1616,11 +1848,18 @@
         videoEl.srcObject = liveCameraStream;
         await videoEl.play().catch(() => {});
         videoEl.classList.remove('hidden'); laserEl.classList.remove('hidden');
-        previewEl.classList.add('hidden'); placeholderEl.classList.add('hidden');
-        btnStart.classList.add('hidden'); btnRetake.classList.add('hidden');
-        btnSnap.classList.remove('hidden'); btnSwitch.classList.remove('hidden');
+        syncCameraButtons();
         document.getElementById('recognizedDishStatus').textContent = 'Наведи прицел на тарелку и сделай снимок';
-      } catch (err) { showNotice('Не удалось включить камеру: ' + err.message); }
+      } catch (err) {
+        liveCameraStream = null;
+        syncCameraButtons();
+        let msg;
+        if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) msg = 'Доступ к камере запрещён. Разреши камеру в настройках телефона или Telegram либо загрузи фото кнопкой «Из галереи».';
+        else if (err && err.name === 'NotFoundError') msg = 'Камера не найдена. Загрузи фото кнопкой «Из галереи».';
+        else if (err && err.name === 'NotReadableError') msg = 'Камера занята другим приложением. Закрой его и попробуй снова.';
+        else msg = 'Не удалось включить камеру: ' + (err?.message || 'неизвестная ошибка');
+        showNotice(msg);
+      }
     }
 
     function switchCameraFacing() {
@@ -1629,24 +1868,24 @@
       startLiveCamera();
     }
 
+    function downscaleToJpeg(source, srcW, srcH, canvas, maxDim = 960, quality = 0.84) {
+      let w = srcW, h = srcH;
+      if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } else { w = Math.round((w * maxDim) / h); h = maxDim; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(source, 0, 0, w, h);
+      return canvas.toDataURL('image/jpeg', quality);
+    }
+
     function capturePhotoFromStream() {
       const videoEl = document.getElementById('cameraVideoStream');
       const canvasEl = document.getElementById('cameraCaptureCanvas');
       const previewEl = document.getElementById('photoPreviewImg');
-      const placeholderEl = document.getElementById('photoPlaceholder');
-      const btnSnap = document.getElementById('btnTakeSnap');
-      const btnRetake = document.getElementById('btnRetakePhoto');
 
       if (!videoEl.videoWidth || !videoEl.videoHeight) { showNotice('Подождите секунду...'); return; }
-      const maxDim = 960; let w = videoEl.videoWidth, h = videoEl.videoHeight;
-      if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } else { w = Math.round((w * maxDim) / h); h = maxDim; } }
-      canvasEl.width = w; canvasEl.height = h;
-      canvasEl.getContext('2d').drawImage(videoEl, 0, 0, w, h);
-      currentPhotoBase64 = canvasEl.toDataURL('image/jpeg', 0.84);
+      currentPhotoBase64 = downscaleToJpeg(videoEl, videoEl.videoWidth, videoEl.videoHeight, canvasEl);
       stopLiveCamera();
-      previewEl.src = currentPhotoBase64; previewEl.classList.remove('hidden'); placeholderEl.classList.add('hidden');
-      btnSnap.classList.add('hidden'); btnRetake.classList.remove('hidden');
-      try { localStorage.setItem(LAST_PHOTO_KEY, currentPhotoBase64); } catch (e) {}
+      previewEl.src = currentPhotoBase64;
+      syncCameraButtons();
       triggerHaptic('success'); document.getElementById('recognizedDishStatus').textContent = 'Снимок захвачен! Нажми «Распознать»';
     }
 
@@ -1655,6 +1894,7 @@
       const videoEl = document.getElementById('cameraVideoStream');
       if (videoEl) { videoEl.srcObject = null; videoEl.classList.add('hidden'); }
       document.getElementById('scannerLaserLine')?.classList.add('hidden');
+      syncCameraButtons();
     }
 
     function handlePhotoUpload(e) {
@@ -1666,22 +1906,16 @@
         const imgObj = new Image();
         imgObj.onload = () => {
           const canvas = document.createElement('canvas');
-          const maxDim = 960; let w = imgObj.width, h = imgObj.height;
-          if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } else { w = Math.round((w * maxDim) / h); h = maxDim; } }
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(imgObj, 0, 0, w, h);
-          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.84);
-          try { localStorage.setItem(LAST_PHOTO_KEY, currentPhotoBase64); } catch (err) {}
-          const preview = document.getElementById('photoPreviewImg');
-          preview.src = currentPhotoBase64; preview.classList.remove('hidden');
-          document.getElementById('photoPlaceholder').classList.add('hidden');
-          document.getElementById('btnStartCamera').classList.add('hidden');
-          document.getElementById('btnRetakePhoto').classList.remove('hidden');
+          currentPhotoBase64 = downscaleToJpeg(imgObj, imgObj.width, imgObj.height, canvas);
+          document.getElementById('photoPreviewImg').src = currentPhotoBase64;
+          syncCameraButtons();
           document.getElementById('recognizedDishStatus').textContent = 'Фото загружено. Нажми «Распознать»';
         };
+        imgObj.onerror = () => showNotice('Не удалось прочитать изображение');
         imgObj.src = ev.target.result;
       };
       reader.readAsDataURL(file);
+      e.target.value = '';
     }
 
     async function analyzeCurrentPhotoWithAI() {
@@ -1695,58 +1929,83 @@
 
       try {
         const { parsed, model } = await callAIJson(promptText, currentPhotoBase64);
-        document.getElementById('recognizedDishTitle').textContent = parsed.title || 'Распознано';
+        const items = (Array.isArray(parsed.items) ? parsed.items : [])
+          .filter(it => it && it.name)
+          .slice(0, 15)
+          .map(it => ({ name: String(it.name).slice(0, 70), grams: Math.round(num(it.grams, 1, 3000, 100)), ...sanitizePer100(it) }));
+        if (items.length === 0) throw new Error('ИИ не нашёл еду на фото. Попробуй переснять.');
+        document.getElementById('recognizedDishTitle').textContent = String(parsed.title || 'Распознано').slice(0, 60);
         document.getElementById('recognizedDishStatus').textContent = `Распознано (${model})`;
-        currentPhotoItems = parsed.items || [];
+        currentPhotoItems = items;
         renderPhotoIngredients();
         triggerHaptic('success');
       } catch (err) { showNotice('Ошибка ИИ: ' + err.message); }
-      finally { btn.disabled = false; btn.textContent = 'Распознать'; laserEl?.classList.add('hidden'); }
+      finally { btn.disabled = false; btn.textContent = 'Распознать'; if (!liveCameraStream) laserEl?.classList.add('hidden'); }
     }
 
-    function renderPhotoIngredients() {
-      const container = document.getElementById('photoIngredientsList');
+    function photoItemMacros(it) {
+      return {
+        kcal: Math.round((it.kcal100 * it.grams) / 100),
+        p: (it.p100 * it.grams) / 100,
+        f: (it.f100 * it.grams) / 100,
+        c: (it.c100 * it.grams) / 100
+      };
+    }
+
+    function updatePhotoTotals() {
       let totKcal = 0, totP = 0, totF = 0, totC = 0;
-      container.innerHTML = currentPhotoItems.map((it, idx) => {
-        const kcal = Math.round((it.kcal100 * it.grams) / 100);
-        const p = +((it.p100 * it.grams) / 100).toFixed(1);
-        const f = +((it.f100 * it.grams) / 100).toFixed(1);
-        const c = +((it.c100 * it.grams) / 100).toFixed(1);
-        totKcal += kcal; totP += p; totF += f; totC += c;
-        return `<div class="p-2.5 rounded-2xl liquid-pill space-y-1 animate-card"><div class="flex justify-between text-xs font-semibold"><span class="text-white">${escapeHtml(it.name)}</span><span class="text-emerald-300">${kcal} ккал</span></div><div class="flex items-center gap-2"><input type="range" min="10" max="500" step="5" value="${Number(it.grams)}" oninput="updatePhotoItemGrams(${idx}, this.value)" class="flex-1" /><span class="text-xs font-bold text-slate-200 w-12 text-right">${Number(it.grams)} г</span></div></div>`;
-      }).join('');
+      currentPhotoItems.forEach(it => { const m = photoItemMacros(it); totKcal += m.kcal; totP += m.p; totF += m.f; totC += m.c; });
       document.getElementById('photoTotalKcal').textContent = `${Math.round(totKcal)} ккал`;
       document.getElementById('photoTotalMacros').textContent = `Б:${totP.toFixed(0)} • Ж:${totF.toFixed(0)} • У:${totC.toFixed(0)}`;
     }
 
-    function updatePhotoItemGrams(idx, val) { currentPhotoItems[idx].grams = Number(val); renderPhotoIngredients(); }
+    function renderPhotoIngredients() {
+      const container = document.getElementById('photoIngredientsList');
+      container.innerHTML = currentPhotoItems.map((it, idx) => {
+        const m = photoItemMacros(it);
+        const max = Math.max(500, Math.ceil((it.grams * 1.5) / 5) * 5);
+        return `<div class="p-2.5 rounded-2xl liquid-pill space-y-1 animate-card"><div class="flex justify-between text-xs font-semibold"><span class="text-white">${escapeHtml(it.name)}</span><span class="text-emerald-300" data-kcal-idx="${idx}">${m.kcal} ккал</span></div><div class="flex items-center gap-2"><input type="range" min="10" max="${max}" step="5" value="${Number(it.grams)}" data-photo-idx="${idx}" class="flex-1" /><span class="text-xs font-bold text-slate-200 w-12 text-right" data-grams-idx="${idx}">${Number(it.grams)} г</span></div></div>`;
+      }).join('');
+      updatePhotoTotals();
+    }
+
+    // Ползунок обновляет только цифры — список не перерисовывается, поэтому перетаскивание не «прилипает»
+    document.getElementById('photoIngredientsList').addEventListener('input', (e) => {
+      const input = e.target.closest('input[data-photo-idx]');
+      if (!input) return;
+      const idx = Number(input.dataset.photoIdx);
+      const it = currentPhotoItems[idx];
+      if (!it) return;
+      it.grams = Math.round(num(input.value, 1, 3000, it.grams));
+      const root = input.closest('div.liquid-pill');
+      root.querySelector(`[data-grams-idx="${idx}"]`).textContent = `${it.grams} г`;
+      root.querySelector(`[data-kcal-idx="${idx}"]`).textContent = `${photoItemMacros(it).kcal} ккал`;
+      updatePhotoTotals();
+    });
 
     function savePhotoDishToDiary() {
-      if (currentPhotoItems.length === 0) return;
+      if (currentPhotoItems.length === 0) return showNotice('Сначала распознай блюдо');
       const meal = document.getElementById('photoTargetMeal').value;
       const day = ensureDay(currentDate);
       currentPhotoItems.forEach(it => {
-        day.items.push({
-          id: 'item_' + Date.now() + Math.random(), meal, name: it.name + ' (фото)', grams: it.grams,
-          kcal: Math.round((it.kcal100 * it.grams) / 100),
-          p: +((it.p100 * it.grams) / 100).toFixed(1),
-          f: +((it.f100 * it.grams) / 100).toFixed(1),
-          c: +((it.c100 * it.grams) / 100).toFixed(1)
-        });
+        if (it.grams > 0) day.items.push(makeDiaryItem(meal, it.name + ' (фото)', it.grams, it.kcal100, it.p100, it.f100, it.c100));
       });
       triggerHaptic('success'); checkAndCelebrateGoals(day); saveState(); switchTab('diary');
     }
 
+    // =====================================================================
+    // 9. АКТИВНОСТЬ
+    // =====================================================================
     function saveActivityFromInputs() {
       const day = ensureDay(currentDate);
       day.activity = {
-        steps: Math.max(0, parseInt(document.getElementById('actStepsInput').value) || 0),
-        burnedKcal: Math.max(0, parseInt(document.getElementById('actBurnedInput').value) || 0),
-        activeMinutes: Math.max(0, parseInt(document.getElementById('actMinutesInput').value) || 0),
-        note: document.getElementById('actNoteInput').value.trim()
+        steps: Math.round(num(document.getElementById('actStepsInput').value, 0, 100000, 0)),
+        burnedKcal: Math.round(num(document.getElementById('actBurnedInput').value, 0, 10000, 0)),
+        activeMinutes: Math.round(num(document.getElementById('actMinutesInput').value, 0, 1440, 0)),
+        note: document.getElementById('actNoteInput').value.trim().slice(0, 120)
       };
       if (!day.celebratedSteps && day.activity.steps >= 10000) { day.celebratedSteps = true; launchGoalConfetti(); }
-      saveState(true); renderSummary(); renderDailyInsights();
+      saveState(true, true); renderSummary(); renderDailyInsights();
       document.getElementById('headerSteps').textContent = day.activity.steps;
       document.getElementById('headerBurned').textContent = `${day.activity.burnedKcal} ккал`;
       document.getElementById('stepsGoalText').textContent = `${day.activity.steps.toLocaleString('ru-RU')} / 10 000`;
@@ -1769,22 +2028,26 @@
       try {
         const { parsed } = await callAIJson(`Вес пользователя ${state.profile.weight} кг, активность: "${text}". ТОЛЬКО JSON: {"burnedKcal":300,"minutes":45,"shortTitle":"Тренировка"}`);
         const day = ensureDay(currentDate);
-        day.activity.burnedKcal = (day.activity.burnedKcal || 0) + (Number(parsed.burnedKcal) || 0);
-        day.activity.activeMinutes = (day.activity.activeMinutes || 0) + (Number(parsed.minutes) || 0);
-        day.activity.note = parsed.shortTitle || text;
+        day.activity.burnedKcal = (day.activity.burnedKcal || 0) + Math.round(num(parsed.burnedKcal, 0, 3000, 0));
+        day.activity.activeMinutes = (day.activity.activeMinutes || 0) + Math.round(num(parsed.minutes, 0, 600, 0));
+        day.activity.note = String(parsed.shortTitle || text).slice(0, 120);
         document.getElementById('aiWorkoutPrompt').value = ''; saveState();
       } catch (e) { showNotice('Ошибка ИИ: ' + e.message); }
       finally { btn.disabled = false; btn.textContent = 'Посчитать'; }
     }
 
+    // =====================================================================
+    // 10. ВЕС
+    // =====================================================================
     function addWeightEntry() {
       const weightVal = parseFloat(document.getElementById('weightValueInput').value);
       const targetVal = parseFloat(document.getElementById('weightTargetInput').value);
       if (!weightVal || weightVal < 30 || weightVal > 300) return showNotice('Введите корректный вес');
       if (targetVal && targetVal > 30) state.profile.targetWeight = targetVal;
-      state.profile.weight = weightVal;
-      state.weightHistory.push({ id: 'w_' + Date.now(), date: currentDate, weight: weightVal });
+      state.weightHistory.push({ id: uid('w'), date: currentDate, weight: weightVal });
       state.weightHistory.sort((a, b) => a.date.localeCompare(b.date));
+      // Текущий вес — самый свежий замер по дате, а не последний добавленный
+      state.profile.weight = state.weightHistory[state.weightHistory.length - 1].weight;
       document.getElementById('weightValueInput').value = '';
       triggerHaptic('success'); saveState();
     }
@@ -1801,6 +2064,11 @@
       if (latest) state.profile.weight = latest.weight;
       saveState();
     }
+
+    document.getElementById('weightHistoryList').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-weight-id]');
+      if (btn) removeWeightEntry(btn.dataset.weightId);
+    });
 
     function renderWeightSvgChart(history) {
       const box = document.getElementById('weightSvgChartBox');
@@ -1825,6 +2093,9 @@
       box.innerHTML = `<svg viewBox="0 0 ${w} ${h}" class="w-full h-full overflow-visible"><defs><linearGradient id="weightAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399" stop-opacity="0.45"/><stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0"/></linearGradient></defs><polygon points="${areaPoints}" fill="url(#weightAreaGrad)" /><polyline fill="none" stroke="#34d399" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" class="svg-glow-emerald" points="${polylinePoints}" />${coords.map(c => `<circle cx="${c.x}" cy="${c.y}" r="4" fill="#03060c" stroke="#6ee7b7" stroke-width="2.5" class="svg-glow-emerald" /><text x="${c.x}" y="${c.y - 8}" text-anchor="middle" fill="#e2e8f0" font-size="9" font-weight="700">${c.val}</text>`).join('')}</svg>`;
     }
 
+    // =====================================================================
+    // 11. РЕНДЕР
+    // =====================================================================
     function renderSummary() {
       const day = ensureDay(currentDate);
       const targets = calculateTargets();
@@ -1880,9 +2151,14 @@
       document.getElementById('mealsContainer').innerHTML = mealsMeta.map((m, idx) => {
         const list = day.items.filter(i => i.meal === m.key);
         const mKcal = Math.round(list.reduce((s, x) => s + x.kcal, 0));
-        return `<div class="liquid-glass rounded-3xl p-3.5 sm:p-4 animate-card" style="animation-delay: ${idx * 45}ms"><div class="flex items-center justify-between mb-2 pb-2 border-b border-white/10"><h3 class="font-bold text-xs sm:text-sm text-white flex items-center gap-2">${getMealSvgIcon(m.key)}<span>${m.title}</span></h3><span class="text-xs font-extrabold text-emerald-300">${mKcal} ккал</span></div>${list.length === 0 ? `<p class="text-[11px] text-slate-400">Пока пусто</p>` : `<div class="space-y-1.5">${list.map(item => `<div class="flex items-center justify-between liquid-pill rounded-2xl px-3 py-2 text-xs"><div class="min-w-0 pr-2"><div class="font-semibold text-white truncate">${escapeHtml(item.name)} <span class="text-slate-300">(${Number(item.grams)}г)</span></div><div class="text-[10px] text-slate-300">Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г</div></div><div class="flex items-center gap-2"><span class="font-bold text-emerald-300 whitespace-nowrap">${Number(item.kcal)}</span><button onclick="removeDiaryItem('${escapeHtml(item.id)}')" class="text-slate-400 hover:text-rose-400 px-1">✕</button></div></div>`).join('')}</div>`}</div>`;
+        return `<div class="liquid-glass rounded-3xl p-3.5 sm:p-4 animate-card" style="animation-delay: ${idx * 45}ms"><div class="flex items-center justify-between mb-2 pb-2 border-b border-white/10"><h3 class="font-bold text-xs sm:text-sm text-white flex items-center gap-2">${getMealSvgIcon(m.key)}<span>${m.title}</span></h3><span class="text-xs font-extrabold text-emerald-300">${mKcal} ккал</span></div>${list.length === 0 ? `<p class="text-[11px] text-slate-400">Пока пусто</p>` : `<div class="space-y-1.5">${list.map(item => `<div class="flex items-center justify-between liquid-pill rounded-2xl px-3 py-2 text-xs"><div class="min-w-0 pr-2"><div class="font-semibold text-white truncate">${escapeHtml(item.name)} <span class="text-slate-300">(${Number(item.grams)}г)</span></div><div class="text-[10px] text-slate-300">Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г</div></div><div class="flex items-center gap-2"><span class="font-bold text-emerald-300 whitespace-nowrap">${Number(item.kcal)}</span><button type="button" data-remove-id="${escapeHtml(item.id)}" class="text-slate-400 hover:text-rose-400 px-1">✕</button></div></div>`).join('')}</div>`}</div>`;
       }).join('');
     }
+
+    document.getElementById('mealsContainer').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-remove-id]');
+      if (btn) removeDiaryItem(btn.dataset.removeId);
+    });
 
     function removeDiaryItem(itemId) {
       const day = ensureDay(currentDate);
@@ -1895,7 +2171,7 @@
       const act = day.activity || { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' };
       document.getElementById('headerSteps').textContent = act.steps;
       document.getElementById('headerBurned').textContent = `${act.burnedKcal} ккал`;
-      document.getElementById('activityDateLabel').textContent = currentDate;
+      document.getElementById('activityDateLabel').textContent = currentDate === getLocalDateString() ? 'сегодня' : currentDate;
 
       const sIn = document.getElementById('actStepsInput'); if (document.activeElement !== sIn) sIn.value = act.steps || '';
       const bIn = document.getElementById('actBurnedInput'); if (document.activeElement !== bIn) bIn.value = act.burnedKcal || '';
@@ -1903,11 +2179,11 @@
       const nIn = document.getElementById('actNoteInput'); if (document.activeElement !== nIn) nIn.value = act.note || '';
 
       document.getElementById('addBurnedToTargetCheckbox').checked = Boolean(state.profile.addBurnedToTarget);
-      document.getElementById('stepsGoalText').textContent = `${act.steps.toLocaleString('ru-RU')} / 10 000`;
-      document.getElementById('stepsProgressBar').style.width = Math.min(100, Math.round((act.steps / 10000) * 100)) + '%';
+      document.getElementById('stepsGoalText').textContent = `${(act.steps || 0).toLocaleString('ru-RU')} / 10 000`;
+      document.getElementById('stepsProgressBar').style.width = Math.min(100, Math.round(((act.steps || 0) / 10000) * 100)) + '%';
 
       const history = state.weightHistory || [];
-      const startW = history.length > 0 ? history[0].weight : state.profile.weight;
+      const startW = history.length > 0 ? Number(history[0].weight) : state.profile.weight;
       const currW = state.profile.weight;
       const targetW = state.profile.targetWeight || currW;
 
@@ -1918,17 +2194,23 @@
 
       const diff = +(currW - startW).toFixed(1);
       document.getElementById('statTotalDiff').textContent = (diff > 0 ? `+${diff}` : `${diff}`) + ' кг';
-      const toGo = +(currW - targetW).toFixed(1);
-      document.getElementById('weightGoalStatus').textContent = toGo > 0 ? `До цели (${targetW} кг) осталось: ${toGo} кг` : `Цель (${targetW} кг) достигнута!`;
+
+      // Учитываем направление цели: и похудение, и набор
+      const losing = startW > targetW;
+      const gaining = startW < targetW;
+      const reached = losing ? currW <= targetW : gaining ? currW >= targetW : true;
+      const left = Math.abs(+(currW - targetW).toFixed(1));
+      document.getElementById('weightGoalStatus').textContent = reached ? `Цель (${targetW} кг) достигнута!` : `До цели (${targetW} кг) осталось: ${left} кг`;
 
       let pct = 0;
-      if (startW !== targetW) pct = Math.max(0, Math.min(100, Math.round((Math.abs(startW - currW) / Math.abs(startW - targetW)) * 100)));
+      if (reached) pct = 100;
+      else if (startW !== targetW) pct = Math.max(0, Math.min(100, Math.round(((startW - currW) / (startW - targetW)) * 100)));
       document.getElementById('weightProgressPct').textContent = pct + '% к цели';
       document.getElementById('weightProgressBar').style.width = pct + '%';
       renderWeightSvgChart(history);
 
       const reversed = [...history].reverse();
-      document.getElementById('weightHistoryList').innerHTML = reversed.map(entry => `<div class="py-2 flex items-center justify-between text-xs"><div><span class="font-bold text-white">${Number(entry.weight)} кг</span><span class="text-slate-300 ml-2">${escapeHtml(entry.date)}</span></div><button onclick="removeWeightEntry('${escapeHtml(entry.id)}')" class="text-slate-400 hover:text-rose-400 px-1">✕</button></div>`).join('');
+      document.getElementById('weightHistoryList').innerHTML = reversed.map(entry => `<div class="py-2 flex items-center justify-between text-xs"><div><span class="font-bold text-white">${Number(entry.weight)} кг</span><span class="text-slate-300 ml-2">${escapeHtml(entry.date)}</span></div><button type="button" data-weight-id="${escapeHtml(entry.id)}" class="text-slate-400 hover:text-rose-400 px-1">✕</button></div>`).join('');
     }
 
     function renderProfileForm() {
@@ -1938,30 +2220,31 @@
       setIfIdle('profWeight', p.weight); setIfIdle('profActivity', p.activity); setIfIdle('profGoal', p.goal);
 
       const t = calculateTargets();
-      document.getElementById('calcResultSummary').innerHTML = `Базовый обмен: <b>${t.bmr} ккал</b> • Поддержание: <b>${t.tdee} ккал</b><br>Ваша дневная норма: <b class="text-emerald-300">${t.targetKcal} ккал</b> (Б: ${t.p}г, Ж: ${t.f}г, У: ${t.c}г)`;
+      const floorNote = t.floorApplied ? `<br><span class="text-amber-300">Норма поднята до безопасного минимума (${t.minSafe} ккал) — дефицит ${p.goal}% оказался слишком жёстким.</span>` : '';
+      document.getElementById('calcResultSummary').innerHTML = `Базовый обмен: <b>${t.bmr} ккал</b> • Поддержание: <b>${t.tdee} ккал</b><br>Ваша дневная норма: <b class="text-emerald-300">${t.targetKcal} ккал</b> (Б: ${t.p}г, Ж: ${t.f}г, У: ${t.c}г)${floorNote}`;
       document.getElementById('foodsCountBadge').textContent = `В базе: ${getAllFoods().length} поз.`;
     }
 
     function saveProfileAndRecalc() {
       state.profile = {
-        ...state.profile, gender: document.getElementById('profGender').value,
-        age: Number(document.getElementById('profAge').value) || 28,
-        height: Number(document.getElementById('profHeight').value) || 175,
-        weight: parseFloat(document.getElementById('profWeight').value) || 80,
+        ...state.profile, gender: document.getElementById('profGender').value === 'female' ? 'female' : 'male',
+        age: num(document.getElementById('profAge').value, 12, 100, 28),
+        height: num(document.getElementById('profHeight').value, 120, 230, 175),
+        weight: num(parseFloat(document.getElementById('profWeight').value), 30, 300, 80),
         activity: Number(document.getElementById('profActivity').value) || 1.375,
-        goal: Number(document.getElementById('profGoal').value) || -20
+        goal: Number(document.getElementById('profGoal').value)
       };
-      saveState(true); renderSummary(); renderDailyInsights(); renderProfileForm(); renderProgressTab();
+      saveState(true, true); renderSummary(); renderDailyInsights(); renderProfileForm(); renderProgressTab();
     }
 
     function addCustomFood() {
       const name = document.getElementById('newFoodName').value.trim();
       if (!name) return showNotice('Укажите название продукта');
-      const p = parseFloat(document.getElementById('newFoodP').value) || 0;
-      const f = parseFloat(document.getElementById('newFoodF').value) || 0;
-      const c = parseFloat(document.getElementById('newFoodC').value) || 0;
-      const kcal = Number(document.getElementById('newFoodKcal').value) || Math.round(p * 4 + f * 9 + c * 4);
-      const newObj = { id: 'custom_' + Date.now(), name, kcal, p, f, c };
+      const p = num(parseFloat(document.getElementById('newFoodP').value), 0, 100, 0);
+      const f = num(parseFloat(document.getElementById('newFoodF').value), 0, 100, 0);
+      const c = num(parseFloat(document.getElementById('newFoodC').value), 0, 100, 0);
+      const kcal = Math.round(num(document.getElementById('newFoodKcal').value, 0, 900, 0)) || Math.round(p * 4 + f * 9 + c * 4);
+      const newObj = { id: uid('custom'), name: name.slice(0, 90), kcal, p, f, c };
       state.customFoods.unshift(newObj); selectedFoodObj = newObj;
       document.getElementById('newFoodName').value = ''; document.getElementById('newFoodP').value = '';
       document.getElementById('newFoodF').value = ''; document.getElementById('newFoodC').value = ''; document.getElementById('newFoodKcal').value = '';
@@ -1975,7 +2258,7 @@
       currentDate = getLocalDateString(dateObj); renderAll();
     }
     function onDateChange(val) { if (val) { currentDate = val; renderAll(); } }
-    function setToday() { currentDate = getLocalDateString(); renderAll(); }
+    function setToday() { currentDate = getLocalDateString(); lastKnownToday = currentDate; renderAll(); }
 
     function addWater(ml) {
       triggerHaptic('light');
@@ -1985,6 +2268,9 @@
       saveState();
     }
 
+    // =====================================================================
+    // 12. НАСТРОЙКИ И БЭКАП
+    // =====================================================================
     function openSettingsModal() {
       document.getElementById('aiProviderSelect').value = state.aiProvider || 'gemini';
       document.getElementById('apiKeyInput').value = state.apiKey || '';
@@ -2008,20 +2294,42 @@
     function restoreFromText() {
       try {
         const parsed = JSON.parse(document.getElementById('restoreCodeArea').value.trim());
-        if (!parsed.profile) throw new Error();
-        state = { ...state, ...parsed, isConfigured: true };
+        if (!parsed || typeof parsed !== 'object' || !parsed.profile) throw new Error('bad');
+        state = normalizeState({ ...parsed, isConfigured: true });
+        if (state.weightHistory.length === 0) state.weightHistory = [{ id: uid('w'), date: currentDate, weight: state.profile.weight, note: 'Стартовый вес' }];
         saveState(); closeBackupModal(); showNotice('Данные восстановлены!');
       } catch (e) { showNotice('Некорректный формат кода.'); }
     }
     function exportBackupFile() {
       const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
       a.download = `nutribalance_${currentDate}.json`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
     }
 
     function renderAll() {
       renderSummary(); renderMeals(); renderDailyInsights(); renderProgressTab(); renderProfileForm();
     }
+
+    // =====================================================================
+    // 13. ЖИЗНЕННЫЙ ЦИКЛ: смена суток, сворачивание, закрытие
+    // =====================================================================
+    function checkDateRollover() {
+      const today = getLocalDateString();
+      if (today === lastKnownToday) return;
+      // Если пользователь смотрел «сегодня» — переключаем на новый день
+      if (currentDate === lastKnownToday) currentDate = today;
+      lastKnownToday = today;
+      renderAll();
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { flushPending(); stopLiveCamera(); }
+      else checkDateRollover();
+    });
+    window.addEventListener('pagehide', flushPending);
+    setInterval(checkDateRollover, 60000);
 
     loadState(); switchTab('diary');
   </script>
