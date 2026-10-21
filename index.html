@@ -3,241 +3,290 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>NutriBalance Pro — КБЖУ, ИИ-сканер и Прогресс</title>
+  <title>NutriBalance Pro — Liquid Glass Edition</title>
   <!-- Telegram Mini Apps SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Tailwind CSS для стилизации -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
-    /* === БАЗОВЫЕ СТИЛИ === */
+    /* === 1. БАЗОВЫЕ НАСТРОЙКИ ЭКРАНА === */
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #070b14;
-      color: #f1f5f9;
+      background-color: #04070f;
+      color: #f8fafc;
       -webkit-tap-highlight-color: transparent;
       overflow-x: hidden;
     }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 4px; }
     input[type="range"] { accent-color: #10b981; }
     input, textarea, select { -webkit-user-select: text !important; user-select: text !important; }
 
-    /* === 1. МОУШЕН-ГРАФИКА: ПАРЯЩИЕ НЕОНОВЫЕ ПЯТНА НА ФОНЕ === */
-    @keyframes floatBlob {
-      0%, 100% { transform: translate(0px, 0px) scale(1); }
-      33% { transform: translate(25px, -30px) scale(1.08); }
-      66% { transform: translate(-20px, 20px) scale(0.95); }
-    }
-    .ambient-blob-1 {
-      animation: floatBlob 14s ease-in-out infinite;
-    }
-    .ambient-blob-2 {
-      animation: floatBlob 18s ease-in-out infinite reverse;
+    /* === 2. ЭФФЕКТ ЖИДКОГО СТЕКЛА (iOS LIQUID GLASS) === */
+    /* Основная стеклянная карточка с изогнутым бликом по верхнему краю */
+    .liquid-glass {
+      position: relative;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.025) 100%);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow:
+        0 18px 40px -12px rgba(0, 0, 0, 0.65),
+        inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.32),
+        inset 0 -1px 2px 0 rgba(16, 185, 129, 0.08);
     }
 
-    /* === 2. МИКРО-АНИМАЦИИ ПЕРЕХОДОВ И КАРТОЧЕК === */
+    /* Вложенные стеклянные капсулы и поля ввода */
+    .liquid-pill {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.07) 0%, rgba(15, 23, 42, 0.45) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0.5px rgba(255, 255, 255, 0.22);
+    }
+
+    /* Поля ввода в стиле тёмного матового стекла */
+    .liquid-input {
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .liquid-input:focus {
+      border-color: rgba(52, 211, 153, 0.65);
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.35);
+      outline: none;
+    }
+
+    /* Акцентная стеклянная кнопка с неоновым свечением */
+    .liquid-btn-primary {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 55%, #059669 100%);
+      color: #022c22;
+      box-shadow:
+        0 8px 22px -4px rgba(16, 185, 129, 0.5),
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.55);
+    }
+    .liquid-btn-primary:hover {
+      filter: brightness(1.06);
+    }
+
+    /* === 3. МЯГКОЕ СВЕЧЕНИЕ ВЕКТОРНЫХ ИЛЛЮСТРАЦИЙ (SVG GLOW) === */
+    .svg-glow-emerald { filter: drop-shadow(0 0 7px rgba(52, 211, 153, 0.65)); }
+    .svg-glow-cyan    { filter: drop-shadow(0 0 7px rgba(56, 189, 248, 0.65)); }
+    .svg-glow-rose    { filter: drop-shadow(0 0 7px rgba(251, 113, 133, 0.65)); }
+    .svg-glow-amber   { filter: drop-shadow(0 0 7px rgba(251, 191, 36, 0.65)); }
+    .svg-glow-purple  { filter: drop-shadow(0 0 7px rgba(192, 132, 252, 0.65)); }
+
+    /* === 4. ПЛАВНЫЕ МИКРО-АНИМАЦИИ И КОЛЬЦО ПРОГРЕССА === */
     @keyframes fadeSlideUp {
-      from {
-        opacity: 0;
-        transform: translateY(14px) scale(0.985);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
+      from { opacity: 0; transform: translateY(14px) scale(0.985); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
     }
     .animate-card {
-      animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: fadeSlideUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-    /* Пружинящий отклик кнопок при нажатии */
     .btn-spring {
-      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s, box-shadow 0.2s;
+      transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s, box-shadow 0.2s;
     }
     .btn-spring:active {
       transform: scale(0.94);
     }
 
-    /* === 3. КОЛЬЦО ПРОГРЕССА КАЛОРИЙ (SVG) === */
     .ring-progress {
       transition: stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1);
       transform: rotate(-90deg);
       transform-origin: 50% 50%;
-      filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.45));
+      filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.6));
     }
 
-    /* === 4. ВОЛНА В СТАКАНЕ ВОДЫ === */
+    /* Анимация жидкости в стакане воды */
     @keyframes wavePulse {
       0%, 100% { transform: translateX(0) scaleY(1); }
-      50% { transform: translateX(-15%) scaleY(1.08); }
+      50% { transform: translateX(-15%) scaleY(1.12); }
     }
     .water-fill {
       transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     }
     .water-wave-top {
-      animation: wavePulse 2.5s ease-in-out infinite;
+      animation: wavePulse 2.4s ease-in-out infinite;
     }
 
-    /* === 5. HUD-ЛАЗЕР ИИ-СКАНЕРА === */
+    /* HUD-лазер ИИ-сканера */
     @keyframes laserScan {
-      0% { top: 4%; opacity: 0.2; }
+      0% { top: 5%; opacity: 0.25; }
       50% { top: 92%; opacity: 1; }
-      100% { top: 4%; opacity: 0.2; }
+      100% { top: 5%; opacity: 0.25; }
     }
     .scanner-laser {
       position: absolute;
-      left: 4%;
-      right: 4%;
+      left: 5%;
+      right: 5%;
       height: 2px;
-      background: linear-gradient(90deg, transparent, #10b981, #34d399, #10b981, transparent);
-      box-shadow: 0 0 12px 2px rgba(16, 185, 129, 0.8);
-      animation: laserScan 2.6s ease-in-out infinite;
+      background: linear-gradient(90deg, transparent, #10b981, #6ee7b7, #10b981, transparent);
+      box-shadow: 0 0 14px 3px rgba(16, 185, 129, 0.85);
+      animation: laserScan 2.5s ease-in-out infinite;
       pointer-events: none;
       z-index: 20;
     }
-    /* Уголки кибер-прицела */
     .hud-corner {
       position: absolute;
-      width: 18px;
-      height: 18px;
-      border-color: #10b981;
+      width: 20px;
+      height: 20px;
+      border-color: #34d399;
+      filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.7));
       pointer-events: none;
       z-index: 15;
-      opacity: 0.8;
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white pb-20 sm:pb-8 relative">
+<body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white pb-24 sm:pb-10 relative">
 
-  <!-- ФОНОВАЯ МОУШЕН-ГРАФИКА (НЕОНОВОЕ СВЕЧЕНИЕ) -->
-  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
-    <div class="ambient-blob-1 absolute -top-24 -left-24 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl"></div>
-    <div class="ambient-blob-2 absolute top-1/3 -right-28 w-96 h-96 rounded-full bg-sky-500/10 blur-3xl"></div>
-  </div>
+  <!-- 1. ЖИВОЙ АНИМИРОВАННЫЙ ФОН «ЖИДКАЯ ПЛАЗМА» (CANVAS) -->
+  <canvas id="plasmaCanvas" class="fixed inset-0 pointer-events-none z-0 w-full h-full"></canvas>
 
-  <!-- CANVAS ДЛЯ САЛЮТА ЧАСТИЦ (КОНФЕТТИ ПРИ ДОСТИЖЕНИИ ЦЕЛИ) -->
+  <!-- 2. ХОЛСТ ДЛЯ САЛЮТА ЧАСТИЦ ПРИ ДОСТИЖЕНИИ ЦЕЛИ -->
   <canvas id="celebrationCanvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
 
   <!-- МОДАЛЬНОЕ ОКНО ПЕРВОГО ВХОДА (ОНБОРДИНГ) -->
-  <div id="onboardingModal" class="hidden fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-slate-900 border border-emerald-500/40 rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl my-auto animate-card">
-      <div class="flex items-center gap-3">
-        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center font-extrabold text-slate-950 text-xl shadow-lg shadow-emerald-500/20">
-          N
+  <div id="onboardingModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto">
+    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 my-auto animate-card">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl liquid-btn-primary flex items-center justify-center font-extrabold text-xl">
+          <svg class="w-7 h-7 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
         </div>
         <div>
-          <h2 class="font-extrabold text-base sm:text-lg text-white">Добро пожаловать! 👋</h2>
-          <p class="text-xs text-slate-400">Укажи свои параметры для точного расчёта КБЖУ</p>
+          <h2 class="font-extrabold text-base sm:text-lg text-white">Добро пожаловать в NutriBalance</h2>
+          <p class="text-xs text-slate-300">Укажи свои параметры для точного расчёта КБЖУ</p>
         </div>
       </div>
 
       <div class="grid grid-cols-2 gap-3 text-xs">
         <div>
-          <label class="block text-slate-400 mb-1">Пол</label>
-          <select id="obGender" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-semibold">
-            <option value="male">Мужской</option>
-            <option value="female">Женский</option>
+          <label class="block text-slate-300 mb-1">Пол</label>
+          <select id="obGender" class="liquid-input w-full rounded-xl px-3 py-2.5 text-white font-semibold">
+            <option value="male" class="bg-slate-900">Мужской</option>
+            <option value="female" class="bg-slate-900">Женский</option>
           </select>
         </div>
         <div>
-          <label class="block text-slate-400 mb-1">Возраст (лет)</label>
-          <input type="number" id="obAge" placeholder="28" value="28" min="12" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold" />
+          <label class="block text-slate-300 mb-1">Возраст (лет)</label>
+          <input type="number" id="obAge" placeholder="28" value="28" min="12" max="100" class="liquid-input w-full rounded-xl px-3 py-2.5 text-white font-bold" />
         </div>
         <div>
-          <label class="block text-slate-400 mb-1">Рост (см)</label>
-          <input type="number" id="obHeight" placeholder="175" value="175" min="120" max="230" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold" />
+          <label class="block text-slate-300 mb-1">Рост (см)</label>
+          <input type="number" id="obHeight" placeholder="175" value="175" min="120" max="230" class="liquid-input w-full rounded-xl px-3 py-2.5 text-white font-bold" />
         </div>
         <div>
-          <label class="block text-slate-400 mb-1">Текущий вес (кг)</label>
-          <input type="number" step="0.1" id="obWeight" placeholder="80" min="30" max="250" class="w-full bg-slate-800 border border-emerald-500/50 rounded-xl px-3 py-2.5 text-white font-bold" />
+          <label class="block text-slate-300 mb-1">Текущий вес (кг)</label>
+          <input type="number" step="0.1" id="obWeight" placeholder="80" min="30" max="250" class="liquid-input w-full rounded-xl px-3 py-2.5 text-white font-bold" />
         </div>
         <div>
-          <label class="block text-slate-400 mb-1">Желаемый вес (кг)</label>
-          <input type="number" step="0.5" id="obTargetWeight" placeholder="72" min="30" max="250" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-emerald-400 font-bold" />
+          <label class="block text-slate-300 mb-1">Желаемый вес (кг)</label>
+          <input type="number" step="0.5" id="obTargetWeight" placeholder="72" min="30" max="250" class="liquid-input w-full rounded-xl px-3 py-2.5 text-emerald-300 font-bold" />
         </div>
         <div>
-          <label class="block text-slate-400 mb-1">Твоя цель</label>
-          <select id="obGoal" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-semibold">
-            <option value="-20">Похудение (-20%)</option>
-            <option value="-15">Мягкий дефицит (-15%)</option>
-            <option value="0">Поддержание (0%)</option>
-            <option value="15">Набор массы (+15%)</option>
+          <label class="block text-slate-300 mb-1">Твоя цель</label>
+          <select id="obGoal" class="liquid-input w-full rounded-xl px-3 py-2.5 text-white font-semibold">
+            <option value="-20" class="bg-slate-900">Похудение (-20%)</option>
+            <option value="-15" class="bg-slate-900">Мягкий дефицит (-15%)</option>
+            <option value="0" class="bg-slate-900">Поддержание (0%)</option>
+            <option value="15" class="bg-slate-900">Набор массы (+15%)</option>
           </select>
         </div>
       </div>
 
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Обычная дневная активность</label>
-        <select id="obActivity" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white">
-          <option value="1.2">Сидячая работа, мало движения (1.2)</option>
-          <option value="1.375" selected>Лёгкая активность / прогулки 1–3 раза в нед. (1.375)</option>
-          <option value="1.55">Средняя активность / тренировки 3–5 раз в нед. (1.55)</option>
-          <option value="1.725">Высокая нагрузка / спорт почти каждый день (1.725)</option>
+        <label class="block text-xs text-slate-300 mb-1">Обычная дневная активность</label>
+        <select id="obActivity" class="liquid-input w-full rounded-xl px-3 py-2.5 text-xs text-white">
+          <option value="1.2" class="bg-slate-900">Сидячая работа, мало движения (1.2)</option>
+          <option value="1.375" selected class="bg-slate-900">Лёгкая активность / прогулки 1–3 раза в нед. (1.375)</option>
+          <option value="1.55" class="bg-slate-900">Средняя активность / тренировки 3–5 раз в нед. (1.55)</option>
+          <option value="1.725" class="bg-slate-900">Высокая нагрузка / спорт почти каждый день (1.725)</option>
         </select>
       </div>
 
-      <button onclick="completeOnboarding()" class="btn-spring w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/20">
-        🚀 Рассчитать мою норму и начать
+      <button onclick="completeOnboarding()" class="btn-spring liquid-btn-primary w-full py-3 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2">
+        <span>Рассчитать мою норму и начать</span>
       </button>
     </div>
   </div>
 
-  <!-- ШАПКА -->
-  <header class="sticky top-0 z-30 bg-slate-900/85 backdrop-blur-md border-b border-slate-800/80">
+  <!-- ШАПКА ПРИЛОЖЕНИЯ (LIQUID GLASS) -->
+  <header class="sticky top-0 z-30 liquid-glass border-t-0 border-x-0">
     <div class="max-w-4xl mx-auto px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center font-extrabold text-slate-950 text-sm shadow-md shadow-emerald-500/20">
-          N
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl liquid-btn-primary flex items-center justify-center font-extrabold text-slate-950 text-sm">
+          <svg class="w-5 h-5 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
         </div>
         <div>
           <div class="flex items-center gap-1.5">
-            <h1 class="font-bold text-sm sm:text-base text-white">NutriBalance</h1>
-            <span id="tgUserBadge" class="hidden text-[10px] px-2 py-0.5 rounded-full font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/30"></span>
-            <span id="syncStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            <h1 class="font-extrabold text-sm sm:text-base text-white tracking-tight">NutriBalance</h1>
+            <span id="tgUserBadge" class="hidden text-[10px] px-2 py-0.5 rounded-full font-semibold bg-sky-500/20 text-sky-300 border border-sky-400/30"></span>
+            <span id="syncStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
               Сохранено
             </span>
           </div>
         </div>
       </div>
 
-      <!-- Навигация для ПК -->
-      <nav class="hidden sm:flex items-center gap-1 bg-slate-800/90 p-1 rounded-xl border border-slate-700/60">
-        <button onclick="switchTab('diary')" id="tabBtnDesktop-diary" class="btn-spring px-3 py-1.5 rounded-lg text-xs font-medium">📒 Дневник</button>
-        <button onclick="switchTab('ai')" id="tabBtnDesktop-ai" class="btn-spring px-3 py-1.5 rounded-lg text-xs font-medium">✨ ИИ-Сканер</button>
-        <button onclick="switchTab('progress')" id="tabBtnDesktop-progress" class="btn-spring px-3 py-1.5 rounded-lg text-xs font-medium">📊 Прогресс</button>
-        <button onclick="switchTab('profile')" id="tabBtnDesktop-profile" class="btn-spring px-3 py-1.5 rounded-lg text-xs font-medium">⚙️ Профиль и База</button>
+      <!-- Навигация для ПК с векторными иконками -->
+      <nav class="hidden sm:flex items-center gap-1 liquid-pill p-1 rounded-2xl">
+        <button onclick="switchTab('diary')" id="tabBtnDesktop-diary" class="btn-spring px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5">
+          <svg class="w-4 h-4 svg-glow-emerald text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span>Дневник</span>
+        </button>
+        <button onclick="switchTab('ai')" id="tabBtnDesktop-ai" class="btn-spring px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5">
+          <svg class="w-4 h-4 svg-glow-purple text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/></svg>
+          <span>ИИ-Сканер</span>
+        </button>
+        <button onclick="switchTab('progress')" id="tabBtnDesktop-progress" class="btn-spring px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5">
+          <svg class="w-4 h-4 svg-glow-cyan text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>Прогресс</span>
+        </button>
+        <button onclick="switchTab('profile')" id="tabBtnDesktop-profile" class="btn-spring px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5">
+          <svg class="w-4 h-4 svg-glow-amber text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+          <span>Профиль</span>
+        </button>
       </nav>
 
       <!-- Быстрые кнопки -->
       <div class="flex items-center gap-1.5">
-        <button onclick="openSettingsModal()" class="btn-spring px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30">
-          🔑 ИИ
+        <button onclick="openSettingsModal()" class="btn-spring liquid-pill px-2.5 py-1.5 rounded-xl text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          <span>ИИ</span>
         </button>
-        <button onclick="openBackupModal()" class="btn-spring px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700" title="Бэкап данных">
-          💾
+        <button onclick="openBackupModal()" class="btn-spring liquid-pill p-2 rounded-xl text-slate-200" title="Бэкап данных">
+          <svg class="w-4 h-4 svg-glow-cyan text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ ДЛЯ ТЕЛЕФОНА -->
-  <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-1.5 grid grid-cols-4 gap-1">
-    <button onclick="switchTab('diary')" id="tabBtnMobile-diary" class="btn-spring flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-medium">
-      <span class="text-base leading-none mb-0.5">📒</span>
+  <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ ДЛЯ ТЕЛЕФОНА (В СТИЛЕ iOS DOCK) -->
+  <nav class="sm:hidden fixed bottom-2.5 left-3 right-3 z-40 liquid-glass rounded-3xl px-2 py-1.5 grid grid-cols-4 gap-1">
+    <button onclick="switchTab('diary')" id="tabBtnMobile-diary" class="btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium gap-0.5">
+      <svg class="w-5 h-5 svg-glow-emerald text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       <span>Дневник</span>
     </button>
-    <button onclick="switchTab('ai')" id="tabBtnMobile-ai" class="btn-spring flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-medium">
-      <span class="text-base leading-none mb-0.5">✨</span>
+    <button onclick="switchTab('ai')" id="tabBtnMobile-ai" class="btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium gap-0.5">
+      <svg class="w-5 h-5 svg-glow-purple text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/></svg>
       <span>ИИ-Сканер</span>
     </button>
-    <button onclick="switchTab('progress')" id="tabBtnMobile-progress" class="btn-spring flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-medium">
-      <span class="text-base leading-none mb-0.5">📊</span>
+    <button onclick="switchTab('progress')" id="tabBtnMobile-progress" class="btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium gap-0.5">
+      <svg class="w-5 h-5 svg-glow-cyan text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <span>Прогресс</span>
     </button>
-    <button onclick="switchTab('profile')" id="tabBtnMobile-profile" class="btn-spring flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-medium">
-      <span class="text-base leading-none mb-0.5">⚙️</span>
+    <button onclick="switchTab('profile')" id="tabBtnMobile-profile" class="btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium gap-0.5">
+      <svg class="w-5 h-5 svg-glow-amber text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
       <span>Профиль</span>
     </button>
   </nav>
@@ -245,62 +294,60 @@
   <!-- ОСНОВНОЙ КОНТЕНТ -->
   <main class="max-w-4xl w-full mx-auto px-3 sm:px-4 py-4 flex-1 space-y-4 relative z-10">
 
-    <!-- КОМПАКТНАЯ СВОДКА ДНЯ С НЕОНОВЫМ КОЛЬЦОМ И АНИМИРОВАННЫМ СТАКАНОМ ВОДЫ -->
-    <section class="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-3">
-      <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-800/80">
+    <!-- ВЕРХНЯЯ СТЕКЛЯННАЯ СВОДКА ДНЯ -->
+    <section class="liquid-glass rounded-3xl p-4 sm:p-5 space-y-3.5">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
         <!-- Переключатель даты -->
-        <div class="flex items-center gap-1">
-          <button onclick="changeDate(-1)" class="btn-spring w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center justify-center">◀</button>
-          <input type="date" id="currentDateInput" onchange="onDateChange(this.value)" class="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs font-semibold text-white" />
-          <button onclick="changeDate(1)" class="btn-spring w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center justify-center">▶</button>
-          <button onclick="setToday()" class="btn-spring text-[11px] text-emerald-400 font-medium px-1.5">Сегодня</button>
+        <div class="flex items-center gap-1.5">
+          <button onclick="changeDate(-1)" class="btn-spring liquid-pill w-7 h-7 rounded-xl text-slate-200 text-xs flex items-center justify-center">◀</button>
+          <input type="date" id="currentDateInput" onchange="onDateChange(this.value)" class="liquid-input rounded-xl px-2.5 py-1 text-xs font-semibold text-white" />
+          <button onclick="changeDate(1)" class="btn-spring liquid-pill w-7 h-7 rounded-xl text-slate-200 text-xs flex items-center justify-center">▶</button>
+          <button onclick="setToday()" class="btn-spring text-[11px] text-emerald-300 font-semibold px-1.5">Сегодня</button>
         </div>
 
-        <!-- Быстрые пилюли: Анимированный стакан воды, Шаги, Вес -->
+        <!-- Быстрые стеклянные пилюли: Стакан воды, Часы, Вес -->
         <div class="flex flex-wrap items-center gap-1.5">
-          <!-- Блок воды с анимированным мини-стаканом -->
-          <div class="flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-700/60 text-xs">
-            <!-- Мини-стакан с поднимающейся волной -->
-            <div class="relative w-4 h-5 rounded-b-md border border-sky-400/70 overflow-hidden bg-slate-950 flex items-end">
-              <div id="waterCupFill" class="water-fill w-full bg-gradient-to-t from-sky-600 to-cyan-400 relative" style="height: 0%">
-                <div class="water-wave-top absolute -top-1 left-0 right-0 h-1.5 bg-cyan-300/80 rounded-full"></div>
+          <!-- Анимированный стакан воды -->
+          <div class="liquid-pill flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs">
+            <div class="relative w-4 h-5 rounded-b-md border border-cyan-300/70 overflow-hidden bg-slate-950/80 flex items-end svg-glow-cyan">
+              <div id="waterCupFill" class="water-fill w-full bg-gradient-to-t from-sky-600 to-cyan-300 relative" style="height: 0%">
+                <div class="water-wave-top absolute -top-1 left-0 right-0 h-1.5 bg-white/70 rounded-full"></div>
               </div>
             </div>
             <strong id="waterValue" class="text-white text-[11px] min-w-[42px]">0 мл</strong>
-            <button onclick="addWater(-250)" class="btn-spring px-1.5 py-0.5 text-[10px] rounded bg-slate-700 text-slate-300">-</button>
-            <button onclick="addWater(250)" class="btn-spring px-1.5 py-0.5 text-[10px] rounded bg-sky-500/20 text-sky-300 font-bold">+250</button>
+            <button onclick="addWater(-250)" class="btn-spring px-1.5 py-0.5 text-[10px] rounded-md bg-white/10 text-slate-200">-</button>
+            <button onclick="addWater(250)" class="btn-spring px-1.5 py-0.5 text-[10px] rounded-md bg-cyan-400/25 text-cyan-200 font-bold">+250</button>
           </div>
 
-          <button onclick="switchTab('progress')" class="btn-spring flex items-center gap-1 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-700/60 text-[11px]">
-            <span>⌚</span>
-            <strong id="headerSteps" class="text-amber-400">0</strong>
-            <span class="text-slate-500">•</span>
-            <strong id="headerBurned" class="text-orange-400">0 ккал</strong>
+          <button onclick="switchTab('progress')" class="btn-spring liquid-pill flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px]">
+            <svg class="w-3.5 h-3.5 text-amber-300 svg-glow-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="6" y="4" width="12" height="16" rx="3"/><path d="M9 2h6"/><path d="M9 22h6"/></svg>
+            <strong id="headerSteps" class="text-amber-300">0</strong>
+            <span class="text-slate-400">•</span>
+            <strong id="headerBurned" class="text-orange-300">0 ккал</strong>
           </button>
 
-          <button onclick="switchTab('progress')" class="btn-spring flex items-center gap-1 bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1 rounded-xl border border-slate-700/60 text-[11px]">
-            <span>⚖️</span>
-            <strong id="headerCurrentWeight" class="text-emerald-400">80 кг</strong>
+          <button onclick="switchTab('progress')" class="btn-spring liquid-pill flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px]">
+            <svg class="w-3.5 h-3.5 text-emerald-300 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 7h8"/><path d="M12 7v3"/></svg>
+            <strong id="headerCurrentWeight" class="text-emerald-300">80 кг</strong>
           </button>
         </div>
       </div>
 
-      <!-- Сетка КБЖУ: Неоновое кольцо калорий + 3 карточки БЖУ -->
+      <!-- Сетка КБЖУ: Светящееся кольцо калорий + 3 стеклянные капсулы БЖУ -->
       <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
         
-        <!-- Круговое кольцо калорий (5 колонок на ПК) -->
-        <div class="sm:col-span-5 bg-slate-800/40 border border-slate-700/50 rounded-2xl p-3 flex items-center gap-3.5">
+        <!-- Круговое неоновое кольцо калорий -->
+        <div class="sm:col-span-5 liquid-pill rounded-2xl p-3 flex items-center gap-3.5">
           <div class="relative w-20 h-20 flex-shrink-0 flex items-center justify-center">
             <svg class="w-20 h-20" viewBox="0 0 84 84">
               <defs>
                 <linearGradient id="calRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#34d399" />
-                  <stop offset="100%" stop-color="#06b6d4" />
+                  <stop offset="0%" stop-color="#6ee7b7" />
+                  <stop offset="50%" stop-color="#10b981" />
+                  <stop offset="100%" stop-color="#38bdf8" />
                 </linearGradient>
               </defs>
-              <!-- Фоновое кольцо -->
-              <circle cx="42" cy="42" r="35" stroke="#1e293b" stroke-width="8" fill="transparent" />
-              <!-- Анимированное кольцо прогресса (длина окружности 2 * PI * 35 ≈ 220) -->
+              <circle cx="42" cy="42" r="35" stroke="rgba(255,255,255,0.08)" stroke-width="8" fill="transparent" />
               <circle
                 id="calRingCircle"
                 class="ring-progress"
@@ -316,67 +363,82 @@
               />
             </svg>
             <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span id="calRingPercent" class="text-xs font-extrabold text-emerald-400">0%</span>
-              <span class="text-[9px] text-slate-400">ккал</span>
+              <span id="calRingPercent" class="text-xs font-extrabold text-emerald-300">0%</span>
+              <span class="text-[9px] text-slate-300">норма</span>
             </div>
           </div>
 
           <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between text-[11px] text-slate-400">
-              <span>🔥 Калории</span>
-              <span id="calRemain" class="text-emerald-400 font-semibold"></span>
+            <div class="flex items-center justify-between text-[11px] text-slate-300">
+              <span class="flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-emerald-300 svg-glow-emerald" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1.5 3.5 4 5.5 4 9a4 4 0 1 1-8 0c0-2 1-3.5 2-5-.5 2 1 3 2 3s1-2.5 0-7z"/></svg>
+                Калории
+              </span>
+              <span id="calRemain" class="text-emerald-300 font-semibold"></span>
             </div>
             <div class="flex items-baseline gap-1 my-0.5">
               <span id="calCurrent" class="text-2xl font-extrabold text-white tracking-tight">0</span>
-              <span class="text-xs text-slate-400">/ <span id="calTarget">2000</span></span>
+              <span class="text-xs text-slate-300">/ <span id="calTarget">2000</span></span>
             </div>
-            <div class="w-full h-1.5 bg-slate-700/70 rounded-full overflow-hidden mt-1">
-              <div id="calBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500" style="width: 0%"></div>
+            <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mt-1">
+              <div id="calBar" class="h-full bg-gradient-to-r from-emerald-400 to-cyan-300 transition-all duration-500" style="width: 0%"></div>
             </div>
           </div>
         </div>
 
-        <!-- 3 карточки макронутриентов (Белки, Жиры, Углеводы — 7 колонок на ПК) -->
-        <div class="sm:col-span-7 grid grid-cols-3 gap-2">
-          <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-2.5">
-            <div class="flex justify-between text-[11px] text-slate-400">
-              <span>🥩 Белки</span>
-              <span id="pPercent" class="text-rose-400 font-semibold">0%</span>
+        <!-- 3 карточки макронутриентов с векторными SVG-иллюстрациями -->
+        <div class="sm:col-span-7 grid grid-cols-3 gap-2.5">
+          <!-- Белки -->
+          <div class="liquid-pill rounded-2xl p-2.5">
+            <div class="flex justify-between items-center text-[11px] text-slate-200">
+              <span class="flex items-center gap-1 font-medium">
+                <svg class="w-3.5 h-3.5 text-rose-400 svg-glow-rose" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15.5 6.5c2.5 2.5 2.5 6.5 0 9l-4 4c-2.5 2.5-6.5 2.5-9 0s-2.5-6.5 0-9l4-4c2.5-2.5 6.5-2.5 9 0z"/><circle cx="11" cy="11" r="2"/></svg>
+                Белки
+              </span>
+              <span id="pPercent" class="text-rose-300 font-bold">0%</span>
             </div>
             <div class="flex items-baseline gap-1 my-1">
-              <span id="pCurrent" class="text-base font-bold text-white">0</span>
-              <span class="text-[10px] text-slate-400">/ <span id="pTarget">140</span>г</span>
+              <span id="pCurrent" class="text-base font-extrabold text-white">0</span>
+              <span class="text-[10px] text-slate-300">/ <span id="pTarget">140</span>г</span>
             </div>
-            <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-              <div id="pBar" class="h-full bg-rose-500 transition-all duration-500" style="width: 0%"></div>
+            <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div id="pBar" class="h-full bg-gradient-to-r from-rose-500 to-pink-400 transition-all duration-500" style="width: 0%"></div>
             </div>
           </div>
 
-          <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-2.5">
-            <div class="flex justify-between text-[11px] text-slate-400">
-              <span>🥑 Жиры</span>
-              <span id="fPercent" class="text-amber-400 font-semibold">0%</span>
+          <!-- Жиры -->
+          <div class="liquid-pill rounded-2xl p-2.5">
+            <div class="flex justify-between items-center text-[11px] text-slate-200">
+              <span class="flex items-center gap-1 font-medium">
+                <svg class="w-3.5 h-3.5 text-amber-300 svg-glow-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                Жиры
+              </span>
+              <span id="fPercent" class="text-amber-300 font-bold">0%</span>
             </div>
             <div class="flex items-baseline gap-1 my-1">
-              <span id="fCurrent" class="text-base font-bold text-white">0</span>
-              <span class="text-[10px] text-slate-400">/ <span id="fTarget">65</span>г</span>
+              <span id="fCurrent" class="text-base font-extrabold text-white">0</span>
+              <span class="text-[10px] text-slate-300">/ <span id="fTarget">65</span>г</span>
             </div>
-            <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-              <div id="fBar" class="h-full bg-amber-500 transition-all duration-500" style="width: 0%"></div>
+            <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div id="fBar" class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 transition-all duration-500" style="width: 0%"></div>
             </div>
           </div>
 
-          <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-2.5">
-            <div class="flex justify-between text-[11px] text-slate-400">
-              <span>🌾 Углев.</span>
-              <span id="cPercent" class="text-sky-400 font-semibold">0%</span>
+          <!-- Углеводы -->
+          <div class="liquid-pill rounded-2xl p-2.5">
+            <div class="flex justify-between items-center text-[11px] text-slate-200">
+              <span class="flex items-center gap-1 font-medium">
+                <svg class="w-3.5 h-3.5 text-sky-300 svg-glow-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v20"/><path d="M17 5l-5 5-5-5"/><path d="M17 11l-5 5-5-5"/></svg>
+                Углев.
+              </span>
+              <span id="cPercent" class="text-sky-300 font-bold">0%</span>
             </div>
             <div class="flex items-baseline gap-1 my-1">
-              <span id="cCurrent" class="text-base font-bold text-white">0</span>
-              <span class="text-[10px] text-slate-400">/ <span id="cTarget">200</span>г</span>
+              <span id="cCurrent" class="text-base font-extrabold text-white">0</span>
+              <span class="text-[10px] text-slate-300">/ <span id="cTarget">200</span>г</span>
             </div>
-            <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-              <div id="cBar" class="h-full bg-sky-500 transition-all duration-500" style="width: 0%"></div>
+            <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div id="cBar" class="h-full bg-gradient-to-r from-sky-500 to-cyan-300 transition-all duration-500" style="width: 0%"></div>
             </div>
           </div>
         </div>
@@ -391,20 +453,32 @@
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
         <!-- Блок поиска и добавления еды -->
-        <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 h-fit space-y-3">
+        <div class="lg:col-span-5 liquid-glass rounded-3xl p-4 h-fit space-y-3">
           <div class="flex items-center justify-between">
-            <h2 class="font-bold text-sm text-white">➕ Добавить еду</h2>
-            <button onclick="switchTab('ai')" class="btn-spring text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
-              ✨ ИИ по фото / тексту
+            <h2 class="font-bold text-sm text-white flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-300 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Добавить еду</span>
+            </h2>
+            <button onclick="switchTab('ai')" class="btn-spring liquid-pill text-[11px] px-2.5 py-1 rounded-xl text-emerald-300 font-semibold flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 svg-glow-purple text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/></svg>
+              <span>ИИ-сканер</span>
             </button>
           </div>
 
-          <!-- Выбор приёма пищи кнопками -->
-          <div class="grid grid-cols-4 gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 text-xs">
-            <button type="button" onclick="selectMealType('breakfast')" id="mealBtn-breakfast" class="btn-spring py-1.5 rounded-lg font-semibold bg-emerald-500 text-slate-950">🍳 Завтр.</button>
-            <button type="button" onclick="selectMealType('lunch')" id="mealBtn-lunch" class="btn-spring py-1.5 rounded-lg font-medium text-slate-300">🍲 Обед</button>
-            <button type="button" onclick="selectMealType('dinner')" id="mealBtn-dinner" class="btn-spring py-1.5 rounded-lg font-medium text-slate-300">🥗 Ужин</button>
-            <button type="button" onclick="selectMealType('snack')" id="mealBtn-snack" class="btn-spring py-1.5 rounded-lg font-medium text-slate-300">🍎 Перек.</button>
+          <!-- Выбор приёма пищи с векторными иконками -->
+          <div class="grid grid-cols-4 gap-1 liquid-pill p-1 rounded-2xl text-xs">
+            <button type="button" onclick="selectMealType('breakfast')" id="mealBtn-breakfast" class="btn-spring py-1.5 rounded-xl font-semibold liquid-btn-primary flex items-center justify-center gap-1">
+              <span>Завтр.</span>
+            </button>
+            <button type="button" onclick="selectMealType('lunch')" id="mealBtn-lunch" class="btn-spring py-1.5 rounded-xl font-medium text-slate-200 flex items-center justify-center gap-1">
+              <span>Обед</span>
+            </button>
+            <button type="button" onclick="selectMealType('dinner')" id="mealBtn-dinner" class="btn-spring py-1.5 rounded-xl font-medium text-slate-200 flex items-center justify-center gap-1">
+              <span>Ужин</span>
+            </button>
+            <button type="button" onclick="selectMealType('snack')" id="mealBtn-snack" class="btn-spring py-1.5 rounded-xl font-medium text-slate-200 flex items-center justify-center gap-1">
+              <span>Перек.</span>
+            </button>
           </div>
 
           <!-- Поле живого поиска -->
@@ -415,25 +489,25 @@
               autocomplete="off"
               autocorrect="off"
               spellcheck="false"
-              placeholder="🔍 Начни вводить: творог, банан, борщ..."
-              class="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-xl pl-3 pr-8 py-2.5 text-xs sm:text-sm text-white outline-none transition"
+              placeholder="Начни вводить: творог, банан, борщ..."
+              class="liquid-input w-full rounded-2xl pl-3.5 pr-8 py-2.5 text-xs sm:text-sm text-white"
             />
-            <button type="button" id="clearSearchBtn" onclick="clearFoodSearch()" class="hidden absolute right-2.5 top-2.5 text-slate-400 hover:text-white text-xs">✕</button>
+            <button type="button" id="clearSearchBtn" onclick="clearFoodSearch()" class="hidden absolute right-3 top-2.5 text-slate-300 hover:text-white text-xs">✕</button>
           </div>
 
-          <div class="flex items-center justify-between text-[11px] text-slate-400 px-0.5">
-            <span id="searchStatusText">Проверенная база (110+ продуктов + Онлайн)</span>
-            <span id="onlineSearchSpinner" class="hidden text-emerald-400 animate-pulse">⏳ поиск онлайн...</span>
+          <div class="flex items-center justify-between text-[11px] text-slate-300 px-0.5">
+            <span id="searchStatusText">База 110+ продуктов + Онлайн</span>
+            <span id="onlineSearchSpinner" class="hidden text-emerald-300 animate-pulse">поиск онлайн...</span>
           </div>
 
           <!-- Интерактивный список найденных продуктов -->
           <div id="foodSearchResults" class="space-y-1.5 max-h-[210px] overflow-y-auto pr-1"></div>
 
           <!-- Карточка выбранного продукта и выбор граммов -->
-          <div class="p-3 rounded-xl bg-slate-800/70 border border-slate-700/70 space-y-2.5">
+          <div class="p-3 rounded-2xl liquid-pill space-y-2.5">
             <div class="flex items-center justify-between gap-2">
               <div id="selectedFoodTitle" class="text-xs font-bold text-white truncate">Куриная грудка (филе)</div>
-              <div id="quickPreviewKcal" class="text-xs font-extrabold text-emerald-400 whitespace-nowrap">248 ккал</div>
+              <div id="quickPreviewKcal" class="text-xs font-extrabold text-emerald-300 whitespace-nowrap">248 ккал</div>
             </div>
 
             <div class="flex items-center gap-1.5">
@@ -444,87 +518,91 @@
                 min="1"
                 max="3000"
                 oninput="updateQuickPreview()"
-                class="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-bold text-white"
+                class="liquid-input w-24 rounded-xl px-2.5 py-1.5 text-sm font-bold text-white"
               />
-              <span class="text-xs text-slate-400 mr-auto">г</span>
-              <button type="button" onclick="setQuickGrams(50)" class="btn-spring px-2 py-1 text-[11px] bg-slate-900 rounded-lg border border-slate-700 text-slate-300">50г</button>
-              <button type="button" onclick="setQuickGrams(100)" class="btn-spring px-2 py-1 text-[11px] bg-slate-900 rounded-lg border border-slate-700 text-slate-300">100г</button>
-              <button type="button" onclick="setQuickGrams(200)" class="btn-spring px-2 py-1 text-[11px] bg-slate-900 rounded-lg border border-slate-700 text-slate-300">200г</button>
+              <span class="text-xs text-slate-300 mr-auto">г</span>
+              <button type="button" onclick="setQuickGrams(50)" class="btn-spring liquid-pill px-2.5 py-1 text-[11px] rounded-lg text-slate-200">50г</button>
+              <button type="button" onclick="setQuickGrams(100)" class="btn-spring liquid-pill px-2.5 py-1 text-[11px] rounded-lg text-slate-200">100г</button>
+              <button type="button" onclick="setQuickGrams(200)" class="btn-spring liquid-pill px-2.5 py-1 text-[11px] rounded-lg text-slate-200">200г</button>
             </div>
           </div>
 
-          <button type="button" onclick="addSelectedFoodToDiary()" class="btn-spring w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/15">
-            ✅ Записать в дневник
+          <button type="button" onclick="addSelectedFoodToDiary()" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5">
+            <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Записать в дневник</span>
           </button>
         </div>
 
         <!-- Список приёмов пищи за день -->
-        <div class="lg:col-span-7 space-y-2.5" id="mealsContainer"></div>
+        <div class="lg:col-span-7 space-y-3" id="mealsContainer"></div>
       </div>
 
       <!-- БЛОК: ИТОГИ ДНЯ И РЕКОМЕНДАЦИИ ИИ -->
-      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/25 border border-emerald-500/30 rounded-2xl p-4 shadow-xl space-y-3.5">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-          <div class="flex items-center gap-2">
-            <span class="text-lg">📊</span>
+      <div class="liquid-glass rounded-3xl p-4 sm:p-5 space-y-3.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl liquid-pill flex items-center justify-center">
+              <svg class="w-5 h-5 text-emerald-300 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+            </div>
             <div>
               <div class="flex items-center gap-2">
                 <h2 class="font-bold text-sm text-white">Итоги дня и рекомендации ИИ</h2>
-                <span id="dayScoreBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span id="dayScoreBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                   Оценка: —/10
                 </span>
               </div>
-              <p class="text-[11px] text-slate-400">Анализ твоего рациона, белка и реального дефицита</p>
+              <p class="text-[11px] text-slate-300">Анализ твоего рациона, белка и реального дефицита</p>
             </div>
           </div>
 
-          <button onclick="generateDailyAIReview()" id="btnGenerateReview" class="btn-spring px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/15">
-            ✨ Разбор дня от ИИ
+          <button onclick="generateDailyAIReview()" id="btnGenerateReview" class="btn-spring liquid-btn-primary px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/></svg>
+            <span>Разбор дня от ИИ</span>
           </button>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-2.5">
-            <div class="text-[10px] text-slate-400">Калории</div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div class="liquid-pill rounded-2xl p-2.5">
+            <div class="text-[10px] text-slate-300">Калории</div>
             <div id="summaryCalStatus" class="text-xs font-bold text-white mt-0.5">Нет записей</div>
-            <div id="summaryCalSub" class="text-[10px] text-slate-400">Добавь еду</div>
+            <div id="summaryCalSub" class="text-[10px] text-slate-300">Добавь еду</div>
           </div>
-          <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-2.5">
-            <div class="text-[10px] text-slate-400">Белок</div>
+          <div class="liquid-pill rounded-2xl p-2.5">
+            <div class="text-[10px] text-slate-300">Белок</div>
             <div id="summaryProteinStatus" class="text-xs font-bold text-white mt-0.5">0 г</div>
-            <div id="summaryProteinSub" class="text-[10px] text-slate-400">Мышцы и сытость</div>
+            <div id="summaryProteinSub" class="text-[10px] text-slate-300">Мышцы и сытость</div>
           </div>
-          <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-2.5">
-            <div class="text-[10px] text-slate-400">Баланс энергии</div>
-            <div id="summaryRealDeficit" class="text-xs font-bold text-emerald-400 mt-0.5">0 ккал</div>
-            <div id="summaryRealDeficitSub" class="text-[10px] text-slate-400">С учётом активности</div>
+          <div class="liquid-pill rounded-2xl p-2.5">
+            <div class="text-[10px] text-slate-300">Баланс энергии</div>
+            <div id="summaryRealDeficit" class="text-xs font-bold text-emerald-300 mt-0.5">0 ккал</div>
+            <div id="summaryRealDeficitSub" class="text-[10px] text-slate-300">С учётом активности</div>
           </div>
-          <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-2.5">
-            <div class="text-[10px] text-slate-400">Вода и шаги</div>
-            <div id="summaryHabitsStatus" class="text-xs font-bold text-sky-400 mt-0.5">0 мл • 0 шаг.</div>
-            <div id="summaryHabitsSub" class="text-[10px] text-slate-400">Режим дня</div>
+          <div class="liquid-pill rounded-2xl p-2.5">
+            <div class="text-[10px] text-slate-300">Вода и шаги</div>
+            <div id="summaryHabitsStatus" class="text-xs font-bold text-cyan-300 mt-0.5">0 мл • 0 шаг.</div>
+            <div id="summaryHabitsSub" class="text-[10px] text-slate-300">Режим дня</div>
           </div>
         </div>
 
         <!-- Быстрые алгоритмические подсказки -->
-        <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3">
-          <ul id="instantTipsList" class="space-y-1 text-xs text-slate-300 list-disc list-inside"></ul>
+        <div class="liquid-pill rounded-2xl p-3">
+          <ul id="instantTipsList" class="space-y-1 text-xs text-slate-200 list-disc list-inside"></ul>
         </div>
 
         <!-- Разбор от ИИ -->
-        <div id="aiDailyReviewBox" class="hidden bg-slate-800/80 border border-emerald-500/40 rounded-xl p-3.5 space-y-2.5 animate-card">
+        <div id="aiDailyReviewBox" class="hidden liquid-pill rounded-2xl p-3.5 space-y-2.5 animate-card border-emerald-400/40">
           <div class="flex items-center justify-between">
-            <span class="font-bold text-xs text-emerald-300">🤖 Персональный совет ИИ-нутрициолога</span>
-            <span id="aiReviewTime" class="text-[10px] text-slate-400"></span>
+            <span class="font-bold text-xs text-emerald-300">Персональный совет ИИ-нутрициолога</span>
+            <span id="aiReviewTime" class="text-[10px] text-slate-300"></span>
           </div>
           <p id="aiReviewVerdict" class="text-xs text-slate-100 leading-relaxed"></p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
-            <div class="bg-slate-900/90 border border-slate-700/70 rounded-xl p-2.5">
-              <div class="text-[11px] font-bold text-emerald-400 mb-1">🍽️ Что съесть дальше / на ужин:</div>
+            <div class="bg-slate-950/60 border border-white/10 rounded-xl p-2.5">
+              <div class="text-[11px] font-bold text-emerald-300 mb-1">Что съесть дальше / на ужин:</div>
               <p id="aiReviewNextMeal" class="text-xs text-slate-200"></p>
             </div>
-            <div class="bg-slate-900/90 border border-slate-700/70 rounded-xl p-2.5">
-              <div class="text-[11px] font-bold text-sky-400 mb-1">🎯 Рекомендации:</div>
+            <div class="bg-slate-950/60 border border-white/10 rounded-xl p-2.5">
+              <div class="text-[11px] font-bold text-cyan-300 mb-1">Рекомендации:</div>
               <ul id="aiReviewBullets" class="space-y-1 text-xs text-slate-200 list-disc list-inside"></ul>
             </div>
           </div>
@@ -536,160 +614,154 @@
     <!-- ВКЛАДКА 2: ИИ-СКАНЕР С HUD-ПРИЦЕЛОМ И ЛАЗЕРОМ -->
     <!-- ========================================== -->
     <section id="tab-ai" class="hidden space-y-4 animate-card">
-      <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-1.5 rounded-2xl max-w-md mx-auto">
-        <button onclick="switchAiMode('text')" id="aiModeBtn-text" class="btn-spring flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950">
-          ✍️ Описать текстом
+      <div class="flex items-center justify-between liquid-glass p-1.5 rounded-2xl max-w-md mx-auto">
+        <button onclick="switchAiMode('text')" id="aiModeBtn-text" class="btn-spring flex-1 py-2 rounded-xl text-xs font-bold liquid-btn-primary">
+          Описать текстом
         </button>
-        <button onclick="switchAiMode('photo')" id="aiModeBtn-photo" class="btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-300">
-          📸 Распознать по фото
+        <button onclick="switchAiMode('photo')" id="aiModeBtn-photo" class="btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-200">
+          Распознать по фото
         </button>
       </div>
 
       <!-- РЕЖИМ 1: РАСЧЁТ БЛЮДА ПО ТЕКСТУ -->
-      <div id="aiSubTab-text" class="bg-slate-900 border border-slate-800 rounded-2xl p-4 max-w-xl mx-auto space-y-3.5 animate-card">
+      <div id="aiSubTab-text" class="liquid-glass rounded-3xl p-4 sm:p-5 max-w-xl mx-auto space-y-3.5 animate-card">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="font-bold text-sm sm:text-base text-white">✍️ Опиши, что съел, своими словами</h2>
-            <p class="text-[11px] text-slate-400">ИИ сам посчитает калории, БЖУ и вес порции</p>
+            <h2 class="font-bold text-sm sm:text-base text-white">Опиши блюдо своими словами</h2>
+            <p class="text-[11px] text-slate-300">ИИ сам посчитает калории, БЖУ и вес порции</p>
           </div>
-          <button onclick="openSettingsModal()" class="btn-spring text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700">🔑 Ключ</button>
+          <button onclick="openSettingsModal()" class="btn-spring liquid-pill text-xs px-2.5 py-1 rounded-xl text-emerald-300">Ключ ИИ</button>
         </div>
 
-        <textarea id="aiTextFoodPrompt" rows="3" placeholder="Например: бутерброд с тунцом и яйцом&#10;Или: тарелка борща со сметаной и 2 куска хлеба" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs sm:text-sm text-white focus:border-emerald-500 outline-none"></textarea>
+        <textarea id="aiTextFoodPrompt" rows="3" placeholder="Например: бутерброд с тунцом и яйцом&#10;Или: тарелка борща со сметаной и 2 куска хлеба" class="liquid-input w-full rounded-2xl p-3 text-xs sm:text-sm text-white"></textarea>
 
-        <button onclick="analyzeTextDishWithAI()" id="btnAnalyzeTextAI" class="btn-spring w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm">
-          🤖 Рассчитать КБЖУ через ИИ
+        <button onclick="analyzeTextDishWithAI()" id="btnAnalyzeTextAI" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-2xl font-bold text-xs sm:text-sm">
+          Рассчитать КБЖУ через ИИ
         </button>
 
-        <div id="aiTextResultBox" class="hidden p-3.5 rounded-xl bg-slate-800/90 border border-emerald-500/30 space-y-3 animate-card">
+        <div id="aiTextResultBox" class="hidden p-3.5 rounded-2xl liquid-pill space-y-3 animate-card">
           <div class="flex items-start justify-between gap-2">
             <div>
               <div id="aiTextResName" class="font-bold text-sm text-white">Блюдо</div>
-              <div id="aiTextResPer100" class="text-[11px] text-slate-400">На 100 г: 0 ккал</div>
+              <div id="aiTextResPer100" class="text-[11px] text-slate-300">На 100 г: 0 ккал</div>
             </div>
             <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">Готово</span>
           </div>
 
-          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-700/70">
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Вес порции (г)</label>
-              <input type="number" id="aiTextPortionGrams" value="250" min="1" max="3000" oninput="updateAiTextPortionPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white" />
+              <label class="block text-[11px] text-slate-300 mb-1">Вес порции (г)</label>
+              <input type="number" id="aiTextPortionGrams" value="250" min="1" max="3000" oninput="updateAiTextPortionPreview()" class="liquid-input w-full rounded-xl px-2.5 py-1.5 text-xs font-bold text-white" />
             </div>
-            <div class="bg-slate-900/80 rounded-lg p-2 flex flex-col justify-center">
-              <div id="aiTextPortionKcal" class="text-sm font-extrabold text-emerald-400">0 ккал</div>
+            <div class="bg-slate-950/60 rounded-xl p-2 flex flex-col justify-center">
+              <div id="aiTextPortionKcal" class="text-sm font-extrabold text-emerald-300">0 ккал</div>
               <div id="aiTextPortionMacros" class="text-[10px] text-slate-300">Б: 0 • Ж: 0 • У: 0</div>
             </div>
           </div>
 
           <div class="flex gap-2">
-            <select id="aiTextMealSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
-              <option value="breakfast">🍳 Завтрак</option>
-              <option value="lunch" selected>🍲 Обед</option>
-              <option value="dinner">🥗 Ужин</option>
-              <option value="snack">🍎 Перекус</option>
+            <select id="aiTextMealSelect" class="liquid-input rounded-xl px-3 py-2 text-xs text-white">
+              <option value="breakfast" class="bg-slate-900">Завтрак</option>
+              <option value="lunch" selected class="bg-slate-900">Обед</option>
+              <option value="dinner" class="bg-slate-900">Ужин</option>
+              <option value="snack" class="bg-slate-900">Перекус</option>
             </select>
-            <button onclick="addAiTextFoodDirectlyToDiary()" class="btn-spring flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs">
-              ✅ Записать в дневник
+            <button onclick="addAiTextFoodDirectlyToDiary()" class="btn-spring liquid-btn-primary flex-1 py-2.5 rounded-xl font-bold text-xs">
+              Записать в дневник
             </button>
           </div>
         </div>
       </div>
 
-      <!-- РЕЖИМ 2: РАСПОЗНАВАНИЕ ПО ФОТОГРАФИИ (С HUD-ЛАЗЕРОМ) -->
+      <!-- РЕЖИМ 2: РАСПОЗНАВАНИЕ ПО ФОТОГРАФИИ -->
       <div id="aiSubTab-photo" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4 animate-card">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <div class="liquid-glass rounded-3xl p-4 space-y-3">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="font-bold text-sm text-white">📸 Сфотографируй тарелку</h2>
-              <p class="text-[10px] text-slate-400">Снимок сохраняется сразу внутри приложения</p>
+              <h2 class="font-bold text-sm text-white">Сфотографируй тарелку</h2>
+              <p class="text-[10px] text-slate-300">Снимок сохраняется сразу внутри приложения</p>
             </div>
             <div class="flex items-center gap-1.5">
-              <button type="button" id="btnSwitchCam" onclick="switchCameraFacing()" class="hidden btn-spring text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700" title="Переключить камеру">
-                🔄 Камера
+              <button type="button" id="btnSwitchCam" onclick="switchCameraFacing()" class="hidden btn-spring liquid-pill text-xs px-2.5 py-1 rounded-xl text-slate-200">
+                Камера
               </button>
-              <button onclick="openSettingsModal()" class="btn-spring text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 border border-slate-700">🔑 Ключ</button>
+              <button onclick="openSettingsModal()" class="btn-spring liquid-pill text-xs px-2.5 py-1 rounded-xl text-emerald-300">Ключ</button>
             </div>
           </div>
 
           <!-- Область видоискателя камеры с кибер-прицелом и лазером -->
-          <div class="relative rounded-2xl border border-slate-700/80 bg-slate-950/90 overflow-hidden min-h-[230px] flex flex-col items-center justify-center">
-            <!-- Уголки кибер-прицела (HUD) -->
+          <div class="relative rounded-2xl border border-white/15 bg-slate-950/75 overflow-hidden min-h-[230px] flex flex-col items-center justify-center">
             <div class="hud-corner top-2.5 left-2.5 border-t-2 border-l-2 rounded-tl-md"></div>
             <div class="hud-corner top-2.5 right-2.5 border-t-2 border-r-2 rounded-tr-md"></div>
             <div class="hud-corner bottom-2.5 left-2.5 border-b-2 border-l-2 rounded-bl-md"></div>
             <div class="hud-corner bottom-2.5 right-2.5 border-b-2 border-r-2 rounded-br-md"></div>
 
-            <!-- Анимированный лазер сканирования (включается при работе камеры или ИИ-распознавании) -->
             <div id="scannerLaserLine" class="scanner-laser hidden"></div>
 
-            <!-- Прямой видеопоток с камеры -->
             <video id="cameraVideoStream" autoplay playsinline muted class="hidden w-full max-h-[280px] object-cover bg-black"></video>
-
-            <!-- Скрытый canvas для захвата кадра -->
             <canvas id="cameraCaptureCanvas" class="hidden"></canvas>
-
-            <!-- Превью готового снимка -->
             <img id="photoPreviewImg" class="hidden w-full max-h-[280px] object-cover" alt="Фото блюда" />
 
-            <!-- Заглушка до включения камеры -->
-            <div id="photoPlaceholder" class="p-4 text-center space-y-1.5">
-              <div class="text-3xl">🍽️</div>
+            <!-- Векторная иллюстрация камеры до включения -->
+            <div id="photoPlaceholder" class="p-4 text-center space-y-2">
+              <div class="w-12 h-12 rounded-2xl liquid-pill mx-auto flex items-center justify-center">
+                <svg class="w-6 h-6 text-emerald-300 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
               <div class="text-xs font-medium text-slate-200">Нажми «Включить камеру» и наведи прицел на еду</div>
               <p class="text-[11px] text-slate-400">Фото сразу попадёт в ИИ-сканер без сохранения в галерею</p>
             </div>
           </div>
 
-          <!-- Кнопки управления прямой камерой -->
           <div class="flex flex-wrap gap-2">
-            <button type="button" id="btnStartCamera" onclick="startLiveCamera()" class="btn-spring flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs text-center shadow-md shadow-emerald-500/10">
-              📷 Включить камеру
+            <button type="button" id="btnStartCamera" onclick="startLiveCamera()" class="btn-spring liquid-btn-primary flex-1 py-2.5 px-3 rounded-xl font-bold text-xs text-center">
+              Включить камеру
             </button>
 
-            <button type="button" id="btnTakeSnap" onclick="capturePhotoFromStream()" class="hidden btn-spring flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs text-center shadow-lg shadow-emerald-500/20">
-              ⚡ Сделать снимок
+            <button type="button" id="btnTakeSnap" onclick="capturePhotoFromStream()" class="hidden btn-spring liquid-btn-primary flex-1 py-2.5 px-3 rounded-xl font-extrabold text-xs text-center">
+              Сделать снимок
             </button>
 
-            <button type="button" id="btnRetakePhoto" onclick="startLiveCamera()" class="hidden btn-spring py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs">
-              🔄 Переснять
+            <button type="button" id="btnRetakePhoto" onclick="startLiveCamera()" class="hidden btn-spring liquid-pill py-2.5 px-3 rounded-xl text-slate-200 font-semibold text-xs">
+              Переснять
             </button>
 
-            <label class="btn-spring py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium text-xs text-center cursor-pointer" title="Загрузить готовое фото из галереи">
-              🖼️ Из галереи
+            <label class="btn-spring liquid-pill py-2.5 px-3 rounded-xl text-slate-200 font-medium text-xs text-center cursor-pointer">
+              Из галереи
               <input type="file" accept="image/*" onchange="handlePhotoUpload(event)" class="hidden" />
             </label>
 
-            <button type="button" onclick="analyzeCurrentPhotoWithAI()" id="btnAnalyzeAI" class="btn-spring py-2.5 px-4 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/30 font-semibold text-xs">
-              ✨ Распознать
+            <button type="button" onclick="analyzeCurrentPhotoWithAI()" id="btnAnalyzeAI" class="btn-spring liquid-pill py-2.5 px-4 rounded-xl text-emerald-300 border-emerald-400/40 font-semibold text-xs">
+              Распознать
             </button>
           </div>
 
-          <input type="text" id="aiCustomPrompt" placeholder="Уточнение (напр.: без масла, внутри индейка)..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+          <input type="text" id="aiCustomPrompt" placeholder="Уточнение (напр.: без масла, внутри индейка)..." class="liquid-input w-full rounded-xl px-3 py-2 text-xs text-white" />
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+        <div class="liquid-glass rounded-3xl p-4 flex flex-col justify-between space-y-3">
           <div class="space-y-2.5">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div class="flex items-center justify-between border-b border-white/10 pb-2">
               <div>
                 <h3 id="recognizedDishTitle" class="font-bold text-sm text-white">Состав тарелки</h3>
-                <p id="recognizedDishStatus" class="text-[11px] text-slate-400">Вес можно подправить ползунком</p>
+                <p id="recognizedDishStatus" class="text-[11px] text-slate-300">Вес можно подправить ползунком</p>
               </div>
               <div class="text-right">
-                <div id="photoTotalKcal" class="text-base font-extrabold text-emerald-400">0 ккал</div>
-                <div id="photoTotalMacros" class="text-[10px] text-slate-400">Б: 0 • Ж: 0 • У: 0</div>
+                <div id="photoTotalKcal" class="text-base font-extrabold text-emerald-300">0 ккал</div>
+                <div id="photoTotalMacros" class="text-[10px] text-slate-300">Б: 0 • Ж: 0 • У: 0</div>
               </div>
             </div>
             <div id="photoIngredientsList" class="space-y-2 max-h-[250px] overflow-y-auto pr-1"></div>
           </div>
 
-          <div class="pt-2 border-t border-slate-800 flex gap-2">
-            <select id="photoTargetMeal" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
-              <option value="breakfast">🍳 Завтрак</option>
-              <option value="lunch" selected>🍲 Обед</option>
-              <option value="dinner">🥗 Ужин</option>
-              <option value="snack">🍎 Перекус</option>
+          <div class="pt-2 border-t border-white/10 flex gap-2">
+            <select id="photoTargetMeal" class="liquid-input rounded-xl px-3 py-2 text-xs text-white">
+              <option value="breakfast" class="bg-slate-900">Завтрак</option>
+              <option value="lunch" selected class="bg-slate-900">Обед</option>
+              <option value="dinner" class="bg-slate-900">Ужин</option>
+              <option value="snack" class="bg-slate-900">Перекус</option>
             </select>
-            <button onclick="savePhotoDishToDiary()" class="btn-spring flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs">
-              ✅ Добавить в дневник
+            <button onclick="savePhotoDishToDiary()" class="btn-spring liquid-btn-primary flex-1 py-2.5 rounded-xl font-bold text-xs">
+              Добавить в дневник
             </button>
           </div>
         </div>
@@ -697,117 +769,116 @@
     </section>
 
     <!-- ========================================== -->
-    <!-- ВКЛАДКА 3: ПРОГРЕСС (ВЕС + АКТИВНОСТЬ С ЧАСОВ) -->
+    <!-- ВКЛАДКА 3: ПРОГРЕСС С ВЕКТОРНЫМ ГРАФИКОМ ВЕСА -->
     <!-- ========================================== -->
     <section id="tab-progress" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4 animate-card">
 
-      <!-- БЛОК 1: ЗАПИСЬ ВЕСА И ПРОГРЕСС ЦЕЛИ -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4 h-fit">
+      <!-- БЛОК 1: ЗАПИСЬ ВЕСА И СВЕТЯЩИЙСЯ SVG-ГРАФИК -->
+      <div class="liquid-glass rounded-3xl p-4 space-y-4 h-fit">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="font-bold text-sm sm:text-base text-white">⚖️ Динамика веса</h2>
-            <p id="weightGoalStatus" class="text-[11px] text-emerald-400 font-medium"></p>
+            <h2 class="font-bold text-sm sm:text-base text-white">Динамика веса</h2>
+            <p id="weightGoalStatus" class="text-[11px] text-emerald-300 font-medium"></p>
           </div>
         </div>
 
         <div class="grid grid-cols-3 gap-2 text-center">
-          <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-2.5">
-            <div class="text-[10px] text-slate-400">Старт</div>
+          <div class="liquid-pill rounded-2xl p-2.5">
+            <div class="text-[10px] text-slate-300">Старт</div>
             <div id="statStartWeight" class="text-sm font-bold text-white mt-0.5">— кг</div>
           </div>
-          <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-2.5">
-            <div class="text-[10px] text-slate-400">Сейчас</div>
-            <div id="statCurrentWeight" class="text-sm font-extrabold text-emerald-400 mt-0.5">— кг</div>
+          <div class="liquid-pill rounded-2xl p-2.5">
+            <div class="text-[10px] text-slate-300">Сейчас</div>
+            <div id="statCurrentWeight" class="text-sm font-extrabold text-emerald-300 mt-0.5">— кг</div>
           </div>
-          <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-2.5">
-            <div class="text-[10px] text-slate-400">Результат</div>
-            <div id="statTotalDiff" class="text-sm font-bold text-sky-400 mt-0.5">0.0 кг</div>
-          </div>
-        </div>
-
-        <div>
-          <div class="flex justify-between text-[11px] text-slate-400 mb-1">
-            <span>Прогресс к цели</span>
-            <span id="weightProgressPct">0%</span>
-          </div>
-          <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-            <div id="weightProgressBar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500" style="width: 0%"></div>
+          <div class="liquid-pill rounded-2xl p-2.5">
+            <div class="text-[10px] text-slate-300">Результат</div>
+            <div id="statTotalDiff" class="text-sm font-bold text-cyan-300 mt-0.5">0.0 кг</div>
           </div>
         </div>
 
-        <div class="p-3 rounded-xl bg-slate-800/40 border border-slate-800 space-y-2.5">
+        <!-- ВЕКТОРНЫЙ НЕОНОВЫЙ ГРАФИК КРИВОЙ ВЕСА (SVG) -->
+        <div class="liquid-pill rounded-2xl p-3">
+          <div class="flex justify-between text-[11px] text-slate-300 mb-1.5">
+            <span>График замеров</span>
+            <span id="weightProgressPct" class="text-emerald-300 font-bold">0% к цели</span>
+          </div>
+          <div id="weightSvgChartBox" class="w-full h-28 flex items-center justify-center"></div>
+          <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mt-2">
+            <div id="weightProgressBar" class="h-full bg-gradient-to-r from-emerald-400 to-cyan-300 transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-2xl liquid-pill space-y-2.5">
           <div class="text-xs font-semibold text-white">Записать новое взвешивание:</div>
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-[10px] text-slate-400 mb-0.5">Новый вес (кг)</label>
-              <input type="number" step="0.1" id="weightValueInput" placeholder="79.5" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white" />
+              <label class="block text-[10px] text-slate-300 mb-0.5">Новый вес (кг)</label>
+              <input type="number" step="0.1" id="weightValueInput" placeholder="79.5" class="liquid-input w-full rounded-xl px-2.5 py-1.5 text-xs font-bold text-white" />
             </div>
             <div>
-              <label class="block text-[10px] text-slate-400 mb-0.5">Целевой вес (кг)</label>
-              <input type="number" step="0.5" id="weightTargetInput" onchange="updateTargetWeightOnly()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-emerald-400" />
+              <label class="block text-[10px] text-slate-300 mb-0.5">Целевой вес (кг)</label>
+              <input type="number" step="0.5" id="weightTargetInput" onchange="updateTargetWeightOnly()" class="liquid-input w-full rounded-xl px-2.5 py-1.5 text-xs font-bold text-emerald-300" />
             </div>
           </div>
-          <button onclick="addWeightEntry()" class="btn-spring w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs">
-            ✅ Сохранить вес и пересчитать норму
+          <button onclick="addWeightEntry()" class="btn-spring liquid-btn-primary w-full py-2 rounded-xl font-bold text-xs">
+            Сохранить вес и пересчитать норму
           </button>
         </div>
 
         <div>
-          <h3 class="text-xs font-bold text-slate-400 mb-1.5">История замеров:</h3>
-          <div id="weightHistoryList" class="divide-y divide-slate-800 max-h-[180px] overflow-y-auto pr-1"></div>
+          <h3 class="text-xs font-bold text-slate-300 mb-1.5">История замеров:</h3>
+          <div id="weightHistoryList" class="divide-y divide-white/10 max-h-[160px] overflow-y-auto pr-1"></div>
         </div>
       </div>
 
       <!-- БЛОК 2: АКТИВНОСТЬ И ЧАСЫ -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-4 h-fit">
+      <div class="liquid-glass rounded-3xl p-4 space-y-4 h-fit">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="font-bold text-sm sm:text-base text-white">⌚ Активность и Часы</h2>
-            <p class="text-[11px] text-slate-400">Шаги и сожжённые калории за <span id="activityDateLabel" class="text-emerald-400 font-semibold">сегодня</span></p>
+            <h2 class="font-bold text-sm sm:text-base text-white">Активность и Часы</h2>
+            <p class="text-[11px] text-slate-300">Шаги и сожжённые калории за <span id="activityDateLabel" class="text-emerald-300 font-semibold">сегодня</span></p>
           </div>
         </div>
 
-        <!-- Шаги -->
         <div class="space-y-1.5">
           <div class="flex justify-between text-xs">
-            <span class="text-slate-300">👟 Шаги за день</span>
-            <span id="stepsGoalText" class="text-amber-400 font-semibold">0 / 10 000</span>
+            <span class="text-slate-200">Шаги за день</span>
+            <span id="stepsGoalText" class="text-amber-300 font-semibold">0 / 10 000</span>
           </div>
           <div class="flex gap-1.5">
-            <input type="number" id="actStepsInput" placeholder="0" oninput="saveActivityFromInputs()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white" />
-            <button onclick="quickAddSteps(1000)" class="btn-spring px-2.5 py-1 text-xs bg-slate-800 rounded-lg border border-slate-700 text-amber-300">+1к</button>
-            <button onclick="quickAddSteps(3000)" class="btn-spring px-2.5 py-1 text-xs bg-slate-800 rounded-lg border border-slate-700 text-amber-300">+3к</button>
+            <input type="number" id="actStepsInput" placeholder="0" oninput="saveActivityFromInputs()" class="liquid-input w-full rounded-xl px-3 py-2 text-xs font-bold text-white" />
+            <button onclick="quickAddSteps(1000)" class="btn-spring liquid-pill px-2.5 py-1 text-xs rounded-xl text-amber-300">+1к</button>
+            <button onclick="quickAddSteps(3000)" class="btn-spring liquid-pill px-2.5 py-1 text-xs rounded-xl text-amber-300">+3к</button>
           </div>
-          <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-            <div id="stepsProgressBar" class="h-full bg-amber-400 transition-all duration-500" style="width: 0%"></div>
+          <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div id="stepsProgressBar" class="h-full bg-gradient-to-r from-amber-400 to-orange-400 transition-all duration-500" style="width: 0%"></div>
           </div>
         </div>
 
-        <!-- Активные ккал и минуты -->
         <div class="grid grid-cols-2 gap-2.5">
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">🔥 Активные ккал (часы)</label>
-            <input type="number" id="actBurnedInput" placeholder="0" oninput="saveActivityFromInputs()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-orange-400" />
+            <label class="block text-[11px] text-slate-300 mb-1">Активные ккал (часы)</label>
+            <input type="number" id="actBurnedInput" placeholder="0" oninput="saveActivityFromInputs()" class="liquid-input w-full rounded-xl px-3 py-2 text-xs font-bold text-orange-300" />
           </div>
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">⏱️ Тренировка (мин)</label>
-            <input type="number" id="actMinutesInput" placeholder="0" oninput="saveActivityFromInputs()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white" />
+            <label class="block text-[11px] text-slate-300 mb-1">Тренировка (мин)</label>
+            <input type="number" id="actMinutesInput" placeholder="0" oninput="saveActivityFromInputs()" class="liquid-input w-full rounded-xl px-3 py-2 text-xs font-bold text-white" />
           </div>
         </div>
 
-        <input type="text" id="actNoteInput" placeholder="Заметка (напр.: Силовая в зале, кардио)..." oninput="saveActivityFromInputs()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+        <input type="text" id="actNoteInput" placeholder="Заметка (напр.: Силовая в зале, кардио)..." oninput="saveActivityFromInputs()" class="liquid-input w-full rounded-xl px-3 py-2 text-xs text-white" />
 
-        <!-- Оценка тренировки через ИИ -->
         <div class="flex gap-1.5 pt-1">
-          <input type="text" id="aiWorkoutPrompt" placeholder="🤖 Оценить через ИИ: 45 мин зал..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
-          <button onclick="estimateWorkoutWithAI()" id="btnAiWorkout" class="btn-spring px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold text-xs">
+          <input type="text" id="aiWorkoutPrompt" placeholder="Оценить через ИИ: 45 мин зал..." class="liquid-input flex-1 rounded-xl px-3 py-2 text-xs text-white" />
+          <button onclick="estimateWorkoutWithAI()" id="btnAiWorkout" class="btn-spring liquid-pill px-3 py-2 rounded-xl text-emerald-300 font-bold text-xs">
             Посчитать
           </button>
         </div>
 
-        <label class="flex items-start gap-2 p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/60 cursor-pointer">
+        <label class="flex items-start gap-2 p-2.5 rounded-2xl liquid-pill cursor-pointer">
           <input type="checkbox" id="addBurnedToTargetCheckbox" onchange="toggleBurnedToTarget(this.checked)" class="mt-0.5 rounded accent-emerald-500" />
-          <span class="text-[11px] text-slate-300">Прибавлять 50% сожжённых ккал к дневной норме еды</span>
+          <span class="text-[11px] text-slate-200">Прибавлять 50% сожжённых ккал к дневной норме еды</span>
         </label>
       </div>
     </section>
@@ -818,66 +889,64 @@
     <section id="tab-profile" class="hidden space-y-4 animate-card">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-        <!-- Параметры тела и формула Миффлина-Сан Жеора -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3.5 h-fit">
-          <h2 class="font-bold text-sm sm:text-base text-white">⚖️ Мои параметры и расчёт нормы</h2>
+        <div class="liquid-glass rounded-3xl p-4 space-y-3.5 h-fit">
+          <h2 class="font-bold text-sm sm:text-base text-white">Мои параметры и расчёт нормы</h2>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
             <div>
-              <label class="block text-slate-400 mb-1">Пол</label>
-              <select id="profGender" onchange="saveProfileAndRecalc()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-white">
-                <option value="male">Мужской</option>
-                <option value="female">Женский</option>
+              <label class="block text-slate-300 mb-1">Пол</label>
+              <select id="profGender" onchange="saveProfileAndRecalc()" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white">
+                <option value="male" class="bg-slate-900">Мужской</option>
+                <option value="female" class="bg-slate-900">Женский</option>
               </select>
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Возраст</label>
-              <input type="number" id="profAge" oninput="saveProfileAndRecalc()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-white" />
+              <label class="block text-slate-300 mb-1">Возраст</label>
+              <input type="number" id="profAge" oninput="saveProfileAndRecalc()" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white" />
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Рост (см)</label>
-              <input type="number" id="profHeight" oninput="saveProfileAndRecalc()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-white" />
+              <label class="block text-slate-300 mb-1">Рост (см)</label>
+              <input type="number" id="profHeight" oninput="saveProfileAndRecalc()" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white" />
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Вес (кг)</label>
-              <input type="number" step="0.1" id="profWeight" oninput="saveProfileAndRecalc()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-white" />
+              <label class="block text-slate-300 mb-1">Вес (кг)</label>
+              <input type="number" step="0.1" id="profWeight" oninput="saveProfileAndRecalc()" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white" />
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Активность</label>
-              <select id="profActivity" onchange="saveProfileAndRecalc()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-white">
-                <option value="1.2">Сидячая (1.2)</option>
-                <option value="1.375">Лёгкая (1.375)</option>
-                <option value="1.55">Средняя (1.55)</option>
-                <option value="1.725">Высокая (1.725)</option>
+              <label class="block text-slate-300 mb-1">Активность</label>
+              <select id="profActivity" onchange="saveProfileAndRecalc()" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white">
+                <option value="1.2" class="bg-slate-900">Сидячая (1.2)</option>
+                <option value="1.375" class="bg-slate-900">Лёгкая (1.375)</option>
+                <option value="1.55" class="bg-slate-900">Средняя (1.55)</option>
+                <option value="1.725" class="bg-slate-900">Высокая (1.725)</option>
               </select>
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Цель</label>
-              <select id="profGoal" onchange="saveProfileAndRecalc()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-white">
-                <option value="-20">Похудение (-20%)</option>
-                <option value="-15">Мягкий дефицит (-15%)</option>
-                <option value="0">Поддержание (0%)</option>
-                <option value="15">Набор (+15%)</option>
+              <label class="block text-slate-300 mb-1">Цель</label>
+              <select id="profGoal" onchange="saveProfileAndRecalc()" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white">
+                <option value="-20" class="bg-slate-900">Похудение (-20%)</option>
+                <option value="-15" class="bg-slate-900">Мягкий дефицит (-15%)</option>
+                <option value="0" class="bg-slate-900">Поддержание (0%)</option>
+                <option value="15" class="bg-slate-900">Набор (+15%)</option>
               </select>
             </div>
           </div>
-          <div id="calcResultSummary" class="p-3 rounded-xl bg-slate-800/70 border border-slate-700 text-xs text-slate-200 leading-relaxed"></div>
+          <div id="calcResultSummary" class="p-3 rounded-2xl liquid-pill text-xs text-slate-200 leading-relaxed"></div>
         </div>
 
-        <!-- Добавление своего продукта вручную -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 h-fit">
+        <div class="liquid-glass rounded-3xl p-4 space-y-3 h-fit">
           <div class="flex items-center justify-between">
-            <h2 class="font-bold text-sm text-white">🥦 Добавить свой продукт в базу (на 100 г)</h2>
-            <span id="foodsCountBadge" class="text-[11px] text-emerald-400 font-semibold"></span>
+            <h2 class="font-bold text-sm text-white">Добавить свой продукт в базу (на 100 г)</h2>
+            <span id="foodsCountBadge" class="text-[11px] text-emerald-300 font-semibold"></span>
           </div>
-          <input type="text" id="newFoodName" placeholder="Название продукта или блюда" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
+          <input type="text" id="newFoodName" placeholder="Название продукта или блюда" class="liquid-input w-full rounded-xl px-3 py-2 text-xs text-white" />
           <div class="grid grid-cols-3 gap-2">
-            <input type="number" step="0.1" id="newFoodP" placeholder="Белки (г)" class="bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white" />
-            <input type="number" step="0.1" id="newFoodF" placeholder="Жиры (г)" class="bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white" />
-            <input type="number" step="0.1" id="newFoodC" placeholder="Углев. (г)" class="bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white" />
+            <input type="number" step="0.1" id="newFoodP" placeholder="Белки (г)" class="liquid-input rounded-xl px-2.5 py-2 text-xs text-white" />
+            <input type="number" step="0.1" id="newFoodF" placeholder="Жиры (г)" class="liquid-input rounded-xl px-2.5 py-2 text-xs text-white" />
+            <input type="number" step="0.1" id="newFoodC" placeholder="Углев. (г)" class="liquid-input rounded-xl px-2.5 py-2 text-xs text-white" />
           </div>
-          <input type="number" id="newFoodKcal" placeholder="Ккал на 100г (если пусто — посчитается само)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" />
-          <button onclick="addCustomFood()" class="btn-spring w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs">
-            ➕ Сохранить продукт в базу
+          <input type="number" id="newFoodKcal" placeholder="Ккал на 100г (если пусто — посчитается само)" class="liquid-input w-full rounded-xl px-3 py-2 text-xs text-white" />
+          <button onclick="addCustomFood()" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-xl font-bold text-xs">
+            Сохранить продукт в базу
           </button>
         </div>
 
@@ -886,73 +955,136 @@
 
   </main>
 
-  <!-- МОДАЛЬНОЕ ОКНО: НАСТРОЙКИ ИИ И ОБЛАКА -->
-  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl animate-card">
+  <!-- МОДАЛЬНОЕ ОКНО: НАСТРОЙКИ ИИ -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 space-y-4 animate-card">
       <div class="flex items-center justify-between">
-        <h3 class="font-bold text-base text-white">⚙️ Настройки ИИ и Синхронизации</h3>
-        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white">✕</button>
+        <h3 class="font-bold text-base text-white">Настройки ИИ и Синхронизации</h3>
+        <button onclick="closeSettingsModal()" class="text-slate-300 hover:text-white">✕</button>
       </div>
 
       <div class="space-y-3 text-xs">
         <div>
-          <label class="block text-slate-300 font-semibold mb-1">1. Провайдер ИИ</label>
-          <select id="aiProviderSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white">
-            <option value="gemini">Google Gemini API (Автовыбор Flash)</option>
-            <option value="openrouter">OpenRouter API (Работает без VPN в РФ)</option>
+          <label class="block text-slate-200 font-semibold mb-1">1. Провайдер ИИ</label>
+          <select id="aiProviderSelect" class="liquid-input w-full rounded-xl px-3 py-2 text-white">
+            <option value="gemini" class="bg-slate-900">Google Gemini API (Автовыбор Flash)</option>
+            <option value="openrouter" class="bg-slate-900">OpenRouter API (Работает без VPN в РФ)</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-slate-300 font-semibold mb-1">API Ключ (AIzaSy... или sk-or-...)</label>
-          <input type="password" id="apiKeyInput" placeholder="Вставьте ваш API ключ..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          <label class="block text-slate-200 font-semibold mb-1">API Ключ (AIzaSy... или sk-or-...)</label>
+          <input type="password" id="apiKeyInput" placeholder="Вставьте ваш API ключ..." class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
         </div>
 
-        <hr class="border-slate-800" />
+        <hr class="border-white/10" />
 
         <div>
-          <label class="block text-slate-300 font-semibold mb-1">2. URL Firebase Realtime DB (необязательно)</label>
-          <input type="text" id="firebaseUrlInput" placeholder="https://your-project-default-rtdb.firebaseio.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white" />
+          <label class="block text-slate-200 font-semibold mb-1">2. URL Firebase Realtime DB (необязательно)</label>
+          <input type="text" id="firebaseUrlInput" placeholder="https://your-project-default-rtdb.firebaseio.com" class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
         </div>
       </div>
 
       <div class="flex justify-end gap-2 pt-2">
-        <button onclick="closeSettingsModal()" class="btn-spring px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300">Отмена</button>
-        <button onclick="saveSettings()" class="btn-spring px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">Сохранить</button>
+        <button onclick="closeSettingsModal()" class="btn-spring liquid-pill px-4 py-2 rounded-xl text-xs text-slate-200">Отмена</button>
+        <button onclick="saveSettings()" class="btn-spring liquid-btn-primary px-4 py-2 rounded-xl font-bold text-xs">Сохранить</button>
       </div>
     </div>
   </div>
 
   <!-- МОДАЛЬНОЕ ОКНО: БЭКАП -->
-  <div id="backupModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl animate-card">
+  <div id="backupModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 space-y-4 animate-card">
       <div class="flex items-center justify-between">
-        <h3 class="font-bold text-base text-white">💾 Бэкап и сброс</h3>
-        <button onclick="closeBackupModal()" class="text-slate-400 hover:text-white">✕</button>
+        <h3 class="font-bold text-base text-white">Бэкап и восстановление</h3>
+        <button onclick="closeBackupModal()" class="text-slate-300 hover:text-white">✕</button>
       </div>
 
       <div class="flex gap-2">
-        <button onclick="copyBackupToClipboard()" class="btn-spring flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">
-          📋 Скопировать базу
+        <button onclick="copyBackupToClipboard()" class="btn-spring liquid-btn-primary flex-1 py-2.5 px-3 rounded-xl font-bold text-xs">
+          Скопировать базу
         </button>
-        <button onclick="exportBackupFile()" class="btn-spring py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs">
-          ⬇️ Скачать .JSON
+        <button onclick="exportBackupFile()" class="btn-spring liquid-pill py-2.5 px-3 rounded-xl text-slate-200 text-xs">
+          Скачать .JSON
         </button>
       </div>
 
       <div>
-        <label class="block text-xs text-slate-400 mb-1">Восстановить из скопированного кода:</label>
-        <textarea id="restoreCodeArea" rows="3" placeholder='{"profile":...}' class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono"></textarea>
-        <button onclick="restoreFromText()" class="btn-spring w-full mt-2 py-2 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/30 font-semibold text-xs">
-          🔄 Восстановить данные
+        <label class="block text-xs text-slate-300 mb-1">Восстановить из скопированного кода:</label>
+        <textarea id="restoreCodeArea" rows="3" placeholder='{"profile":...}' class="liquid-input w-full rounded-xl p-2.5 text-xs text-white font-mono"></textarea>
+        <button onclick="restoreFromText()" class="btn-spring liquid-pill w-full mt-2 py-2 rounded-xl text-cyan-300 font-semibold text-xs">
+          Восстановить данные
         </button>
       </div>
     </div>
   </div>
 
   <script>
-    // === 0. БЕЗОПАСНОСТЬ (ЗАЩИТА ОТ XSS) И ЛОКАЛЬНАЯ ДАТА ===
-    // Экранирует спецсимволы HTML, чтобы внешние названия продуктов не могли выполнить вредоносный JS-код
+    // === 0. АНИМИРОВАННЫЙ ФОН «ЖИДКАЯ ПЛАЗМА» (CANVAS) ===
+    // Рисует 5 мягких неоновых сфер, которые плавно перетекают друг в друга под жидким стеклом
+    (function initPlasmaBackground() {
+      const canvas = document.getElementById('plasmaCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      let width = (canvas.width = window.innerWidth);
+      let height = (canvas.height = window.innerHeight);
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      // Набор плазменных сфер (цвет в RGB, радиус и скорость движения)
+      const orbs = [
+        { x: 0.2, y: 0.2, r: 340, color: '16, 185, 129', vx: 0.0004, vy: 0.0003, phase: 0 },
+        { x: 0.8, y: 0.3, r: 380, color: '14, 165, 233', vx: -0.0003, vy: 0.0005, phase: 2 },
+        { x: 0.5, y: 0.75, r: 360, color: '20, 184, 166', vx: 0.00035, vy: -0.0004, phase: 4 },
+        { x: 0.15, y: 0.8, r: 300, color: '99, 102, 241', vx: 0.0005, vy: 0.0002, phase: 1 },
+        { x: 0.85, y: 0.85, r: 320, color: '52, 211, 153', vx: -0.0004, vy: -0.0003, phase: 3 }
+      ];
+
+      let tick = 0;
+      function drawPlasma() {
+        if (!document.hidden) {
+          tick += 1;
+          ctx.clearRect(0, 0, width, height);
+          ctx.globalCompositeOperation = 'screen';
+
+          orbs.forEach((orb, idx) => {
+            const cx = (orb.x + Math.sin(tick * orb.vx * 18 + orb.phase) * 0.18) * width;
+            const cy = (orb.y + Math.cos(tick * orb.vy * 18 + idx) * 0.18) * height;
+            const radius = Math.min(width, height) * 0.48 + (orb.r * 0.35);
+
+            const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, radius);
+            grad.addColorStop(0, `rgba(${orb.color}, 0.26)`);
+            grad.addColorStop(0.5, `rgba(${orb.color}, 0.09)`);
+            grad.addColorStop(1, `rgba(${orb.color}, 0)`);
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+        requestAnimationFrame(drawPlasma);
+      }
+      requestAnimationFrame(drawPlasma);
+    })();
+
+    // === 0.1. БИБЛИОТЕКА ВЕКТОРНЫХ SVG-ИЛЛЮСТРАЦИЙ С МЯГКИМ СВЕЧЕНИЕМ ===
+    // Возвращает готовую векторную SVG-иконку вместо стандартных эмодзи
+    function getMealSvgIcon(mealKey) {
+      const icons = {
+        breakfast: `<svg class="w-4 h-4 text-amber-300 svg-glow-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>`,
+        lunch: `<svg class="w-4 h-4 text-emerald-300 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11h18a8 8 0 0 1-8 8h-2a8 8 0 0 1-8-8z"/><path d="M7 7c0-1.5 1.5-2 1.5-3.5"/><path d="M12 7c0-1.5 1.5-2 1.5-3.5"/><path d="M17 7c0-1.5 1.5-2 1.5-3.5"/></svg>`,
+        dinner: `<svg class="w-4 h-4 text-cyan-300 svg-glow-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`,
+        snack: `<svg class="w-4 h-4 text-rose-300 svg-glow-rose" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"/><path d="M10 2c1 .5 2 2 2 5"/></svg>`
+      };
+      return icons[mealKey] || icons.breakfast;
+    }
+
+    // === 0.2. БЕЗОПАСНОСТЬ (ЗАЩИТА ОТ XSS) И ЛОКАЛЬНАЯ ДАТА ===
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
       return String(str)
@@ -963,7 +1095,6 @@
         .replace(/'/g, '&#039;');
     }
 
-    // Возвращает дату YYYY-MM-DD строго по локальному времени устройства (исправляет баг после 00:00)
     function getLocalDateString(dateObj = new Date()) {
       const year = dateObj.getFullYear();
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -971,10 +1102,9 @@
       return `${year}-${month}-${day}`;
     }
 
-    // === 0.1. МОУШЕН-ФУНКЦИИ: ПЛАВНЫЙ СЧЁТЧИК ЦИФР И САЛЮТ ЧАСТИЦ ===
+    // === 0.3. ПЛАВНЫЙ СЧЁТЧИК ЦИФР И САЛЮТ ЧАСТИЦ ===
     const animatedValuesMap = {};
 
-    // Плавно анимирует число внутри HTML-элемента от старого значения к новому
     function animateNumber(elId, targetValue, duration = 450) {
       const el = document.getElementById(elId);
       if (!el) return;
@@ -989,7 +1119,6 @@
       const startTime = performance.now();
       function step(now) {
         const progress = Math.min((now - startTime) / duration, 1);
-        // Формула плавного замедления в конце (easeOutCubic)
         const eased = 1 - Math.pow(1 - progress, 3);
         const current = Math.round(startValue + (targetValue - startValue) * eased);
         el.textContent = current;
@@ -1002,7 +1131,6 @@
       requestAnimationFrame(step);
     }
 
-    // Запускает праздничный разлёт светящихся частиц на экране при достижении цели
     function launchGoalConfetti() {
       const canvas = document.getElementById('celebrationCanvas');
       if (!canvas) return;
@@ -1065,8 +1193,8 @@
       try {
         tg.ready();
         tg.expand();
-        if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#070b14');
-        if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#070b14');
+        if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#04070f');
+        if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#04070f');
       } catch (e) {}
     }
 
@@ -1236,7 +1364,6 @@
     let currentPhotoItems = [];
     let lastAiTextFood = null;
 
-    // Переменные прямой камеры
     let liveCameraStream = null;
     let currentCameraFacing = 'environment';
 
@@ -1379,9 +1506,9 @@
     async function saveState(skipFullRender = false) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        updateBadge(isTelegramMiniApp ? '✓ В памяти TG' : '✓ Сохранено', true);
+        updateBadge(isTelegramMiniApp ? 'В памяти TG' : 'Сохранено', true);
       } catch (e) {
-        updateBadge('⚠ Ошибка памяти', false);
+        updateBadge('Ошибка памяти', false);
       }
 
       if (isTelegramMiniApp) {
@@ -1405,8 +1532,8 @@
       const b = document.getElementById('syncStatusBadge');
       b.textContent = text;
       b.className = ok
-        ? 'text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-        : 'text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30';
+        ? 'text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+        : 'text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-500/20 text-amber-300 border border-amber-400/30';
     }
 
     // === 5. ЖИВОЙ ПОИСК ПРОДУКТОВ С ОТМЕНОЙ УСТАРЕВШИХ ЗАПРОСОВ ===
@@ -1498,10 +1625,10 @@
 
       if (filtered.length === 0) {
         container.innerHTML = `
-          <div class="p-3 rounded-xl bg-slate-800/50 text-center space-y-2">
-            <div class="text-xs text-slate-400">Ничего не найдено по запросу «${escapeHtml(q)}»</div>
-            <button type="button" onclick="openAiTextWithQuery()" class="btn-spring px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs font-semibold">
-              ✨ Рассчитать «${escapeHtml(q)}» через ИИ
+          <div class="p-3 rounded-2xl liquid-pill text-center space-y-2">
+            <div class="text-xs text-slate-300">Ничего не найдено по запросу «${escapeHtml(q)}»</div>
+            <button type="button" onclick="openAiTextWithQuery()" class="btn-spring liquid-btn-primary px-3 py-1.5 rounded-xl text-xs font-bold">
+              Рассчитать «${escapeHtml(q)}» через ИИ
             </button>
           </div>
         `;
@@ -1514,10 +1641,10 @@
           <button
             type="button"
             onclick="selectFoodFromList('${escapeHtml(f.id)}')"
-            class="w-full text-left px-3 py-2 rounded-xl border transition flex items-center justify-between gap-2 ${
+            class="w-full text-left px-3 py-2 rounded-2xl border transition flex items-center justify-between gap-2 ${
               isSelected
-                ? 'bg-emerald-500/20 border-emerald-500/60 text-white'
-                : 'bg-slate-800/50 hover:bg-slate-800 border-slate-800 text-slate-200'
+                ? 'bg-emerald-500/25 border-emerald-400/60 text-white shadow-sm'
+                : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-200'
             }"
           >
             <div class="min-w-0 flex-1">
@@ -1525,9 +1652,9 @@
                 ${escapeHtml(f.name)}
                 ${f.isOnline ? '<span class="text-[9px] ml-1 px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300">Онлайн</span>' : ''}
               </div>
-              <div class="text-[10px] text-slate-400">Б: ${Number(f.p)}г • Ж: ${Number(f.f)}г • У: ${Number(f.c)}г (на 100г)</div>
+              <div class="text-[10px] text-slate-300">Б: ${Number(f.p)}г • Ж: ${Number(f.f)}г • У: ${Number(f.c)}г (на 100г)</div>
             </div>
-            <div class="text-xs font-bold text-emerald-400 whitespace-nowrap">${Number(f.kcal)} ккал</div>
+            <div class="text-xs font-bold text-emerald-300 whitespace-nowrap">${Number(f.kcal)} ккал</div>
           </button>
         `;
       }).join('');
@@ -1557,8 +1684,8 @@
       ['breakfast', 'lunch', 'dinner', 'snack'].forEach(m => {
         const btn = document.getElementById('mealBtn-' + m);
         btn.className = m === mealKey
-          ? 'btn-spring py-1.5 rounded-lg font-semibold bg-emerald-500 text-slate-950'
-          : 'btn-spring py-1.5 rounded-lg font-medium text-slate-300 hover:text-white';
+          ? 'btn-spring py-1.5 rounded-xl font-semibold liquid-btn-primary flex items-center justify-center gap-1'
+          : 'btn-spring py-1.5 rounded-xl font-medium text-slate-200 hover:text-white flex items-center justify-center gap-1';
       });
     }
 
@@ -1601,7 +1728,6 @@
       saveState();
     }
 
-    // Проверка выполнения целей дня для запуска праздничного салюта
     function checkAndCelebrateGoals(day) {
       const targets = calculateTargets();
       let totP = 0, totKcal = 0;
@@ -1657,7 +1783,6 @@
         const sectionEl = document.getElementById('tab-' + t);
         if (t === tabId) {
           sectionEl.classList.remove('hidden');
-          // Перезапуск анимации появления вкладки
           sectionEl.classList.remove('animate-card');
           void sectionEl.offsetWidth;
           sectionEl.classList.add('animate-card');
@@ -1668,15 +1793,15 @@
         const deskBtn = document.getElementById('tabBtnDesktop-' + t);
         if (deskBtn) {
           deskBtn.className = t === tabId
-            ? 'btn-spring px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 shadow'
-            : 'btn-spring px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white';
+            ? 'btn-spring px-3 py-1.5 rounded-xl text-xs font-bold bg-white/15 text-white border border-white/20 shadow flex items-center gap-1.5'
+            : 'btn-spring px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5';
         }
 
         const mobBtn = document.getElementById('tabBtnMobile-' + t);
         if (mobBtn) {
           mobBtn.className = t === tabId
-            ? 'btn-spring flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-bold bg-emerald-500/15 text-emerald-400'
-            : 'btn-spring flex flex-col items-center justify-center py-1 rounded-xl text-[11px] font-medium text-slate-400';
+            ? 'btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-bold bg-white/15 text-white border border-white/20 gap-0.5'
+            : 'btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium text-slate-300 gap-0.5';
         }
       });
     }
@@ -1686,11 +1811,11 @@
       document.getElementById('aiSubTab-text').classList.toggle('hidden', mode !== 'text');
       document.getElementById('aiSubTab-photo').classList.toggle('hidden', mode !== 'photo');
       document.getElementById('aiModeBtn-text').className = mode === 'text'
-        ? 'btn-spring flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950'
-        : 'btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-300';
+        ? 'btn-spring flex-1 py-2 rounded-xl text-xs font-bold liquid-btn-primary'
+        : 'btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-200';
       document.getElementById('aiModeBtn-photo').className = mode === 'photo'
-        ? 'btn-spring flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950'
-        : 'btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-300';
+        ? 'btn-spring flex-1 py-2 rounded-xl text-xs font-bold liquid-btn-primary'
+        : 'btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-200';
 
       if (mode === 'photo') {
         startLiveCamera();
@@ -1736,7 +1861,7 @@
     async function callAIJson(promptText, base64ImageOrNull = null) {
       if (!state.apiKey) {
         openSettingsModal();
-        throw new Error('Укажите API ключ в настройках (кнопка 🔑 ИИ вверху)');
+        throw new Error('Укажите API ключ в настройках (кнопка ИИ вверху)');
       }
 
       if (state.aiProvider === 'openrouter') {
@@ -1820,15 +1945,15 @@
         calSubEl.textContent = `Цель: ${targets.targetKcal} ккал`;
       } else if (Math.abs(calDiff) <= 150) {
         calStatusEl.textContent = 'Точно в цели';
-        calStatusEl.className = 'text-xs font-bold text-emerald-400 mt-0.5';
+        calStatusEl.className = 'text-xs font-bold text-emerald-300 mt-0.5';
         calSubEl.textContent = `${totKcal} из ${targets.targetKcal} ккал`;
       } else if (calDiff > 150) {
         calStatusEl.textContent = `Осталось ${calDiff} ккал`;
-        calStatusEl.className = 'text-xs font-bold text-sky-400 mt-0.5';
+        calStatusEl.className = 'text-xs font-bold text-cyan-300 mt-0.5';
         calSubEl.textContent = `Съедено ${totKcal} ккал`;
       } else {
         calStatusEl.textContent = `Перебор +${Math.abs(calDiff)}`;
-        calStatusEl.className = 'text-xs font-bold text-amber-400 mt-0.5';
+        calStatusEl.className = 'text-xs font-bold text-amber-300 mt-0.5';
         calSubEl.textContent = `${totKcal} из ${targets.targetKcal} ккал`;
       }
 
@@ -1841,10 +1966,10 @@
         defEl.textContent = '—';
       } else if (realDeficit >= 0) {
         defEl.textContent = `-${realDeficit} ккал`;
-        defEl.className = 'text-xs font-bold text-emerald-400 mt-0.5';
+        defEl.className = 'text-xs font-bold text-emerald-300 mt-0.5';
       } else {
         defEl.textContent = `+${Math.abs(realDeficit)} профицит`;
-        defEl.className = 'text-xs font-bold text-amber-400 mt-0.5';
+        defEl.className = 'text-xs font-bold text-amber-300 mt-0.5';
       }
 
       document.getElementById('summaryHabitsStatus').textContent = `${day.water} мл • ${act.steps} шаг.`;
@@ -1894,7 +2019,7 @@
 
       const btn = document.getElementById('btnGenerateReview');
       btn.disabled = true;
-      btn.textContent = '⏳ Анализируем...';
+      btn.textContent = 'Анализируем...';
 
       const eatenListStr = day.items.map(i => `${i.name} (${i.grams}г, ${i.kcal} ккал)`).join('; ');
       const prompt = `Проанализируй день пользователя: вес ${state.profile.weight} кг, цель ${state.profile.targetWeight} кг.
@@ -1918,17 +2043,17 @@
         showNotice('Ошибка ИИ: ' + err.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = '✨ Разбор дня от ИИ';
+        btn.textContent = 'Разбор дня от ИИ';
       }
     }
 
-    // === 9. ИИ ПО ТЕКСТУ + ПРЯМАЯ КАМЕРА С ЛАЗЕРОМ ===
+    // === 9. ИИ ПО ТЕКСТУ + ПРЯМАЯ КАМЕРА ===
     async function analyzeTextDishWithAI() {
       const text = document.getElementById('aiTextFoodPrompt').value.trim();
       if (!text) return showNotice('Опиши блюдо текстом!');
       const btn = document.getElementById('btnAnalyzeTextAI');
       btn.disabled = true;
-      btn.textContent = '⏳ Считаем КБЖУ...';
+      btn.textContent = 'Считаем КБЖУ...';
 
       const prompt = `Пользователь описал еду: "${text}". Рассчитай КБЖУ на 100г и оцени вес всей порции в граммах.
 Верни ТОЛЬКО JSON: {"name":"Название на русском","portionGrams":250,"kcal100":180,"p100":12,"f100":8,"c100":15}`;
@@ -1953,7 +2078,7 @@
         showNotice('Ошибка ИИ: ' + err.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = '🤖 Рассчитать КБЖУ через ИИ';
+        btn.textContent = 'Рассчитать КБЖУ через ИИ';
       }
     }
 
@@ -1970,7 +2095,6 @@
       const grams = Number(document.getElementById('aiTextPortionGrams').value) || 100;
       const meal = document.getElementById('aiTextMealSelect').value;
 
-      // Не создаём дубликат в пользовательской базе, если такое название уже есть
       const exists = state.customFoods.some(f => f.name.toLowerCase() === lastAiTextFood.name.toLowerCase());
       if (!exists) {
         state.customFoods.unshift({
@@ -2001,7 +2125,6 @@
       switchTab('diary');
     }
 
-    // --- Прямая работа с камерой и лазерным прицелом ---
     async function startLiveCamera() {
       stopLiveCamera();
       const videoEl = document.getElementById('cameraVideoStream');
@@ -2181,7 +2304,7 @@
       const hint = document.getElementById('aiCustomPrompt').value || '';
       
       btn.disabled = true;
-      btn.textContent = '⏳ Сканируем...';
+      btn.textContent = 'Сканируем...';
       laserEl?.classList.remove('hidden');
 
       const promptText = `Определи блюдо на фото и разложи на ингредиенты с весом в граммах и КБЖУ на 100г. Уточнение: "${hint}".
@@ -2190,7 +2313,7 @@
       try {
         const { parsed, model } = await callAIJson(promptText, currentPhotoBase64);
         document.getElementById('recognizedDishTitle').textContent = parsed.title || 'Распознано';
-        document.getElementById('recognizedDishStatus').textContent = `✓ Распознано (${model})`;
+        document.getElementById('recognizedDishStatus').textContent = `Распознано (${model})`;
         currentPhotoItems = parsed.items || [];
         renderPhotoIngredients();
         triggerHaptic('success');
@@ -2198,7 +2321,7 @@
         showNotice('Ошибка ИИ: ' + err.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = '✨ Распознать';
+        btn.textContent = 'Распознать';
         laserEl?.classList.add('hidden');
       }
     }
@@ -2213,10 +2336,10 @@
         const c = +((it.c100 * it.grams) / 100).toFixed(1);
         totKcal += kcal; totP += p; totF += f; totC += c;
         return `
-          <div class="p-2.5 rounded-xl bg-slate-800/70 border border-slate-700/70 space-y-1 animate-card">
+          <div class="p-2.5 rounded-2xl liquid-pill space-y-1 animate-card">
             <div class="flex justify-between text-xs font-semibold">
               <span class="text-white">${escapeHtml(it.name)}</span>
-              <span class="text-emerald-400">${kcal} ккал</span>
+              <span class="text-emerald-300">${kcal} ккал</span>
             </div>
             <div class="flex items-center gap-2">
               <input type="range" min="10" max="500" step="5" value="${Number(it.grams)}" oninput="updatePhotoItemGrams(${idx}, this.value)" class="flex-1" />
@@ -2256,7 +2379,7 @@
       switchTab('diary');
     }
 
-    // === 10. АКТИВНОСТЬ И ВЕС ===
+    // === 10. АКТИВНОСТЬ И ВЕС + ВЕКТОРНЫЙ ГРАФИК ВЕСА ===
     function saveActivityFromInputs() {
       const day = ensureDay(currentDate);
       day.activity = {
@@ -2298,7 +2421,7 @@
       if (!text) return showNotice('Опиши тренировку!');
       const btn = document.getElementById('btnAiWorkout');
       btn.disabled = true;
-      btn.textContent = '⏳...';
+      btn.textContent = '...';
       try {
         const { parsed } = await callAIJson(
           `Вес пользователя ${state.profile.weight} кг, активность: "${text}". Оцени сожженные ккал и минуты. ТОЛЬКО JSON: {"burnedKcal":300,"minutes":45,"shortTitle":"Тренировка"}`
@@ -2347,7 +2470,58 @@
       saveState();
     }
 
-    // === 11. ОТРИСОВКА ИНТЕРФЕЙСА С АНИМАЦИЕЙ КОЛЬЦА, ЦИФР И СТАКАНА ВОДЫ ===
+    // Генерация неонового векторного SVG-графика истории веса
+    function renderWeightSvgChart(history) {
+      const box = document.getElementById('weightSvgChartBox');
+      if (!box) return;
+      const points = (history || []).slice(-10);
+      if (points.length === 0) {
+        box.innerHTML = `<span class="text-xs text-slate-400">Нет замеров для графика</span>`;
+        return;
+      }
+
+      const w = 320, h = 100, padX = 24, padY = 18;
+      const weights = points.map(p => Number(p.weight));
+      const minW = Math.min(...weights) - 1;
+      const maxW = Math.max(...weights) + 1;
+      const range = Math.max(1, maxW - minW);
+
+      const coords = points.map((p, idx) => {
+        const x = points.length === 1 ? w / 2 : padX + (idx / (points.length - 1)) * (w - padX * 2);
+        const y = h - padY - ((Number(p.weight) - minW) / range) * (h - padY * 2);
+        return { x: Math.round(x), y: Math.round(y), val: Number(p.weight) };
+      });
+
+      const polylinePoints = coords.map(c => `${c.x},${c.y}`).join(' ');
+      const areaPoints = `${coords[0].x},${h - 6} ${polylinePoints} ${coords[coords.length - 1].x},${h - 6}`;
+
+      box.innerHTML = `
+        <svg viewBox="0 0 ${w} ${h}" class="w-full h-full overflow-visible">
+          <defs>
+            <linearGradient id="weightAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#34d399" stop-opacity="0.45"/>
+              <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0"/>
+            </linearGradient>
+          </defs>
+          <polygon points="${areaPoints}" fill="url(#weightAreaGrad)" />
+          <polyline
+            fill="none"
+            stroke="#34d399"
+            stroke-width="2.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="svg-glow-emerald"
+            points="${polylinePoints}"
+          />
+          ${coords.map(c => `
+            <circle cx="${c.x}" cy="${c.y}" r="4" fill="#04070f" stroke="#6ee7b7" stroke-width="2.5" class="svg-glow-emerald" />
+            <text x="${c.x}" y="${c.y - 8}" text-anchor="middle" fill="#e2e8f0" font-size="9" font-weight="700">${c.val}</text>
+          `).join('')}
+        </svg>
+      `;
+    }
+
+    // === 11. ОТРИСОВКА ИНТЕРФЕЙСА С ВЕКТОРНЫМИ ИЛЛЮСТРАЦИЯМИ ===
     function renderSummary() {
       const day = ensureDay(currentDate);
       const targets = calculateTargets();
@@ -2358,12 +2532,10 @@
       document.getElementById('currentDateInput').value = currentDate;
       document.getElementById('waterValue').textContent = `${day.water} мл`;
       
-      // Анимация наполнения стакана воды (норма 2000 мл = 100%)
       const waterPct = Math.min(100, Math.round((day.water / 2000) * 100));
       const cupFill = document.getElementById('waterCupFill');
       if (cupFill) cupFill.style.height = `${waterPct}%`;
 
-      // Плавная прокрутка цифр КБЖУ
       animateNumber('calCurrent', totKcal);
       document.getElementById('calTarget').textContent = targets.targetKcal;
 
@@ -2374,7 +2546,6 @@
       document.getElementById('calBar').style.width = calPct + '%';
       document.getElementById('calRingPercent').textContent = calPct + '%';
 
-      // Анимация кругового неонового кольца (окружность 220px)
       const ringEl = document.getElementById('calRingCircle');
       if (ringEl) {
         const circumference = 220;
@@ -2404,31 +2575,34 @@
     function renderMeals() {
       const day = ensureDay(currentDate);
       const mealsMeta = [
-        { key: 'breakfast', title: '🍳 Завтрак' },
-        { key: 'lunch', title: '🍲 Обед' },
-        { key: 'dinner', title: '🥗 Ужин' },
-        { key: 'snack', title: '🍎 Перекус' }
+        { key: 'breakfast', title: 'Завтрак' },
+        { key: 'lunch', title: 'Обед' },
+        { key: 'dinner', title: 'Ужин' },
+        { key: 'snack', title: 'Перекус' }
       ];
       document.getElementById('mealsContainer').innerHTML = mealsMeta.map((m, idx) => {
         const list = day.items.filter(i => i.meal === m.key);
         const mKcal = Math.round(list.reduce((s, x) => s + x.kcal, 0));
         return `
-          <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 animate-card" style="animation-delay: ${idx * 45}ms">
-            <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-800/80">
-              <h3 class="font-bold text-xs sm:text-sm text-white">${m.title}</h3>
-              <span class="text-xs font-bold text-emerald-400">${mKcal} ккал</span>
+          <div class="liquid-glass rounded-3xl p-3.5 sm:p-4 animate-card" style="animation-delay: ${idx * 45}ms">
+            <div class="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+              <h3 class="font-bold text-xs sm:text-sm text-white flex items-center gap-2">
+                ${getMealSvgIcon(m.key)}
+                <span>${m.title}</span>
+              </h3>
+              <span class="text-xs font-extrabold text-emerald-300">${mKcal} ккал</span>
             </div>
-            ${list.length === 0 ? `<p class="text-[11px] text-slate-500">Пока пусто</p>` : `
+            ${list.length === 0 ? `<p class="text-[11px] text-slate-400">Пока пусто</p>` : `
               <div class="space-y-1.5">
                 ${list.map(item => `
-                  <div class="flex items-center justify-between bg-slate-800/50 rounded-xl px-3 py-1.5 text-xs">
+                  <div class="flex items-center justify-between liquid-pill rounded-2xl px-3 py-2 text-xs">
                     <div class="min-w-0 pr-2">
-                      <div class="font-semibold text-slate-100 truncate">${escapeHtml(item.name)} <span class="text-slate-400">(${Number(item.grams)}г)</span></div>
-                      <div class="text-[10px] text-slate-400">Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г</div>
+                      <div class="font-semibold text-white truncate">${escapeHtml(item.name)} <span class="text-slate-300">(${Number(item.grams)}г)</span></div>
+                      <div class="text-[10px] text-slate-300">Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г</div>
                     </div>
                     <div class="flex items-center gap-2">
-                      <span class="font-bold text-white whitespace-nowrap">${Number(item.kcal)}</span>
-                      <button onclick="removeDiaryItem('${escapeHtml(item.id)}')" class="text-slate-500 hover:text-rose-400 px-1">✕</button>
+                      <span class="font-bold text-emerald-300 whitespace-nowrap">${Number(item.kcal)}</span>
+                      <button onclick="removeDiaryItem('${escapeHtml(item.id)}')" class="text-slate-400 hover:text-rose-400 px-1">✕</button>
                     </div>
                   </div>
                 `).join('')}
@@ -2489,17 +2663,19 @@
       if (startW !== targetW) {
         pct = Math.max(0, Math.min(100, Math.round((Math.abs(startW - currW) / Math.abs(startW - targetW)) * 100)));
       }
-      document.getElementById('weightProgressPct').textContent = pct + '%';
+      document.getElementById('weightProgressPct').textContent = pct + '% к цели';
       document.getElementById('weightProgressBar').style.width = pct + '%';
+
+      renderWeightSvgChart(history);
 
       const reversed = [...history].reverse();
       document.getElementById('weightHistoryList').innerHTML = reversed.map(entry => `
         <div class="py-2 flex items-center justify-between text-xs">
           <div>
             <span class="font-bold text-white">${Number(entry.weight)} кг</span>
-            <span class="text-slate-400 ml-2">${escapeHtml(entry.date)}</span>
+            <span class="text-slate-300 ml-2">${escapeHtml(entry.date)}</span>
           </div>
-          <button onclick="removeWeightEntry('${escapeHtml(entry.id)}')" class="text-slate-500 hover:text-rose-400 px-1">✕</button>
+          <button onclick="removeWeightEntry('${escapeHtml(entry.id)}')" class="text-slate-400 hover:text-rose-400 px-1">✕</button>
         </div>
       `).join('');
     }
@@ -2519,7 +2695,7 @@
 
       const t = calculateTargets();
       document.getElementById('calcResultSummary').innerHTML =
-        `Базовый обмен: <b>${t.bmr} ккал</b> • Поддержание: <b>${t.tdee} ккал</b><br>Ваша дневная норма: <b class="text-emerald-400">${t.targetKcal} ккал</b> (Б: ${t.p}г, Ж: ${t.f}г, У: ${t.c}г)`;
+        `Базовый обмен: <b>${t.bmr} ккал</b> • Поддержание: <b>${t.tdee} ккал</b><br>Ваша дневная норма: <b class="text-emerald-300">${t.targetKcal} ккал</b> (Б: ${t.p}г, Ж: ${t.f}г, У: ${t.c}г)`;
       document.getElementById('foodsCountBadge').textContent = `В базе: ${getAllFoods().length} поз.`;
     }
 
@@ -2595,7 +2771,7 @@
       state.aiProvider = document.getElementById('aiProviderSelect').value;
       state.apiKey = document.getElementById('apiKeyInput').value.trim();
       state.firebaseUrl = document.getElementById('firebaseUrlInput').value.trim();
-      cachedGeminiModel = null; // Сбрасываем кэш модели при смене ключа
+      cachedGeminiModel = null;
       saveState();
       closeSettingsModal();
     }
