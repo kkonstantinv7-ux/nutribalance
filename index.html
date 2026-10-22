@@ -1109,6 +1109,11 @@
         </div>
       </div>
 
+      <!-- Статус подключения базы Cloudflare KV (NUTRI_KV) -->
+      <div id="adminKvStatusBanner" class="liquid-pill rounded-2xl p-2.5 text-[11px] text-slate-300 border border-white/15 flex items-center justify-between gap-2">
+        <span id="adminKvStatusText">⏳ Проверка связи с Cloudflare Worker...</span>
+      </div>
+
       <!-- Сводка цифр админки -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
         <div class="liquid-pill rounded-2xl p-2.5">
@@ -1245,6 +1250,9 @@
             🔔 Тест сообщения в ТГ
           </button>
         </div>
+        <button type="button" onclick="exportHtmlWithEmbeddedConfig()" class="btn-spring liquid-pill w-full py-2 px-3 rounded-xl font-semibold text-xs text-emerald-300 border border-emerald-400/35 flex items-center justify-center gap-1.5">
+          <span>📥 Скачать готовый .HTML с вшитыми реквизитами (для загрузки на GitHub)</span>
+        </button>
 
         <!-- Переключатель для теста глазами пользователя -->
         <div class="liquid-pill rounded-2xl p-3 space-y-2 border border-amber-400/30">
@@ -3704,6 +3712,7 @@
       updateSbpSubmitButtonState();
 
       document.getElementById('paywallModal').classList.remove('hidden');
+      syncUserAccessFromServer(false);
     }
 
     function closePaywallModal() {
@@ -4055,10 +4064,25 @@
         if (data?.config && typeof data.config === 'object') {
           const srvTime = Number(data.config.updatedAt) || 0;
           const locTime = Number(paymentConfig.updatedAt) || 0;
-          if (srvTime > locTime) {
-            paymentConfig = { ...paymentConfig, ...data.config };
-            try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
-            renderProAndAdminUI();
+          const srvHasCustomPhone = data.config.sbpPhone && data.config.sbpPhone !== '+7 (999) 000-00-00';
+          const locHasCustomPhone = paymentConfig.sbpPhone && paymentConfig.sbpPhone !== '+7 (999) 000-00-00';
+
+          if (!isUserAdmin()) {
+            // На всех чужих аккаунтах всегда берём актуальные реквизиты с сервера (без сохранения токена)
+            if (srvHasCustomPhone || srvTime > 1 || srvTime >= locTime) {
+              paymentConfig = { ...paymentConfig, ...data.config, tgBotToken: paymentConfig.tgBotToken || '' };
+              try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
+              renderProAndAdminUI();
+            }
+          } else {
+            // На аккаунте админа: если сервер сбросился, автоматически отправляем сохранённые реквизиты админа на сервер
+            if (locHasCustomPhone && !srvHasCustomPhone) {
+              pushAdminConfigToWorker();
+            } else if (srvTime > locTime) {
+              paymentConfig = { ...paymentConfig, ...data.config, tgBotToken: data.config.tgBotToken || paymentConfig.tgBotToken || '' };
+              try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
+              renderProAndAdminUI();
+            }
           }
         }
         if (data?.user && typeof data.user === 'object') {
@@ -4088,6 +4112,7 @@
     // =====================================================================
     // 15. ЛОГИКА АДМИН-ПАНЕЛИ (ДЛЯ ID 939208462)
     // =====================================================================
+    let adminPollInterval = null;
     function openAdminModal() {
       // Внутри Telegram пускаем только владельца ID 939208462; в браузере разрешаем тест
       if (isTelegramMiniApp && !isUserAdmin()) {
@@ -4098,9 +4123,19 @@
       renderAdminDashboard();
       document.getElementById('adminModal').classList.remove('hidden');
       fetchAdminDataFromWorker(false);
+      clearInterval(adminPollInterval);
+      adminPollInterval = setInterval(() => {
+        const modal = document.getElementById('adminModal');
+        if (modal && !modal.classList.contains('hidden')) {
+          fetchAdminDataFromWorker(false);
+        } else {
+          clearInterval(adminPollInterval);
+        }
+      }, 7000);
     }
 
     function closeAdminModal() {
+      clearInterval(adminPollInterval);
       document.getElementById('adminModal').classList.add('hidden');
     }
 
@@ -4210,6 +4245,22 @@
       triggerHaptic('success');
       showNotice(`Реквизиты СБП (${paymentConfig.sbpPhone}, ${paymentConfig.priceRub} ₽) сохранены!`);
       pushAdminConfigToWorker();
+    }
+
+    function exportHtmlWithEmbeddedConfig() {
+      readAdminConfigInputs();
+      const docHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const cfgBlockRegex = /let paymentConfig = \{[\s\S]*?\};/;
+      const newCfgBlock = `let paymentConfig = ${JSON.stringify(paymentConfig, null, 6)};`;
+      const updatedHtml = docHtml.replace(cfgBlockRegex, newCfgBlock);
+      const blob = new Blob([updatedHtml], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'nutribalance_pro_liquid_glass_edition.html';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2500);
+      showNotice('Готовый HTML-файл с твоими реквизитами скачан! Загрузи его на GitHub.');
     }
 
     function renderAdminDashboard() {
@@ -4450,13 +4501,34 @@
         if (data?.users && typeof data.users === 'object') {
           adminDataCache.users = { ...adminDataCache.users, ...data.users };
         }
+        const kvBanner = document.getElementById('adminKvStatusBanner');
+        const kvText = document.getElementById('adminKvStatusText');
+        if (kvBanner && kvText) {
+          if (data?.kvConnected) {
+            kvBanner.className = 'liquid-pill rounded-2xl p-2.5 text-[11px] text-emerald-300 border border-emerald-400/40 flex items-center justify-between gap-2';
+            kvText.innerHTML = '🟢 <b>База NUTRI_KV подключена в Cloudflare</b> — реквизиты СБП и заявки на оплату синхронизируются между всеми аккаунтами!';
+          } else {
+            kvBanner.className = 'liquid-pill rounded-2xl p-2.5 text-[11px] text-amber-200 border border-amber-400/50 flex items-center justify-between gap-2';
+            kvText.innerHTML = '🟠 <b>Внимание: в Cloudflare не привязана база NUTRI_KV!</b> Без неё Cloudflare стирает заявки и реквизиты через несколько секунд. В панели Cloudflare открой <b>Storage &amp; Databases → KV → Create namespace «NUTRI_KV»</b>, затем в воркере <b>Settings → Bindings → Add → KV Namespace → Variable name: NUTRI_KV</b>.';
+          }
+        }
+
         if (Array.isArray(data?.requests)) {
-          adminDataCache.requests = data.requests;
+          const mergedMap = new Map();
+          data.requests.forEach(r => { if (r && r.id) mergedMap.set(r.id, r); });
+          (adminDataCache.requests || []).forEach(r => {
+            if (r && r.id && !mergedMap.has(r.id)) mergedMap.set(r.id, r);
+          });
+          adminDataCache.requests = Array.from(mergedMap.values()).sort((a, b) => (Number(b.createdAtTs) || 0) - (Number(a.createdAtTs) || 0));
         }
         if (data?.config && typeof data.config === 'object') {
           const srvTime = Number(data.config.updatedAt) || 0;
           const locTime = Number(paymentConfig.updatedAt) || 0;
-          if (srvTime > locTime) {
+          const srvHasCustomPhone = data.config.sbpPhone && data.config.sbpPhone !== '+7 (999) 000-00-00';
+          const locHasCustomPhone = paymentConfig.sbpPhone && paymentConfig.sbpPhone !== '+7 (999) 000-00-00';
+          if (locHasCustomPhone && !srvHasCustomPhone) {
+            pushAdminConfigToWorker();
+          } else if (srvTime > locTime) {
             paymentConfig = { ...paymentConfig, ...data.config };
             try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
             populateAdminSettingsInputs();
@@ -4468,7 +4540,9 @@
         renderAdminDashboard();
         if (showToast) showNotice('Данные админ-панели синхронизированы с Cloudflare Worker!');
       } catch (e) {
-        if (showToast) showNotice('Работает локальный кэш админки (для облачной синхронизации обнови код Cloudflare Worker).');
+        const kvText = document.getElementById('adminKvStatusText');
+        if (kvText) kvText.innerHTML = '🔴 Не удалось связаться с новым API воркера. Проверь, что код cloudflare_worker_with_payments.js задеплоен в Cloudflare.';
+        if (showToast) showNotice('Работает локальный кэш админки (проверь деплой Cloudflare Worker).');
       }
     }
 
