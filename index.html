@@ -1182,7 +1182,7 @@
         <div class="liquid-pill rounded-2xl p-3.5 space-y-2">
           <div class="text-xs font-bold text-white">Универсальный промокод (для друзей / акций):</div>
           <div class="flex gap-2">
-            <input type="text" id="admUniversalPromoInput" placeholder="Например: NUTRI2026" class="liquid-input flex-1 rounded-xl px-3 py-2 text-xs font-mono text-white uppercase" />
+            <input type="text" id="admUniversalPromoInput" oninput="onAdminConfigInput()" placeholder="Например: NUTRI2026" class="liquid-input flex-1 rounded-xl px-3 py-2 text-xs font-mono text-white uppercase" />
             <button type="button" onclick="saveAdminPaymentConfig()" class="btn-spring liquid-pill px-3.5 py-2 rounded-xl font-bold text-xs text-emerald-300">Сохранить промокод</button>
           </div>
         </div>
@@ -1193,31 +1193,40 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
           <div>
             <label class="block text-slate-300 mb-1">Разовая цена PRO (в рублях)</label>
-            <input type="number" id="admCfgPrice" value="299" min="1" max="50000" class="liquid-input w-full rounded-xl px-3 py-2 font-bold text-emerald-300" />
+            <input type="number" id="admCfgPrice" oninput="onAdminConfigInput()" value="299" min="1" max="50000" class="liquid-input w-full rounded-xl px-3 py-2 font-bold text-emerald-300" />
           </div>
           <div>
             <label class="block text-slate-300 mb-1">Бесплатный триал ИИ (дней)</label>
-            <input type="number" id="admCfgTrialDays" value="14" min="0" max="365" class="liquid-input w-full rounded-xl px-3 py-2 font-bold text-white" />
+            <input type="number" id="admCfgTrialDays" oninput="onAdminConfigInput()" value="14" min="0" max="365" class="liquid-input w-full rounded-xl px-3 py-2 font-bold text-white" />
           </div>
           <div>
             <label class="block text-slate-300 mb-1">Телефон / номер для перевода СБП</label>
-            <input type="text" id="admCfgSbpPhone" placeholder="+7 (999) 000-00-00" class="liquid-input w-full rounded-xl px-3 py-2 font-mono text-white" />
+            <input type="tel" id="admCfgSbpPhone" oninput="onAdminConfigInput()" placeholder="+7 (999) 000-00-00" class="liquid-input w-full rounded-xl px-3 py-2 font-mono text-white" />
           </div>
           <div>
             <label class="block text-slate-300 mb-1">Банк получателя СБП</label>
-            <input type="text" id="admCfgSbpBank" placeholder="Т-Банк / Сбербанк" class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
+            <input type="text" id="admCfgSbpBank" oninput="onAdminConfigInput()" placeholder="Т-Банк / Сбербанк" class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
           </div>
           <div>
             <label class="block text-slate-300 mb-1">Имя получателя (для сверки)</label>
-            <input type="text" id="admCfgSbpRecipient" placeholder="Константин К." class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
+            <input type="text" id="admCfgSbpRecipient" oninput="onAdminConfigInput()" placeholder="Константин К." class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
           </div>
           <div>
             <label class="block text-slate-300 mb-1">Ссылка СБП / QR НСПК / ЮKassa (опционально)</label>
-            <input type="url" id="admCfgSbpLink" placeholder="https://qr.nspk.ru/... или пусто" class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
+            <input type="url" id="admCfgSbpLink" oninput="onAdminConfigInput()" placeholder="https://qr.nspk.ru/... или пусто" class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
           </div>
         </div>
 
-        <button type="button" onclick="saveAdminPaymentConfig()" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-xl font-extrabold text-xs">
+        <!-- Живой предпросмотр реквизитов -->
+        <div class="bg-slate-950/65 border border-emerald-400/25 rounded-2xl p-2.5 text-xs flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-[10px] text-slate-400 block">Сейчас в окне оплаты отображается:</span>
+            <span id="admLivePreviewRequisites" class="font-mono font-bold text-emerald-300">+7 (999) 000-00-00 • Т-Банк / Сбербанк (СБП) • Константин К. • 299 ₽</span>
+          </div>
+          <span id="admAutoSaveIndicator" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">Автосохранение активно</span>
+        </div>
+
+        <button type="button" id="btnSaveAdminCfg" onclick="saveAdminPaymentConfig()" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-xl font-extrabold text-xs">
           Сохранить настройки оплаты СБП (299 ₽)
         </button>
 
@@ -3383,7 +3392,8 @@
       sbpBank: 'Т-Банк / Сбербанк (СБП)',
       sbpRecipient: 'Константин К.',
       sbpLink: '',
-      universalPromo: 'NUTVIP299'
+      universalPromo: 'NUTVIP299',
+      updatedAt: 0
     };
 
     let subState = {
@@ -3415,6 +3425,22 @@
           }
         }
       } catch (e) {}
+
+      if (isTelegramMiniApp && tg?.CloudStorage) {
+        cloudGet(['nb_adm_cfg_v1']).then(vals => {
+          if (vals?.nb_adm_cfg_v1) {
+            try {
+              const cloudCfg = JSON.parse(vals.nb_adm_cfg_v1);
+              if (cloudCfg && (Number(cloudCfg.updatedAt) || 0) >= (Number(paymentConfig.updatedAt) || 0)) {
+                paymentConfig = { ...paymentConfig, ...cloudCfg };
+                try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
+                renderProAndAdminUI();
+                populateAdminSettingsInputs();
+              }
+            } catch (e) {}
+          }
+        });
+      }
 
       try {
         const rawSub = localStorage.getItem(SUB_STORAGE_KEY);
@@ -3627,6 +3653,11 @@
       if (recEl) recEl.textContent = paymentConfig.sbpRecipient || 'Получатель';
       if (uidEl) uidEl.textContent = tgUserId;
       if (sbpLinkBtn) sbpLinkBtn.classList.toggle('hidden', !paymentConfig.sbpLink);
+
+      const livePrev = document.getElementById('admLivePreviewRequisites');
+      if (livePrev) {
+        livePrev.textContent = `${paymentConfig.sbpPhone || '—'} • ${paymentConfig.sbpBank || 'СБП'} • ${paymentConfig.sbpRecipient || '—'} • ${price} ₽`;
+      }
     }
 
     function openPaywallModal(lockedFeatureName = '') {
@@ -3825,8 +3856,13 @@
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
         if (data?.config && typeof data.config === 'object') {
-          paymentConfig = { ...paymentConfig, ...data.config };
-          try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
+          const srvTime = Number(data.config.updatedAt) || 0;
+          const locTime = Number(paymentConfig.updatedAt) || 0;
+          if (srvTime > locTime) {
+            paymentConfig = { ...paymentConfig, ...data.config };
+            try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
+            renderProAndAdminUI();
+          }
         }
         if (data?.user && typeof data.user === 'object') {
           const wasPro = subState.isPro;
@@ -3885,51 +3921,92 @@
     }
 
     function populateAdminSettingsInputs() {
-      const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+      const setVal = (id, v) => {
+        const el = document.getElementById(id);
+        if (el && document.activeElement !== el) el.value = v ?? '';
+      };
       setVal('admCfgPrice', paymentConfig.priceRub ?? 299);
       setVal('admCfgTrialDays', paymentConfig.trialDays ?? 14);
-      setVal('admCfgSbpPhone', paymentConfig.sbpPhone || '');
-      setVal('admCfgSbpBank', paymentConfig.sbpBank || '');
-      setVal('admCfgSbpRecipient', paymentConfig.sbpRecipient || '');
-      setVal('admCfgSbpLink', paymentConfig.sbpLink || '');
-      setVal('admUniversalPromoInput', paymentConfig.universalPromo || 'NUTVIP299');
+      setVal('admCfgSbpPhone', paymentConfig.sbpPhone ?? '+7 (999) 000-00-00');
+      setVal('admCfgSbpBank', paymentConfig.sbpBank ?? 'Т-Банк / Сбербанк');
+      setVal('admCfgSbpRecipient', paymentConfig.sbpRecipient ?? 'Константин К.');
+      setVal('admCfgSbpLink', paymentConfig.sbpLink ?? '');
+      setVal('admUniversalPromoInput', paymentConfig.universalPromo ?? 'NUTVIP299');
     }
 
-    async function saveAdminPaymentConfig() {
+    function readAdminConfigInputs() {
+      const phoneRaw = document.getElementById('admCfgSbpPhone')?.value;
+      const bankRaw = document.getElementById('admCfgSbpBank')?.value;
+      const recRaw = document.getElementById('admCfgSbpRecipient')?.value;
+      const linkRaw = document.getElementById('admCfgSbpLink')?.value;
+      const promoRaw = document.getElementById('admUniversalPromoInput')?.value;
+
       paymentConfig = {
         ...paymentConfig,
-        priceRub: Math.round(num(document.getElementById('admCfgPrice')?.value, 1, 50000, 299)),
-        trialDays: Math.round(num(document.getElementById('admCfgTrialDays')?.value, 0, 365, 14)),
-        sbpPhone: (document.getElementById('admCfgSbpPhone')?.value || '+7 (999) 000-00-00').trim(),
-        sbpBank: (document.getElementById('admCfgSbpBank')?.value || 'Т-Банк / Сбербанк').trim(),
-        sbpRecipient: (document.getElementById('admCfgSbpRecipient')?.value || 'Константин К.').trim(),
-        sbpLink: (document.getElementById('admCfgSbpLink')?.value || '').trim(),
-        universalPromo: (document.getElementById('admUniversalPromoInput')?.value || 'NUTVIP299').trim().toUpperCase()
+        priceRub: Math.round(num(document.getElementById('admCfgPrice')?.value, 1, 50000, paymentConfig.priceRub || 299)),
+        trialDays: Math.round(num(document.getElementById('admCfgTrialDays')?.value, 0, 365, paymentConfig.trialDays ?? 14)),
+        sbpPhone: phoneRaw !== undefined ? phoneRaw.trim() : paymentConfig.sbpPhone,
+        sbpBank: bankRaw !== undefined ? bankRaw.trim() : paymentConfig.sbpBank,
+        sbpRecipient: recRaw !== undefined ? recRaw.trim() : paymentConfig.sbpRecipient,
+        sbpLink: linkRaw !== undefined ? linkRaw.trim() : paymentConfig.sbpLink,
+        universalPromo: promoRaw !== undefined ? promoRaw.trim().toUpperCase() : paymentConfig.universalPromo,
+        updatedAt: Date.now()
       };
       try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
+      if (isTelegramMiniApp && tg?.CloudStorage) {
+        cloudSet('nb_adm_cfg_v1', JSON.stringify(paymentConfig));
+      }
       renderProAndAdminUI();
+    }
 
-      // Синхронизируем настройки на Cloudflare Worker
+    let adminCfgSyncTimer = null;
+    function onAdminConfigInput() {
+      readAdminConfigInputs();
+      const ind = document.getElementById('admAutoSaveIndicator');
+      if (ind) {
+        ind.textContent = '✓ Сохранено';
+      }
+      clearTimeout(adminCfgSyncTimer);
+      adminCfgSyncTimer = setTimeout(() => {
+        pushAdminConfigToWorker();
+      }, 800);
+    }
+
+    async function pushAdminConfigToWorker() {
       try {
         const proxyUrl = (AI_PROXY_URL || '').trim();
-        if (proxyUrl) {
-          await fetchWithTimeout(proxyUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Telegram-Init-Data': tg?.initData || ''
-            },
-            body: JSON.stringify({
-              action: 'admin_save_config',
-              adminId: ADMIN_TG_ID,
-              config: paymentConfig
-            })
-          }, 8000);
-        }
+        if (!proxyUrl) return;
+        await fetchWithTimeout(proxyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Telegram-Init-Data': tg?.initData || ''
+          },
+          body: JSON.stringify({
+            action: 'admin_save_config',
+            adminId: ADMIN_TG_ID,
+            config: paymentConfig
+          })
+        }, 6000);
       } catch (e) {}
+    }
 
+    function saveAdminPaymentConfig() {
+      readAdminConfigInputs();
+      if (!paymentConfig.sbpPhone) {
+        paymentConfig.sbpPhone = '+7 (999) 000-00-00';
+        populateAdminSettingsInputs();
+        renderProAndAdminUI();
+      }
+      const btn = document.getElementById('btnSaveAdminCfg');
+      if (btn) {
+        const prevText = btn.textContent;
+        btn.textContent = `✓ Сохранено: ${paymentConfig.sbpPhone} (${paymentConfig.priceRub} ₽)`;
+        setTimeout(() => { btn.textContent = prevText; }, 2200);
+      }
       triggerHaptic('success');
-      showNotice(`Настройки СБП (${paymentConfig.priceRub} ₽, триал ${paymentConfig.trialDays} дн.) сохранены!`);
+      showNotice(`Реквизиты СБП (${paymentConfig.sbpPhone}, ${paymentConfig.priceRub} ₽) сохранены!`);
+      pushAdminConfigToWorker();
     }
 
     function renderAdminDashboard() {
@@ -4174,8 +4251,15 @@
           adminDataCache.requests = data.requests;
         }
         if (data?.config && typeof data.config === 'object') {
-          paymentConfig = { ...paymentConfig, ...data.config };
-          populateAdminSettingsInputs();
+          const srvTime = Number(data.config.updatedAt) || 0;
+          const locTime = Number(paymentConfig.updatedAt) || 0;
+          if (srvTime > locTime) {
+            paymentConfig = { ...paymentConfig, ...data.config };
+            try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
+            populateAdminSettingsInputs();
+          } else if (locTime > srvTime) {
+            pushAdminConfigToWorker();
+          }
         }
         saveAdminCacheLocal();
         renderAdminDashboard();
