@@ -6,6 +6,8 @@
   <title>NutriBalance Pro — Liquid Glass Edition</title>
   <!-- Telegram Mini Apps SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Barcode / QR Decoder (EAN-13, EAN-8, UPC) -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2487,42 +2489,348 @@
       return 'gemini-3.5-flash-lite';
     };
 
-    // Сканирование штрихкода через камеру Telegram и запрос к OpenFoodFacts
+    // Локальный резервный справочник популярных штрихкодов (на случай отсутствия в OpenFoodFacts или офлайна)
+    const BARCODE_FALLBACK_DB = {
+      '3017620422003': { name: 'Паста ореховая Nutella (Ferrero)', kcal: 539, p: 6.3, f: 30.9, c: 57.5 },
+      '5449000000996': { name: 'Напиток Coca-Cola Classic', kcal: 42, p: 0, f: 0, c: 10.6 },
+      '4607065000051': { name: 'Творог 5% Простоквашино', kcal: 121, p: 16, f: 5, c: 3 },
+      '4607004891467': { name: 'Йогурт греческий Teos 2% (Савушкин)', kcal: 68, p: 8, f: 2, c: 4.2 },
+      '4600605022378': { name: 'Хлебцы гречневые Dr.Korner', kcal: 310, p: 12, f: 3.3, c: 57 },
+      '8000500037560': { name: 'Батончик Kinder Bueno', kcal: 572, p: 8.6, f: 37.3, c: 49.5 }
+    };
+
+    let barcodeVideoStream = null;
+    let barcodeScanLoopId = null;
+    let barcodeScannerActive = false;
+
+    function ensureBarcodeModal() {
+      let modal = document.getElementById('barcodeScannerModal');
+      if (modal) return modal;
+
+      modal = document.createElement('div');
+      modal.id = 'barcodeScannerModal';
+      modal.className = 'hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto';
+      modal.innerHTML = `
+        <div class="liquid-glass rounded-3xl max-w-md w-full p-4 sm:p-5 space-y-3.5 animate-card my-auto">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl liquid-pill flex items-center justify-center text-emerald-300">
+                <svg class="w-4 h-4 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>
+              </div>
+              <div>
+                <h3 class="font-bold text-sm sm:text-base text-white">Сканер штрихкодов</h3>
+                <p id="barcodeModalStatus" class="text-[11px] text-slate-300">Наведи камеру на штрихкод или введи цифры</p>
+              </div>
+            </div>
+            <button type="button" onclick="closeBarcodeModal()" class="text-slate-300 hover:text-white px-1.5 py-0.5 text-sm">✕</button>
+          </div>
+
+          <div class="relative rounded-2xl border border-white/15 bg-slate-950/80 overflow-hidden h-48 flex flex-col items-center justify-center">
+            <div class="hud-corner top-2.5 left-2.5 border-t-2 border-l-2 rounded-tl-md"></div>
+            <div class="hud-corner top-2.5 right-2.5 border-t-2 border-r-2 rounded-tr-md"></div>
+            <div class="hud-corner bottom-2.5 left-2.5 border-b-2 border-l-2 rounded-bl-md"></div>
+            <div class="hud-corner bottom-2.5 right-2.5 border-b-2 border-r-2 rounded-br-md"></div>
+            <div id="barcodeLaserLine" class="scanner-laser hidden"></div>
+
+            <video id="barcodeVideoEl" autoplay playsinline muted class="hidden w-full h-full object-cover bg-black"></video>
+            <div id="barcodeCamPlaceholder" class="p-4 text-center space-y-2">
+              <p class="text-xs text-slate-300">Камера выключена или недоступна в текущем окне</p>
+              <div class="flex flex-wrap items-center justify-center gap-2">
+                <button type="button" onclick="startBarcodeCamera()" class="btn-spring liquid-btn-primary px-3.5 py-1.5 rounded-xl font-bold text-xs">Включить камеру</button>
+                <label class="btn-spring liquid-pill px-3 py-1.5 rounded-xl text-xs text-slate-200 cursor-pointer">
+                  Фото штрихкода
+                  <input type="file" accept="image/*" onchange="handleBarcodeImageUpload(event)" class="hidden" />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5">
+            <label class="btn-spring liquid-pill flex-1 py-2 px-3 rounded-xl text-center text-xs text-slate-200 cursor-pointer">
+              Загрузить фото штрихкода
+              <input type="file" accept="image/*" onchange="handleBarcodeImageUpload(event)" class="hidden" />
+            </label>
+            <button type="button" id="btnTgNativeQr" onclick="openTelegramNativeScanner()" class="hidden btn-spring liquid-pill py-2 px-3 rounded-xl text-xs text-sky-300 font-semibold">
+              Сканер Telegram
+            </button>
+          </div>
+
+          <div class="pt-2 border-t border-white/10 space-y-2">
+            <label class="block text-[11px] text-slate-300">Или введи штрихкод вручную (8–14 цифр):</label>
+            <div class="flex gap-1.5">
+              <input type="text" id="manualBarcodeInput" inputmode="numeric" placeholder="Например: 3017620422003" class="liquid-input flex-1 rounded-xl px-3 py-2 text-xs font-mono text-white" />
+              <button type="button" id="btnLookupBarcode" onclick="submitManualBarcode()" class="btn-spring liquid-btn-primary px-4 py-2 rounded-xl font-bold text-xs">Найти</button>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+              <span class="text-[10px] text-slate-400">Тест:</span>
+              <button type="button" onclick="testSampleBarcode('4607004891467')" class="btn-spring liquid-pill px-2 py-0.5 rounded-lg text-[10px] text-emerald-300">Йогурт Teos</button>
+              <button type="button" onclick="testSampleBarcode('4607065000051')" class="btn-spring liquid-pill px-2 py-0.5 rounded-lg text-[10px] text-emerald-300">Творог 5%</button>
+              <button type="button" onclick="testSampleBarcode('3017620422003')" class="btn-spring liquid-pill px-2 py-0.5 rounded-lg text-[10px] text-emerald-300">Nutella</button>
+              <button type="button" onclick="testSampleBarcode('5449000000996')" class="btn-spring liquid-pill px-2 py-0.5 rounded-lg text-[10px] text-emerald-300">Coca-Cola</button>
+            </div>
+          </div>
+          <div id="barcodeHiddenReader" class="hidden"></div>
+        </div>`;
+      document.body.appendChild(modal);
+
+      const inputEl = document.getElementById('manualBarcodeInput');
+      inputEl.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); submitManualBarcode(); }
+      });
+      return modal;
+    }
+
+    function canUseTelegramQrScanner() {
+      if (!isTelegramMiniApp || !tg || typeof tg.showScanQrPopup !== 'function') return false;
+      if (typeof tg.isVersionAtLeast === 'function' && !tg.isVersionAtLeast('6.4')) return false;
+      return true;
+    }
+
     function scanBarcode() {
-      if (!tg?.showScanQrPopup) {
-        return showNotice('Сканер штрихкодов работает в мобильном приложении Telegram');
+      triggerHaptic('light');
+      const modal = ensureBarcodeModal();
+      modal.classList.remove('hidden');
+      const tgBtn = document.getElementById('btnTgNativeQr');
+      if (tgBtn) tgBtn.classList.toggle('hidden', !canUseTelegramQrScanner());
+      startBarcodeCamera();
+    }
+
+    function closeBarcodeModal() {
+      stopBarcodeCamera();
+      const modal = document.getElementById('barcodeScannerModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function stopBarcodeCamera() {
+      barcodeScannerActive = false;
+      if (barcodeScanLoopId) { clearTimeout(barcodeScanLoopId); barcodeScanLoopId = null; }
+      if (barcodeVideoStream) {
+        barcodeVideoStream.getTracks().forEach(t => t.stop());
+        barcodeVideoStream = null;
       }
-      tg.showScanQrPopup({ text: 'Наведи камеру на штрихкод упаковки' }, async (barcode) => {
-        const code = String(barcode).trim();
+      const videoEl = document.getElementById('barcodeVideoEl');
+      if (videoEl) { videoEl.srcObject = null; videoEl.classList.add('hidden'); }
+      document.getElementById('barcodeLaserLine')?.classList.add('hidden');
+      document.getElementById('barcodeCamPlaceholder')?.classList.remove('hidden');
+    }
+
+    async function startBarcodeCamera() {
+      stopBarcodeCamera();
+      const statusEl = document.getElementById('barcodeModalStatus');
+      const videoEl = document.getElementById('barcodeVideoEl');
+      const placeholderEl = document.getElementById('barcodeCamPlaceholder');
+      const laserEl = document.getElementById('barcodeLaserLine');
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (statusEl) statusEl.textContent = 'Камера недоступна в этом окне — введи код вручную или загрузи фото';
+        return;
+      }
+
+      try {
+        barcodeVideoStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        videoEl.srcObject = barcodeVideoStream;
+        await videoEl.play().catch(() => {});
+        videoEl.classList.remove('hidden');
+        placeholderEl.classList.add('hidden');
+        laserEl.classList.remove('hidden');
+        barcodeScannerActive = true;
+        if (statusEl) statusEl.textContent = 'Наведи камеру на штрихкод упаковки...';
+        runBarcodeFrameLoop();
+      } catch (err) {
+        barcodeVideoStream = null;
+        if (statusEl) statusEl.textContent = 'Доступ к камере закрыт — используй ввод цифр или фото штрихкода';
+      }
+    }
+
+    async function runBarcodeFrameLoop() {
+      if (!barcodeScannerActive) return;
+      const videoEl = document.getElementById('barcodeVideoEl');
+      if (videoEl && videoEl.readyState >= 2 && videoEl.videoWidth > 0) {
+        // 1) Пробуем встроенный браузерный BarcodeDetector (Chrome / Android / iOS 17+)
+        if ('BarcodeDetector' in window) {
+          try {
+            if (!window._nbBarcodeDetector) {
+              window._nbBarcodeDetector = new window.BarcodeDetector({
+                formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'qr_code']
+              });
+            }
+            const codes = await window._nbBarcodeDetector.detect(videoEl);
+            if (codes && codes.length > 0) {
+              const raw = String(codes[0].rawValue || '').replace(/\D/g, '');
+              if (/^\d{8,14}$/.test(raw)) {
+                onBarcodeDetected(raw);
+                return;
+              }
+            }
+          } catch (e) {}
+        }
+
+        // 2) Резервный декодер через Html5Qrcode по кадру на холсте
+        if (typeof window.Html5Qrcode === 'function') {
+          try {
+            const c = document.createElement('canvas');
+            c.width = videoEl.videoWidth;
+            c.height = videoEl.videoHeight;
+            c.getContext('2d').drawImage(videoEl, 0, 0, c.width, c.height);
+            const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+            if (blob) {
+              const file = new File([blob], 'frame.jpg', { type: 'image/jpeg' });
+              if (!window._nbHtml5Qr) window._nbHtml5Qr = new window.Html5Qrcode('barcodeHiddenReader');
+              const decoded = await window._nbHtml5Qr.scanFile(file, false);
+              const clean = String(decoded || '').replace(/\D/g, '');
+              if (/^\d{8,14}$/.test(clean)) {
+                onBarcodeDetected(clean);
+                return;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+      if (barcodeScannerActive) {
+        barcodeScanLoopId = setTimeout(runBarcodeFrameLoop, 450);
+      }
+    }
+
+    async function handleBarcodeImageUpload(ev) {
+      const file = ev.target.files?.[0];
+      ev.target.value = '';
+      if (!file) return;
+      const statusEl = document.getElementById('barcodeModalStatus');
+      if (statusEl) statusEl.textContent = 'Распознаём штрихкод на фото...';
+
+      // 1) Пробуем локальный декодер Html5Qrcode
+      if (typeof window.Html5Qrcode === 'function') {
+        try {
+          if (!window._nbHtml5Qr) window._nbHtml5Qr = new window.Html5Qrcode('barcodeHiddenReader');
+          const decoded = await window._nbHtml5Qr.scanFile(file, false);
+          const clean = String(decoded || '').replace(/\D/g, '');
+          if (/^\d{8,14}$/.test(clean)) {
+            return onBarcodeDetected(clean);
+          }
+        } catch (e) {}
+      }
+
+      // 2) Пробуем BarcodeDetector по ImageBitmap
+      if ('BarcodeDetector' in window && typeof createImageBitmap === 'function') {
+        try {
+          const bmp = await createImageBitmap(file);
+          const det = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+          const res = await det.detect(bmp);
+          if (res && res.length > 0) {
+            const clean = String(res[0].rawValue || '').replace(/\D/g, '');
+            if (/^\d{8,14}$/.test(clean)) return onBarcodeDetected(clean);
+          }
+        } catch (e) {}
+      }
+
+      showNotice('Не удалось прочитать штрихкод с фото — введи цифры под полосками вручную');
+      if (statusEl) statusEl.textContent = 'Не удалось считать полоски — введи цифры вручную ниже';
+    }
+
+    function openTelegramNativeScanner() {
+      if (!canUseTelegramQrScanner()) {
+        return showNotice('Встроенный сканер Telegram доступен только в мобильном приложении');
+      }
+      closeBarcodeModal();
+      tg.showScanQrPopup({ text: 'Наведи камеру на штрихкод упаковки' }, (barcode) => {
+        const code = String(barcode || '').replace(/\D/g, '');
         if (!/^\d{8,14}$/.test(code)) return false;
         tg.closeScanQrPopup();
-        triggerHaptic('light');
-
-        try {
-          const res = await fetchWithTimeout(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_ru,brands,nutriments`, {}, 10000);
-          const data = await res.json();
-          const p = data?.product;
-          if (!p) throw new Error('Не найден');
-
-          const nut = p.nutriments || {};
-          const kcal = Math.round(Number(nut['energy-kcal_100g'] || (nut['energy_100g'] ? nut['energy_100g'] / 4.184 : 0)));
-          const prot = round1(Number(nut.proteins_100g) || 0);
-          const fat = round1(Number(nut.fat_100g) || 0);
-          const carb = round1(Number(nut.carbohydrates_100g) || 0);
-          const name = (p.product_name_ru || p.product_name || `Штрихкод ${code}`).trim();
-
-          if (!kcal && !prot && !fat && !carb) throw new Error('Нет КБЖУ');
-
-          const item = { id: `off_${code}`, name: name.slice(0, 90), kcal, p: prot, f: fat, c: carb, isOnline: true };
-          onlineFoundFoods.unshift(item);
-          selectedFoodObj = item;
-          renderFoodSearchResults();
-          triggerHaptic('success');
-        } catch (e) {
-          showNotice('Продукт с этим штрихкодом не найден в базе OpenFoodFacts');
-        }
+        lookupBarcodeProduct(code);
         return true;
       });
+    }
+
+    function testSampleBarcode(code) {
+      const inputEl = document.getElementById('manualBarcodeInput');
+      if (inputEl) inputEl.value = code;
+      lookupBarcodeProduct(code);
+    }
+
+    function submitManualBarcode() {
+      const raw = document.getElementById('manualBarcodeInput')?.value || '';
+      const code = raw.replace(/\D/g, '');
+      if (!/^\d{8,14}$/.test(code)) {
+        return showNotice('Штрихкод должен содержать от 8 до 14 цифр');
+      }
+      lookupBarcodeProduct(code);
+    }
+
+    function onBarcodeDetected(code) {
+      triggerHaptic('light');
+      const inputEl = document.getElementById('manualBarcodeInput');
+      if (inputEl) inputEl.value = code;
+      lookupBarcodeProduct(code);
+    }
+
+    function selectScannedFoodItem(item) {
+      // Очищаем текстовый фильтр поиска, чтобы найденный по штрихкоду продукт сразу отобразился вверху списка
+      searchInputEl.value = '';
+      document.getElementById('clearSearchBtn')?.classList.add('hidden');
+      onlineFoundFoods = [item, ...onlineFoundFoods.filter(f => f.id !== item.id)];
+      selectedFoodObj = item;
+      renderFoodSearchResults();
+      updateQuickPreview();
+      closeBarcodeModal();
+      triggerHaptic('success');
+      showNotice(`Найден: ${item.name} (${item.kcal} ккал/100г)`);
+    }
+
+    async function lookupBarcodeProduct(code) {
+      const btn = document.getElementById('btnLookupBarcode');
+      const statusEl = document.getElementById('barcodeModalStatus');
+      if (btn) { btn.disabled = true; btn.textContent = 'Поиск...'; }
+      if (statusEl) statusEl.textContent = `Ищем штрихкод ${code} в базе OpenFoodFacts...`;
+
+      try {
+        const res = await fetchWithTimeout(
+          `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_ru,generic_name_ru,brands,nutriments`,
+          {},
+          8500
+        );
+        const data = await res.json();
+        const p = data?.product;
+        if (!p) throw new Error('Не найден');
+
+        const nut = p.nutriments || {};
+        const prot = round1(Number(nut.proteins_100g ?? nut.proteins) || 0);
+        const fat = round1(Number(nut.fat_100g ?? nut.fat) || 0);
+        const carb = round1(Number(nut.carbohydrates_100g ?? nut.carbohydrates) || 0);
+        let kcal = Math.round(
+          Number(
+            nut['energy-kcal_100g'] ||
+            nut['energy-kcal'] ||
+            (nut['energy-kj_100g'] ? nut['energy-kj_100g'] / 4.184 : 0) ||
+            (nut['energy_100g'] ? nut['energy_100g'] / 4.184 : 0)
+          ) || 0
+        );
+        if (!kcal && (prot || fat || carb)) {
+          kcal = Math.round(prot * 4 + fat * 9 + carb * 4);
+        }
+
+        const baseName = (p.product_name_ru || p.generic_name_ru || p.product_name || '').trim();
+        const brand = p.brands ? ` (${String(p.brands).split(',')[0].trim()})` : '';
+        const name = (baseName ? `${baseName}${brand}` : `Штрихкод ${code}`).trim();
+
+        if (!kcal && !prot && !fat && !carb) throw new Error('Нет КБЖУ');
+
+        const item = { id: `off_${code}`, name: name.slice(0, 90), kcal, p: prot, f: fat, c: carb, isOnline: true };
+        selectScannedFoodItem(item);
+      } catch (e) {
+        const fallback = BARCODE_FALLBACK_DB[code];
+        if (fallback) {
+          const item = { id: `off_${code}`, name: fallback.name, kcal: fallback.kcal, p: fallback.p, f: fallback.f, c: fallback.c, isOnline: true };
+          selectScannedFoodItem(item);
+        } else {
+          if (statusEl) statusEl.textContent = `Штрихкод ${code} не найден в OpenFoodFacts`;
+          showNotice(`Продукт со штрихкодом ${code} не найден в базе OpenFoodFacts`);
+        }
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Найти'; }
+      }
     }
 
     // Отрисовка графика калорий за 7 дней во вкладке «Прогресс»
