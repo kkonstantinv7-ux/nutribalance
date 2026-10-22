@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -891,7 +890,7 @@
         <div>
           <label class="block text-slate-200 font-semibold mb-1">1. Провайдер ИИ</label>
           <select id="aiProviderSelect" class="liquid-input w-full rounded-xl px-3 py-2 text-white">
-            <option value="gemini" class="bg-slate-900">Google Gemini API (gemini-2.5-flash)</option>
+            <option value="gemini" class="bg-slate-900">Google Gemini API (gemini-3.5-flash-lite)</option>
             <option value="openrouter" class="bg-slate-900">OpenRouter API</option>
           </select>
         </div>
@@ -1674,7 +1673,7 @@
         const data = await res.json();
         if (data && Array.isArray(data.models)) {
           const supported = data.models.filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace('models/', ''));
-          const priority = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
+          const priority = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-flash-latest'];
           for (const pref of priority) {
             const match = supported.find(s => s === pref || s.startsWith(pref));
             if (match) { cachedGeminiModel = match; return match; }
@@ -1683,7 +1682,7 @@
           if (anyFlash) { cachedGeminiModel = anyFlash; return anyFlash; }
         }
       } catch (e) {}
-      return 'gemini-2.5-flash';
+      return 'gemini-3.5-flash-lite';
     }
 
     async function callAIJson(promptText, base64ImageOrNull = null) {
@@ -1693,7 +1692,7 @@
         if (base64ImageOrNull) contentParts.push({ type: 'image_url', image_url: { url: base64ImageOrNull } });
         const resp = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.apiKey}` },
-          body: JSON.stringify({ model: 'google/gemini-2.5-flash', messages: [{ role: 'user', content: contentParts }] })
+          body: JSON.stringify({ model: 'google/gemini-3.5-flash-lite', messages: [{ role: 'user', content: contentParts }] })
         });
         const data = await resp.json().catch(() => null);
         if (!resp.ok) throw new Error(data?.error?.message || `Ошибка OpenRouter (HTTP ${resp.status})`);
@@ -1701,7 +1700,7 @@
         return { parsed: extractJson(raw), model: 'OpenRouter' };
       } else {
         const detectedModel = await detectWorkingGeminiModel(state.apiKey);
-        const candidateModels = [...new Set([detectedModel, 'gemini-2.5-flash', 'gemini-2.0-flash'])];
+        const candidateModels = [...new Set([detectedModel, 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'])];
         const parts = [{ text: promptText }];
         if (base64ImageOrNull) parts.push({ inline_data: { mime_type: 'image/jpeg', data: base64ImageOrNull.split(',')[1] } });
 
@@ -2478,14 +2477,14 @@
         const data = await res.json();
         if (data && Array.isArray(data.models)) {
           const supported = data.models.filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace('models/', ''));
-          const priority = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
+          const priority = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-flash-latest'];
           for (const pref of priority) {
             const match = supported.find(s => s === pref || s.startsWith(pref));
             if (match) { cachedGeminiModel = match; return match; }
           }
         }
       } catch (e) {}
-      return 'gemini-2.5-flash';
+      return 'gemini-3.5-flash-lite';
     };
 
     // Сканирование штрихкода через камеру Telegram и запрос к OpenFoodFacts
@@ -2584,4 +2583,3 @@
   </script>
 </body>
 </html>
-```
