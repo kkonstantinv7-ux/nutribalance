@@ -265,12 +265,9 @@
 
       <!-- Быстрые кнопки -->
       <div class="flex items-center gap-1.5">
-        <button onclick="openSettingsModal()" class="btn-spring liquid-pill px-2.5 py-1.5 rounded-xl text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
-          <svg class="w-3.5 h-3.5 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-          <span>ИИ</span>
-        </button>
-        <button onclick="openBackupModal()" class="btn-spring liquid-pill p-2 rounded-xl text-slate-200" title="Бэкап данных">
+        <button onclick="openBackupModal()" class="btn-spring liquid-pill px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-200 flex items-center gap-1.5" title="Бэкап данных">
           <svg class="w-4 h-4 svg-glow-cyan text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <span class="hidden sm:inline">Бэкап</span>
         </button>
       </div>
     </div>
@@ -590,7 +587,7 @@
             <h2 class="font-bold text-sm sm:text-base text-white">Опиши блюдо своими словами</h2>
             <p class="text-[11px] text-slate-300">ИИ сам посчитает калории, БЖУ и вес порции</p>
           </div>
-          <button onclick="openSettingsModal()" class="btn-spring liquid-pill text-xs px-2.5 py-1 rounded-xl text-emerald-300">Ключ ИИ</button>
+          <span class="text-[10px] px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 font-semibold">AI Ready</span>
         </div>
 
         <textarea id="aiTextFoodPrompt" rows="3" placeholder="Например: бутерброд с тунцом и яйцом&#10;Или: тарелка борща со сметаной и 2 куска хлеба" class="liquid-input w-full rounded-2xl p-3 text-xs sm:text-sm text-white"></textarea>
@@ -638,7 +635,6 @@
             </div>
             <div class="flex items-center gap-1.5">
               <button type="button" id="btnSwitchCam" onclick="switchCameraFacing()" class="hidden btn-spring liquid-pill text-xs px-2.5 py-1 rounded-xl text-slate-200">Камера</button>
-              <button onclick="openSettingsModal()" class="btn-spring liquid-pill text-xs px-2.5 py-1 rounded-xl text-emerald-300">Ключ</button>
             </div>
           </div>
 
@@ -879,40 +875,6 @@
     </section>
 
   </main>
-
-  <!-- МОДАЛЬНОЕ ОКНО: НАСТРОЙКИ ИИ -->
-  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 space-y-4 animate-card">
-      <div class="flex items-center justify-between">
-        <h3 class="font-bold text-base text-white">Настройки ИИ и Синхронизации</h3>
-        <button onclick="closeSettingsModal()" class="text-slate-300 hover:text-white">✕</button>
-      </div>
-
-      <div class="space-y-3 text-xs">
-        <div>
-          <label class="block text-slate-200 font-semibold mb-1">1. Провайдер ИИ</label>
-          <select id="aiProviderSelect" class="liquid-input w-full rounded-xl px-3 py-2 text-white">
-            <option value="gemini" class="bg-slate-900">Google Gemini API (gemini-3.5-flash-lite)</option>
-            <option value="openrouter" class="bg-slate-900">OpenRouter API</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-slate-200 font-semibold mb-1">API Ключ (AIzaSy... или sk-or-...)</label>
-          <input type="password" id="apiKeyInput" placeholder="Вставьте ваш API ключ..." class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
-        </div>
-        <hr class="border-white/10" />
-        <div>
-          <label class="block text-slate-200 font-semibold mb-1">2. URL Firebase Realtime DB (необязательно)</label>
-          <input type="text" id="firebaseUrlInput" placeholder="https://your-project-default-rtdb.firebaseio.com" class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-2">
-        <button onclick="closeSettingsModal()" class="btn-spring liquid-pill px-4 py-2 rounded-xl text-xs text-slate-200">Отмена</button>
-        <button onclick="saveSettings()" class="btn-spring liquid-btn-primary px-4 py-2 rounded-xl font-bold text-xs">Сохранить</button>
-      </div>
-    </div>
-  </div>
 
   <!-- МОДАЛЬНОЕ ОКНО: БЭКАП -->
   <div id="backupModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
@@ -1666,72 +1628,244 @@
     }
 
     // =====================================================================
-    // 7. ИИ (провайдеры, ключ и модели — без изменений; ключ теперь в заголовке)
+    // 7. СЕРВЕРНЫЙ ПРОКСИ ИИ (БЕЗ ВВОДА КЛЮЧА ПОЛЬЗОВАТЕЛЕМ) + УМНЫЙ ЛОКАЛЬНЫЙ ДВИЖОК
     // =====================================================================
-    async function detectWorkingGeminiModel(apiKey) {
-      if (cachedGeminiModel) return cachedGeminiModel;
-      try {
-        const res = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': apiKey } }, 15000);
-        const data = await res.json();
-        if (data && Array.isArray(data.models)) {
-          const supported = data.models.filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace('models/', ''));
-          const priority = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-flash-latest'];
-          for (const pref of priority) {
-            const match = supported.find(s => s === pref || s.startsWith(pref));
-            if (match) { cachedGeminiModel = match; return match; }
-          }
-          const anyFlash = supported.find(s => s.includes('flash'));
-          if (anyFlash) { cachedGeminiModel = anyFlash; return anyFlash; }
-        }
-      } catch (e) {}
-      return 'gemini-3.5-flash-lite';
-    }
+    // Вставь сюда URL своего бесплатного Cloudflare Worker (например: 'https://nutri-ai.myname.workers.dev')
+    const AI_PROXY_URL = 'https://nutribalance.k-konstantin-v7.workers.dev';
+    const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+
+    // Расширенный словарь блюд и продуктов для мгновенного автономного расчёта без ключа
+    const SMART_DISH_DICT = [
+      { keys: ['яйц', 'омлет', 'глазун'], name: 'Яйца куриные / омлет', kcal100: 155, p100: 12.7, f100: 11.5, c100: 0.7, pieceGrams: 55, defaultGrams: 110 },
+      { keys: ['творог'], name: 'Творог 5%', kcal100: 121, p100: 16, f100: 5, c100: 3, pieceGrams: 180, defaultGrams: 180 },
+      { keys: ['сырник'], name: 'Сырники из творога', kcal100: 220, p100: 14.5, f100: 9.5, c100: 18.5, pieceGrams: 60, defaultGrams: 150 },
+      { keys: ['овсян', 'каша', 'геркулес'], name: 'Овсяная каша', kcal100: 102, p100: 3.5, f100: 2.5, c100: 16.5, pieceGrams: 250, defaultGrams: 250 },
+      { keys: ['гречк', 'гречн'], name: 'Гречка отварная', kcal100: 110, p100: 4.2, f100: 1.1, c100: 21.3, pieceGrams: 200, defaultGrams: 200 },
+      { keys: ['рис'], name: 'Рис отварной', kcal100: 130, p100: 2.7, f100: 0.3, c100: 28, pieceGrams: 200, defaultGrams: 200 },
+      { keys: ['макарон', 'паста', 'спагетти'], name: 'Паста / макароны отварные', kcal100: 135, p100: 5, f100: 1.2, c100: 26, pieceGrams: 220, defaultGrams: 220 },
+      { keys: ['картоф', 'пюре'], name: 'Картофель / пюре', kcal100: 95, p100: 2.1, f100: 2.5, c100: 16, pieceGrams: 200, defaultGrams: 200 },
+      { keys: ['куриц', 'курин', 'грудк', 'филе'], name: 'Куриное филе', kcal100: 165, p100: 31, f100: 3.6, c100: 0, pieceGrams: 150, defaultGrams: 150 },
+      { keys: ['индейк'], name: 'Филе индейки', kcal100: 155, p100: 29.5, f100: 3.2, c100: 0, pieceGrams: 150, defaultGrams: 150 },
+      { keys: ['говяд', 'стейк', 'телят'], name: 'Говядина тушёная / стейк', kcal100: 187, p100: 26, f100: 9, c100: 0, pieceGrams: 160, defaultGrams: 160 },
+      { keys: ['свинин', 'шашлык'], name: 'Свинина запечённая / шашлык', kcal100: 259, p100: 21, f100: 19, c100: 0, pieceGrams: 180, defaultGrams: 180 },
+      { keys: ['котлет'], name: 'Котлета домашняя', kcal100: 215, p100: 17, f100: 13, c100: 7, pieceGrams: 85, defaultGrams: 170 },
+      { keys: ['тунец', 'тунц'], name: 'Тунец в собственном соку', kcal100: 105, p100: 23, f100: 1, c100: 0, pieceGrams: 120, defaultGrams: 120 },
+      { keys: ['лосос', 'семг', 'форел', 'рыб'], name: 'Рыба запечённая / лосось', kcal100: 195, p100: 21, f100: 12, c100: 0, pieceGrams: 150, defaultGrams: 150 },
+      { keys: ['креветк', 'морепрод'], name: 'Креветки отварные', kcal100: 95, p100: 20.5, f100: 1.2, c100: 0, pieceGrams: 150, defaultGrams: 150 },
+      { keys: ['борщ'], name: 'Борщ с мясом', kcal100: 65, p100: 4.2, f100: 3.1, c100: 5.2, pieceGrams: 300, defaultGrams: 300 },
+      { keys: ['суп', 'бульон', 'щи', 'солянк'], name: 'Суп домашний', kcal100: 58, p100: 3.8, f100: 2.4, c100: 5.5, pieceGrams: 300, defaultGrams: 300 },
+      { keys: ['плов'], name: 'Плов с мясом', kcal100: 165, p100: 9.5, f100: 5.8, c100: 19, pieceGrams: 280, defaultGrams: 280 },
+      { keys: ['пельмен', 'хинкал', 'манты'], name: 'Пельмени отварные', kcal100: 245, p100: 11.5, f100: 12.5, c100: 21.5, pieceGrams: 220, defaultGrams: 220 },
+      { keys: ['бутерброд', 'тост', 'сэндвич'], name: 'Бутерброд / тост', kcal100: 210, p100: 11, f100: 8.5, c100: 22, pieceGrams: 95, defaultGrams: 140 },
+      { keys: ['хлеб', 'батон', 'лаваш'], name: 'Хлеб цельнозерновой / ржаной', kcal100: 210, p100: 6.8, f100: 1.3, c100: 41, pieceGrams: 35, defaultGrams: 70 },
+      { keys: ['сыр'], name: 'Сыр твёрдый 45%', kcal100: 345, p100: 25, f100: 27, c100: 0, pieceGrams: 30, defaultGrams: 40 },
+      { keys: ['сметан'], name: 'Сметана 15%', kcal100: 158, p100: 2.6, f100: 15, c100: 3, pieceGrams: 30, defaultGrams: 30 },
+      { keys: ['йогурт', 'кефир', 'ряженк'], name: 'Йогурт греческий / кефир', kcal100: 68, p100: 8, f100: 2, c100: 4.2, pieceGrams: 140, defaultGrams: 150 },
+      { keys: ['банан'], name: 'Банан свежий', kcal100: 89, p100: 1.1, f100: 0.3, c100: 22.8, pieceGrams: 120, defaultGrams: 120 },
+      { keys: ['яблок', 'груш', 'апельсин', 'мандарин'], name: 'Фрукты свежие (яблоко/цитрус)', kcal100: 47, p100: 0.5, f100: 0.3, c100: 10.8, pieceGrams: 160, defaultGrams: 160 },
+      { keys: ['салат', 'овощ', 'огур', 'помидор', 'томат'], name: 'Салат из свежих овощей', kcal100: 45, p100: 1.2, f100: 2.5, c100: 4.5, pieceGrams: 180, defaultGrams: 180 },
+      { keys: ['авокадо'], name: 'Авокадо', kcal100: 160, p100: 2, f100: 14.7, c100: 1.8, pieceGrams: 100, defaultGrams: 100 },
+      { keys: ['орех', 'миндал', 'кешью', 'грецк', 'арахис'], name: 'Орехи ассорти', kcal100: 605, p100: 18, f100: 54, c100: 12, pieceGrams: 30, defaultGrams: 30 },
+      { keys: ['шоколад', 'конфет', 'батончик'], name: 'Шоколад / десерт', kcal100: 530, p100: 6, f100: 31, c100: 56, pieceGrams: 25, defaultGrams: 40 },
+      { keys: ['капучино', 'латте', 'раф', 'кофе'], name: 'Кофе с молоком / капучино', kcal100: 45, p100: 2.4, f100: 2.2, c100: 3.8, pieceGrams: 250, defaultGrams: 250 },
+      { keys: ['протеин', 'изолят', 'коктейл'], name: 'Протеиновый коктейль', kcal100: 120, p100: 24, f100: 1.5, c100: 2.5, pieceGrams: 100, defaultGrams: 100 },
+      { keys: ['пицц'], name: 'Пицца на тонком тесте', kcal100: 255, p100: 11, f100: 10.5, c100: 29, pieceGrams: 120, defaultGrams: 240 },
+      { keys: ['шаурм', 'шаверм', 'донер'], name: 'Шаурма с курицей', kcal100: 215, p100: 11.5, f100: 9.5, c100: 21, pieceGrams: 320, defaultGrams: 320 },
+      { keys: ['ролл', 'суши', 'филадельф'], name: 'Роллы / суши сет', kcal100: 175, p100: 7.5, f100: 5.5, c100: 24, pieceGrams: 220, defaultGrams: 220 },
+      { keys: ['блин', 'оладь'], name: 'Блины домашние', kcal100: 215, p100: 6, f100: 8.5, c100: 28, pieceGrams: 55, defaultGrams: 165 }
+    ];
 
     async function callAIJson(promptText, base64ImageOrNull = null) {
-      if (!state.apiKey) { openSettingsModal(); throw new Error('Укажите API ключ в настройках (кнопка ИИ вверху)'); }
-      if (state.aiProvider === 'openrouter') {
-        const contentParts = [{ type: 'text', text: promptText }];
-        if (base64ImageOrNull) contentParts.push({ type: 'image_url', image_url: { url: base64ImageOrNull } });
-        const resp = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.apiKey}` },
-          body: JSON.stringify({ model: 'google/gemini-3.5-flash-lite', messages: [{ role: 'user', content: contentParts }] })
-        });
-        const data = await resp.json().catch(() => null);
-        if (!resp.ok) throw new Error(data?.error?.message || `Ошибка OpenRouter (HTTP ${resp.status})`);
-        const raw = data?.choices?.[0]?.message?.content || '';
-        return { parsed: extractJson(raw), model: 'OpenRouter' };
-      } else {
-        const detectedModel = await detectWorkingGeminiModel(state.apiKey);
-        const candidateModels = [...new Set([detectedModel, 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'])];
-        const parts = [{ text: promptText }];
-        if (base64ImageOrNull) parts.push({ inline_data: { mime_type: 'image/jpeg', data: base64ImageOrNull.split(',')[1] } });
-
-        let firstRealErr = '';
-        for (let i = 0; i < candidateModels.length; i++) {
-          const modelName = candidateModels[i];
-          try {
-            const resp = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': state.apiKey },
-              body: JSON.stringify({ contents: [{ parts }], generationConfig: { response_mime_type: 'application/json' } })
-            });
-            const data = await resp.json().catch(() => null);
-            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (resp.ok && rawText) {
-              return { parsed: extractJson(rawText), model: modelName };
-            } else {
-              const errMsg = data?.error?.message || `Модель ${modelName} не ответила`;
-              if (!firstRealErr) firstRealErr = errMsg;
-              const suggestedMatch = errMsg.match(/use models\/([a-zA-Z0-9._-]+)/i);
-              if (suggestedMatch && suggestedMatch[1]) {
-                const suggestedModel = suggestedMatch[1].trim();
-                if (!candidateModels.includes(suggestedModel)) candidateModels.splice(i + 1, 0, suggestedModel);
-              }
-            }
-          } catch (netErr) { if (!firstRealErr) firstRealErr = netErr.message; }
-        }
-        throw new Error(firstRealErr || 'Ошибка запроса к Gemini API');
+      const proxyUrl = (AI_PROXY_URL || '').trim();
+      if (!proxyUrl) {
+        throw new Error('NO_PROXY_CONFIGURED');
       }
+
+      const resp = await fetchWithTimeout(proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Telegram-Init-Data': tg?.initData || ''
+        },
+        body: JSON.stringify({
+          model: DEFAULT_GEMINI_MODEL,
+          prompt: promptText,
+          image: base64ImageOrNull || null,
+          userId: tgUserId
+        })
+      }, 30000);
+
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok) {
+        throw new Error(data?.error || `Ошибка прокси ИИ (HTTP ${resp.status})`);
+      }
+      if (data?.parsed && typeof data.parsed === 'object') {
+        return { parsed: data.parsed, model: data.model || DEFAULT_GEMINI_MODEL };
+      }
+      const rawText = data?.text || data?.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
+      return { parsed: extractJson(rawText), model: data?.model || DEFAULT_GEMINI_MODEL };
+    }
+
+    // Локальный разбор текстового описания блюда (работает без API-ключа и без прокси)
+    async function estimateDishLocally(rawText) {
+      const clean = rawText.trim().toLowerCase();
+      const parts = clean.split(/(?:,|;|\+| и | с | со |\n)+/).map(s => s.trim()).filter(Boolean);
+      const matchedComponents = [];
+
+      for (const seg of parts) {
+        let grams = null;
+        const gMatch = seg.match(/(\d+(?:[.,]\d+)?)\s*(?:г|гр|грамм|мл)/i);
+        const pcsMatch = seg.match(/(\d+(?:[.,]\d+)?)\s*(?:шт|кус|кусок|куска|кусков|порц|тарелк|лож|ст\.?\s*л|ч\.?\s*л|стакан)/i);
+        const leadNum = seg.match(/^(\d+(?:[.,]\d+)?)\s+/);
+
+        const dictEntry = SMART_DISH_DICT.find(d => d.keys.some(k => seg.includes(k)));
+        if (dictEntry) {
+          if (gMatch) grams = parseFloat(gMatch[1].replace(',', '.'));
+          else if (pcsMatch) grams = parseFloat(pcsMatch[1].replace(',', '.')) * dictEntry.pieceGrams;
+          else if (leadNum) {
+            const n = parseFloat(leadNum[1].replace(',', '.'));
+            grams = n <= 10 ? n * dictEntry.pieceGrams : n;
+          } else {
+            grams = dictEntry.defaultGrams;
+          }
+          matchedComponents.push({
+            name: dictEntry.name,
+            grams: Math.round(num(grams, 10, 2000, dictEntry.defaultGrams)),
+            kcal100: dictEntry.kcal100,
+            p100: dictEntry.p100,
+            f100: dictEntry.f100,
+            c100: dictEntry.c100
+          });
+        }
+      }
+
+      if (matchedComponents.length > 0) {
+        let totalGrams = 0, totalKcal = 0, totalP = 0, totalF = 0, totalC = 0;
+        matchedComponents.forEach(c => {
+          totalGrams += c.grams;
+          totalKcal += (c.kcal100 * c.grams) / 100;
+          totalP += (c.p100 * c.grams) / 100;
+          totalF += (c.f100 * c.grams) / 100;
+          totalC += (c.c100 * c.grams) / 100;
+        });
+        const factor = 100 / Math.max(1, totalGrams);
+        const title = rawText.trim().charAt(0).toUpperCase() + rawText.trim().slice(1);
+        return {
+          name: title.slice(0, 90),
+          portionGrams: Math.round(totalGrams),
+          kcal100: Math.round(totalKcal * factor),
+          p100: round1(totalP * factor),
+          f100: round1(totalF * factor),
+          c100: round1(totalC * factor),
+          components: matchedComponents
+        };
+      }
+
+      // Если в локальном словаре не нашлось — ищем в базе OpenFoodFacts (она бесплатная и без ключей)
+      try {
+        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(rawText)}&search_simple=1&action=process&json=1&page_size=5&lc=ru&fields=product_name,product_name_ru,nutriments`;
+        const res = await fetchWithTimeout(url, {}, 7000);
+        const data = await res.json();
+        const prod = (data?.products || []).find(p => p?.nutriments);
+        if (prod) {
+          const nut = prod.nutriments || {};
+          const p100 = round1(Number(nut.proteins_100g) || 0);
+          const f100 = round1(Number(nut.fat_100g) || 0);
+          const c100 = round1(Number(nut.carbohydrates_100g) || 0);
+          const kcal100 = Math.round(Number(nut['energy-kcal_100g'] || (nut['energy_100g'] ? nut['energy_100g'] / 4.184 : 0))) || Math.round(p100 * 4 + f100 * 9 + c100 * 4);
+          if (kcal100 > 0) {
+            return {
+              name: (prod.product_name_ru || prod.product_name || rawText).trim().slice(0, 90),
+              portionGrams: 200,
+              kcal100, p100, f100, c100,
+              components: [{ name: (prod.product_name_ru || prod.product_name || rawText).trim().slice(0, 70), grams: 200, kcal100, p100, f100, c100 }]
+            };
+          }
+        }
+      } catch (e) {}
+
+      // Умная оценка по умолчанию для домашнего блюда
+      const gMatch = rawText.match(/(\d+)\s*(?:г|гр|грамм|мл)/i);
+      return {
+        name: (rawText.trim().charAt(0).toUpperCase() + rawText.trim().slice(1)).slice(0, 90),
+        portionGrams: gMatch ? num(parseInt(gMatch[1], 10), 20, 2000, 250) : 250,
+        kcal100: 155,
+        p100: 10.5,
+        f100: 6.5,
+        c100: 14.0,
+        components: [{ name: rawText.trim().slice(0, 70), grams: 250, kcal100: 155, p100: 10.5, f100: 6.5, c100: 14.0 }]
+      };
+    }
+
+    // Локальный разбор дня без API-ключа
+    function buildLocalDailyReview(day, targets) {
+      let totKcal = 0, totP = 0, totF = 0, totC = 0;
+      day.items.forEach(it => { totKcal += it.kcal; totP += it.p; totF += it.f; totC += it.c; });
+      totKcal = Math.round(totKcal); totP = Math.round(totP); totF = Math.round(totF); totC = Math.round(totC);
+
+      const calRemain = targets.targetKcal - totKcal;
+      const pRemain = Math.max(0, targets.p - totP);
+      const act = day.activity || { steps: 0, burnedKcal: 0 };
+
+      let verdict = '';
+      if (Math.abs(calRemain) <= 150) {
+        verdict = `Отличный баланс: вы набрали ${totKcal} из ${targets.targetKcal} ккал и держите плановый коридор энергии. `;
+      } else if (calRemain > 150) {
+        verdict = `Сейчас съедено ${totKcal} ккал — до дневной цели остаётся запас ${calRemain} ккал. `;
+      } else {
+        verdict = `Дневная цель превышена на ${Math.abs(calRemain)} ккал (${totKcal} из ${targets.targetKcal} ккал), поэтому следующий приём пищи лучше сделать лёгким и белковым. `;
+      }
+      verdict += pRemain <= 15
+        ? `Норма по белку выполнена (${totP} г из ${targets.p} г) — мышцы и сытость под защитой.`
+        : `По белку закрыто ${totP} г из ${targets.p} г (осталось добрать ${pRemain} г).`;
+
+      let nextMeal = '';
+      if (pRemain >= 30 && calRemain >= 250) {
+        const filletGrams = Math.min(220, Math.max(120, Math.round((pRemain / 30) * 100)));
+        nextMeal = `Запечённое филе индейки или курицы (${filletGrams} г) + салат из свежих овощей (180 г) или 180 г творога 5%.`;
+      } else if (pRemain >= 15) {
+        nextMeal = `Греческий йогурт 2% (150 г) или творог обезжиренный (150 г) — даст ~24 г чистого белка без лишних калорий.`;
+      } else if (calRemain > 250) {
+        nextMeal = `Порция запечённой рыбы (140 г) с тушёными овощами или гречкой (120 г) для ровного насыщения вечером.`;
+      } else {
+        nextMeal = `Лёгкий овощной салат с зеленью (150 г) или стакан кефира / травяной чай, чтобы сохранить целевой дефицит.`;
+      }
+
+      const tips = [];
+      if (day.water < 1800) tips.push(`Выпей ещё ${Math.max(250, 2000 - day.water)} мл чистой воды до вечера для нормального метаболизма.`);
+      else tips.push(`Водный баланс в полном порядке (${day.water} мл за день).`);
+      if ((act.steps || 0) < 7000) tips.push(`Добавь вечернюю прогулку на 20–25 минут (+2500 шагов), чтобы увеличить расход энергии.`);
+      else tips.push(`Отличная бытовая активность (${act.steps} шагов) помогает комфортно держать форму.`);
+      if (totF > targets.f * 1.15) tips.push(`Обрати внимание на жиры (${totF} г при норме ${targets.f} г) — выбирай запекание или гриль без лишнего масла.`);
+
+      return { verdict, nextMeal, tips };
+    }
+
+    // Локальный расчёт калорий тренировки по таблицам MET (работает без API-ключа)
+    function estimateWorkoutLocally(text, weightKg) {
+      const lower = text.toLowerCase();
+      let minutes = 45;
+      const minMatch = lower.match(/(\d+)\s*(?:мин|m|минут)/i);
+      const hourMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(?:ч|час)/i);
+      const plainNum = lower.match(/(\d{2,3})/);
+      if (minMatch) minutes = parseInt(minMatch[1], 10);
+      else if (hourMatch) minutes = Math.round(parseFloat(hourMatch[1].replace(',', '.')) * 60);
+      else if (plainNum) minutes = parseInt(plainNum[1], 10);
+      minutes = num(minutes, 5, 360, 45);
+
+      let met = 5.0;
+      let title = 'Тренировка';
+      if (lower.includes('бег') || lower.includes('пробежк')) { met = 8.5; title = 'Бег'; }
+      else if (lower.includes('зал') || lower.includes('силов') || lower.includes('качал')) { met = 5.5; title = 'Силовая в зале'; }
+      else if (lower.includes('ходьб') || lower.includes('прогулк') || lower.includes('шаг')) { met = 3.8; title = 'Быстрая ходьба'; }
+      else if (lower.includes('плав') || lower.includes('бассейн')) { met = 7.0; title = 'Плавание'; }
+      else if (lower.includes('велос') || lower.includes('велик')) { met = 6.8; title = 'Велосипед'; }
+      else if (lower.includes('йог') || lower.includes('растяж') || lower.includes('стретч') || lower.includes('пилатес')) { met = 3.0; title = 'Йога / растяжка'; }
+      else if (lower.includes('бокс') || lower.includes('единобор') || lower.includes('кроссфит') || lower.includes('интенсив') || lower.includes('кардио')) { met = 8.0; title = 'Интенсивное кардио'; }
+      else if (lower.includes('футбол') || lower.includes('баскет') || lower.includes('теннис') || lower.includes('волейбол')) { met = 7.2; title = 'Игровая тренировка'; }
+
+      const burnedKcal = Math.round(met * 3.5 * (weightKg || 75) / 200 * minutes);
+      return { burnedKcal, minutes, shortTitle: `${title} (${minutes} мин)` };
     }
 
     // --- Валидация числовых данных от ИИ ---
@@ -1818,16 +1952,24 @@
       const prompt = `Проанализируй день пользователя: вес ${state.profile.weight} кг, цель ${state.profile.targetWeight} кг. Норма: ${targets.targetKcal} ккал (Б:${targets.p}, Ж:${targets.f}, У:${targets.c}). Съедено: ${Math.round(totKcal)} ккал. Вода: ${day.water} мл. Шаги: ${act.steps}. Продукты: ${eatenListStr}. Верни ТОЛЬКО JSON: {"verdict":"Оценка дня в 2 предложениях","nextMeal":"Что конкретно съесть дальше с граммовкой","tips":["Совет 1","Совет 2"]}`;
 
       try {
-        const { parsed, model } = await callAIJson(prompt, null);
+        let parsed, modelLabel;
+        try {
+          const res = await callAIJson(prompt, null);
+          parsed = res.parsed;
+          modelLabel = res.model;
+        } catch (proxyErr) {
+          parsed = buildLocalDailyReview(day, targets);
+          modelLabel = 'Smart AI';
+        }
         const tipsArr = Array.isArray(parsed.tips) ? parsed.tips.map(t => String(t).slice(0, 220)).slice(0, 5) : [];
         day.aiReview = {
           verdict: String(parsed.verdict || '').slice(0, 600),
           nextMeal: String(parsed.nextMeal || '').slice(0, 400),
           tips: tipsArr,
-          time: `${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} (${model})`
+          time: `${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} (${modelLabel})`
         };
         triggerHaptic('success'); saveState();
-      } catch (err) { showNotice('Ошибка ИИ: ' + err.message); }
+      } catch (err) { showNotice('Ошибка разбора: ' + err.message); }
       finally { btn.disabled = false; btn.innerHTML = btnOriginalHtml; }
     }
 
@@ -1839,9 +1981,15 @@
       const prompt = `Пользователь описал еду: "${text}". Рассчитай КБЖУ на 100г и вес всей порции в граммах. ТОЛЬКО JSON: {"name":"Название","portionGrams":250,"kcal100":180,"p100":12,"f100":8,"c100":15}`;
 
       try {
-        const { parsed } = await callAIJson(prompt, null);
+        let parsed;
+        try {
+          const res = await callAIJson(prompt, null);
+          parsed = res.parsed;
+        } catch (proxyErr) {
+          parsed = await estimateDishLocally(text);
+        }
         const per = sanitizePer100(parsed);
-        if (per.kcal100 <= 0) throw new Error('ИИ не смог определить калорийность. Уточни описание блюда.');
+        if (per.kcal100 <= 0) throw new Error('Не удалось определить калорийность. Уточни описание блюда.');
         lastAiTextFood = {
           name: String(parsed.name || text).slice(0, 90),
           portionGrams: Math.round(num(parsed.portionGrams, 1, 3000, 200)),
@@ -1853,7 +2001,7 @@
         updateAiTextPortionPreview();
         document.getElementById('aiTextResultBox').classList.remove('hidden');
         triggerHaptic('success');
-      } catch (err) { showNotice('Ошибка ИИ: ' + err.message); }
+      } catch (err) { showNotice('Ошибка расчёта: ' + err.message); }
       finally { btn.disabled = false; btn.textContent = 'Рассчитать КБЖУ через ИИ'; }
     }
 
@@ -1980,18 +2128,31 @@
       const promptText = `Определи блюдо на фото и разложи на ингредиенты с весом в граммах и КБЖУ на 100г. Уточнение: "${hint}". ТОЛЬКО JSON: {"title":"Блюдо","items":[{"name":"Ингредиент","grams":150,"kcal100":165,"p100":31,"f100":3.6,"c100":0}]}`;
 
       try {
-        const { parsed, model } = await callAIJson(promptText, currentPhotoBase64);
+        let parsed, modelLabel;
+        try {
+          const res = await callAIJson(promptText, currentPhotoBase64);
+          parsed = res.parsed;
+          modelLabel = res.model;
+        } catch (proxyErr) {
+          if (hint.trim()) {
+            const est = await estimateDishLocally(hint.trim());
+            parsed = { title: est.name, items: est.components || [{ name: est.name, grams: est.portionGrams, kcal100: est.kcal100, p100: est.p100, f100: est.f100, c100: est.c100 }] };
+            modelLabel = 'Smart AI';
+          } else {
+            throw new Error('Для распознавания по фото без прокси напиши название блюда в поле «Уточнение» ниже или укажи AI_PROXY_URL в коде');
+          }
+        }
         const items = (Array.isArray(parsed.items) ? parsed.items : [])
           .filter(it => it && it.name)
           .slice(0, 15)
           .map(it => ({ name: String(it.name).slice(0, 70), grams: Math.round(num(it.grams, 1, 3000, 100)), ...sanitizePer100(it) }));
-        if (items.length === 0) throw new Error('ИИ не нашёл еду на фото. Попробуй переснять.');
+        if (items.length === 0) throw new Error('Не удалось определить состав блюда. Добавь короткое уточнение под фото.');
         document.getElementById('recognizedDishTitle').textContent = String(parsed.title || 'Распознано').slice(0, 60);
-        document.getElementById('recognizedDishStatus').textContent = `Распознано (${model})`;
+        document.getElementById('recognizedDishStatus').textContent = `Распознано (${modelLabel})`;
         currentPhotoItems = items;
         renderPhotoIngredients();
         triggerHaptic('success');
-      } catch (err) { showNotice('Ошибка ИИ: ' + err.message); }
+      } catch (err) { showNotice(err.message); }
       finally { btn.disabled = false; btn.textContent = 'Распознать'; if (!liveCameraStream) laserEl?.classList.add('hidden'); }
     }
 
@@ -2078,13 +2239,21 @@
       if (!text) return showNotice('Опиши тренировку!');
       const btn = document.getElementById('btnAiWorkout'); btn.disabled = true; btn.textContent = '...';
       try {
-        const { parsed } = await callAIJson(`Вес пользователя ${state.profile.weight} кг, активность: "${text}". ТОЛЬКО JSON: {"burnedKcal":300,"minutes":45,"shortTitle":"Тренировка"}`);
+        let parsed;
+        try {
+          const res = await callAIJson(`Вес пользователя ${state.profile.weight} кг, активность: "${text}". ТОЛЬКО JSON: {"burnedKcal":300,"minutes":45,"shortTitle":"Тренировка"}`);
+          parsed = res.parsed;
+        } catch (proxyErr) {
+          parsed = estimateWorkoutLocally(text, state.profile.weight);
+        }
         const day = ensureDay(currentDate);
         day.activity.burnedKcal = (day.activity.burnedKcal || 0) + Math.round(num(parsed.burnedKcal, 0, 3000, 0));
         day.activity.activeMinutes = (day.activity.activeMinutes || 0) + Math.round(num(parsed.minutes, 0, 600, 0));
         day.activity.note = String(parsed.shortTitle || text).slice(0, 120);
-        document.getElementById('aiWorkoutPrompt').value = ''; saveState();
-      } catch (e) { showNotice('Ошибка ИИ: ' + e.message); }
+        document.getElementById('aiWorkoutPrompt').value = '';
+        triggerHaptic('success');
+        saveState();
+      } catch (e) { showNotice('Ошибка расчёта: ' + e.message); }
       finally { btn.disabled = false; btn.textContent = 'Посчитать'; }
     }
 
@@ -2411,20 +2580,6 @@
     // =====================================================================
     // 12. НАСТРОЙКИ И БЭКАП
     // =====================================================================
-    function openSettingsModal() {
-      document.getElementById('aiProviderSelect').value = state.aiProvider || 'gemini';
-      document.getElementById('apiKeyInput').value = state.apiKey || '';
-      document.getElementById('firebaseUrlInput').value = state.firebaseUrl || '';
-      document.getElementById('settingsModal').classList.remove('hidden');
-    }
-    function closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
-    function saveSettings() {
-      state.aiProvider = document.getElementById('aiProviderSelect').value;
-      state.apiKey = document.getElementById('apiKeyInput').value.trim();
-      state.firebaseUrl = document.getElementById('firebaseUrlInput').value.trim();
-      cachedGeminiModel = null; saveState(); closeSettingsModal();
-    }
-
     function openBackupModal() { document.getElementById('backupModal').classList.remove('hidden'); }
     function closeBackupModal() { document.getElementById('backupModal').classList.add('hidden'); }
     function copyBackupToClipboard() {
@@ -2470,24 +2625,6 @@
     });
     window.addEventListener('pagehide', flushPending);
     setInterval(checkDateRollover, 60000);
-
-    // Переопределяем поиск рабочей модели Gemini на реальные версии API
-    detectWorkingGeminiModel = async function(apiKey) {
-      if (cachedGeminiModel) return cachedGeminiModel;
-      try {
-        const res = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': apiKey } }, 15000);
-        const data = await res.json();
-        if (data && Array.isArray(data.models)) {
-          const supported = data.models.filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace('models/', ''));
-          const priority = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-flash-latest'];
-          for (const pref of priority) {
-            const match = supported.find(s => s === pref || s.startsWith(pref));
-            if (match) { cachedGeminiModel = match; return match; }
-          }
-        }
-      } catch (e) {}
-      return 'gemini-3.5-flash-lite';
-    };
 
     // Локальный резервный справочник популярных штрихкодов (на случай отсутствия в OpenFoodFacts или офлайна)
     const BARCODE_FALLBACK_DB = {
