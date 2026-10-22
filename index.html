@@ -884,7 +884,7 @@
         <div>
           <label class="block text-slate-200 font-semibold mb-1">1. Провайдер ИИ</label>
           <select id="aiProviderSelect" class="liquid-input w-full rounded-xl px-3 py-2 text-white">
-            <option value="gemini" class="bg-slate-900">Google Gemini API (gemini-3.8-flash)</option>
+            <option value="gemini" class="bg-slate-900">Google Gemini API (gemini-3.5-flash-lite)</option>
             <option value="openrouter" class="bg-slate-900">OpenRouter API</option>
           </select>
         </div>
@@ -1196,6 +1196,8 @@
     let searchDebounceTimer = null;
     let searchAbortController = null;
     let cachedGeminiModel = null;
+    const quotaExhaustedModels = new Map(); // модель -> время (мс), до которого считаем лимит исчерпанным
+    const GEMINI_FALLBACKS = ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
     let currentPhotoBase64 = null; // только в памяти
     let currentPhotoItems = [];
     let lastAiTextFood = null;
@@ -1623,7 +1625,7 @@
         const data = await res.json();
         if (data && Array.isArray(data.models)) {
           const supported = data.models.filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace('models/', ''));
-          const priority = ['gemini-3.8-flash', 'gemini-3.0-flash', 'gemini-flash-latest'];
+          const priority = ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-flash-latest'];
           for (const pref of priority) {
             const match = supported.find(s => s === pref || s.startsWith(pref));
             if (match) { cachedGeminiModel = match; return match; }
@@ -1632,7 +1634,7 @@
           if (anyFlash) { cachedGeminiModel = anyFlash; return anyFlash; }
         }
       } catch (e) {}
-      return 'gemini-3.8-flash';
+      return 'gemini-3.5-flash-lite';
     }
 
     async function callAIJson(promptText, base64ImageOrNull = null) {
@@ -1650,11 +1652,16 @@
         return { parsed: extractJson(raw), model: 'OpenRouter' };
       } else {
         const detectedModel = await detectWorkingGeminiModel(state.apiKey);
-        const candidateModels = [...new Set([detectedModel, 'gemini-3.8-flash', 'gemini-3.0-flash'])];
+        const allCandidates = [...new Set([detectedModel, ...GEMINI_FALLBACKS])];
+        const nowMs = Date.now();
+        const freshCandidates = allCandidates.filter(m => (quotaExhaustedModels.get(m) || 0) <= nowMs);
+        // Модели с исчерпанным лимитом идут в конец очереди — на случай, если лимит уже сбросился
+        const candidateModels = [...freshCandidates, ...allCandidates.filter(m => !freshCandidates.includes(m))];
         const parts = [{ text: promptText }];
         if (base64ImageOrNull) parts.push({ inline_data: { mime_type: 'image/jpeg', data: base64ImageOrNull.split(',')[1] } });
 
         let firstRealErr = '';
+        let sawQuotaErr = false;
         for (let i = 0; i < candidateModels.length; i++) {
           const modelName = candidateModels[i];
           try {
@@ -1669,7 +1676,14 @@
               return { parsed: extractJson(rawText), model: modelName };
             } else {
               const errMsg = data?.error?.message || `Модель ${modelName} не ответила`;
-              if (!firstRealErr) firstRealErr = errMsg;
+              const isQuota = resp.status === 429 || /quota|RESOURCE_EXHAUSTED|rate.?limit/i.test(errMsg) || data?.error?.status === 'RESOURCE_EXHAUSTED';
+              if (isQuota) {
+                sawQuotaErr = true;
+                // Запоминаем: эту модель пока пропускаем (по подсказке Google «retry in …» или на 10 минут)
+                const retryMatch = errMsg.match(/retry in ([0-9.]+)s/i);
+                const waitMs = retryMatch ? Math.min(6 * 3600 * 1000, Number(retryMatch[1]) * 1000) : 10 * 60 * 1000;
+                quotaExhaustedModels.set(modelName, Date.now() + waitMs);
+              } else if (!firstRealErr) firstRealErr = errMsg;
               const suggestedMatch = errMsg.match(/use models\/([a-zA-Z0-9._-]+)/i);
               if (suggestedMatch && suggestedMatch[1]) {
                 const suggestedModel = suggestedMatch[1].trim();
@@ -1678,6 +1692,7 @@
             }
           } catch (netErr) { if (!firstRealErr) firstRealErr = netErr.message; }
         }
+        if (sawQuotaErr && !firstRealErr) throw new Error('Дневной лимит бесплатного Gemini API исчерпан для всех доступных моделей. Попробуй позже, включи биллинг в Google AI Studio или переключись на OpenRouter в настройках.');
         throw new Error(firstRealErr || 'Ошибка запроса к Gemini API');
       }
     }
