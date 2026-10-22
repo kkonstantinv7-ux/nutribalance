@@ -11,7 +11,22 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
-    /* === 1. БАЗОВЫЕ НАСТРОЙКИ ЭКРАНА === */
+    /* ========================================================
+       LIQUID GLASS (iOS 26 style)
+       ======================================================== */
+    :root {
+      --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @supports (transition-timing-function: linear(0, 1)) {
+      :root { --spring: linear(0.0, 0.0658, 0.2197, 0.409, 0.5969, 0.7611, 0.8908, 0.9836, 1.0424, 1.0734, 1.0834, 1.0794, 1.0673, 1.0517, 1.0358, 1.0218, 1.0105, 1.0023, 0.997, 0.9941, 0.9931, 0.9933, 0.9942, 0.9955, 0.9968, 0.998, 0.999, 0.9997, 1.0002, 1.0005, 1.0006, 1.0006, 1.0005, 1.0004, 1.0003, 1.0002, 1.0001, 1.0, 1); }
+    }
+
+    /* Плавное движение блика */
+    @property --mx   { syntax: '<length-percentage>'; inherits: false; initial-value: 22%; }
+    @property --my   { syntax: '<length-percentage>'; inherits: false; initial-value: -6%; }
+    @property --glow { syntax: '<number>'; inherits: false; initial-value: 0.55; }
+
     body {
       font-family: 'Inter', sans-serif;
       background-color: #03060c;
@@ -20,97 +35,175 @@
       overflow-x: hidden;
     }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
-    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 4px; }
-    input[type="range"] { accent-color: #10b981; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 4px; }
+    input[type="range"] { accent-color: #34d399; }
     input, textarea, select { -webkit-user-select: text !important; user-select: text !important; }
 
-    /* === 2. ПРОЗРАЧНОЕ ЖИДКОЕ СТЕКЛО (ГЛЯЦЕВЫЙ IOS СТИЛЬ) === */
+    /* --- Основная стеклянная панель --- */
     .liquid-glass {
       position: relative;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.035) 100%);
-      backdrop-filter: blur(24px) saturate(210%);
-      -webkit-backdrop-filter: blur(24px) saturate(210%);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      isolation: isolate;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.17) 0%, rgba(255,255,255,0.045) 42%, rgba(255,255,255,0.085) 100%);
+      backdrop-filter: blur(22px) saturate(185%) brightness(1.1);
+      -webkit-backdrop-filter: blur(22px) saturate(185%) brightness(1.1);
+      border: none;
       box-shadow:
-        0 20px 45px -10px rgba(0, 0, 0, 0.7),
-        inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.45),
-        inset 0 -1px 2px 0 rgba(16, 185, 129, 0.12);
+        0 22px 44px -14px rgba(0, 0, 0, 0.6),
+        0 3px 8px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+        inset 1px 0 0 rgba(255, 255, 255, 0.14),
+        inset -1px 0 0 rgba(255, 255, 255, 0.14),
+        inset 0 0 26px rgba(255, 255, 255, 0.055);
+      transition: --mx 0.45s var(--ease-out), --my 0.45s var(--ease-out), --glow 0.45s ease, box-shadow 0.4s ease;
+    }
+    /* Световая кромка: яркая сверху-слева и снизу-справа, прозрачная посередине */
+    .liquid-glass::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg,
+        rgba(255,255,255,0.8) 0%,
+        rgba(255,255,255,0.14) 28%,
+        rgba(255,255,255,0.03) 55%,
+        rgba(255,255,255,0.18) 78%,
+        rgba(255,255,255,0.55) 100%);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+      pointer-events: none;
+      z-index: 2;
+    }
+    /* Бегущий блик: следует за пальцем/курсором */
+    .liquid-glass::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(280px circle at var(--mx) var(--my), rgba(255,255,255,0.2), rgba(255,255,255,0.05) 45%, transparent 70%);
+      opacity: var(--glow);
+      mix-blend-mode: soft-light;
+      pointer-events: none;
+      z-index: 1;
     }
 
-    .liquid-pill {
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.09) 0%, rgba(15, 23, 42, 0.35) 100%);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+    /* Шапка при прокрутке становится плотнее */
+    header.liquid-glass.is-scrolled {
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.07) 45%, rgba(255,255,255,0.11) 100%);
       box-shadow:
-        0 4px 16px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0.5px rgba(255, 255, 255, 0.3);
+        0 18px 36px -12px rgba(0, 0, 0, 0.7),
+        0 3px 8px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 0 26px rgba(255, 255, 255, 0.07);
+    }
+
+    /* --- Мелкие стеклянные элементы (без вложенного блюра — он не нужен и дорогой) --- */
+    .liquid-pill {
+      background: linear-gradient(160deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.035) 58%, rgba(255,255,255,0.075) 100%);
+      border: none;
+      box-shadow:
+        0 6px 16px -4px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.07),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.075);
     }
 
     .liquid-input {
-      background: rgba(15, 23, 42, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      transition: border-color 0.2s, box-shadow 0.2s;
+      background: rgba(10, 16, 30, 0.42);
+      border: none;
+      box-shadow:
+        inset 0 2px 5px rgba(0, 0, 0, 0.38),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.13),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+      transition: box-shadow 0.35s var(--ease-out), background 0.35s ease;
     }
     .liquid-input:focus {
-      border-color: rgba(52, 211, 153, 0.75);
-      box-shadow: 0 0 16px rgba(16, 185, 129, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.3);
+      background: rgba(10, 16, 30, 0.55);
+      box-shadow:
+        inset 0 2px 5px rgba(0, 0, 0, 0.35),
+        inset 0 0 0 1.5px rgba(52, 211, 153, 0.8),
+        0 0 0 4px rgba(16, 185, 129, 0.18),
+        0 0 22px rgba(16, 185, 129, 0.3);
       outline: none;
     }
 
+    /* Основная кнопка: цветное «стеклянное» тело с глянцем */
     .liquid-btn-primary {
-      background: linear-gradient(135deg, #34d399 0%, #10b981 55%, #059669 100%);
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 46%),
+        linear-gradient(135deg, #5eead4 0%, #34d399 45%, #10b981 100%);
       color: #022c22;
       box-shadow:
-        0 8px 24px -4px rgba(16, 185, 129, 0.55),
-        inset 0 1.5px 1px rgba(255, 255, 255, 0.6);
+        0 10px 26px -6px rgba(16, 185, 129, 0.6),
+        0 2px 6px rgba(0, 0, 0, 0.25),
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.85),
+        inset 0 -2px 4px rgba(4, 120, 87, 0.35);
     }
-    .liquid-btn-primary:hover {
-      filter: brightness(1.06);
+    @media (hover: hover) {
+      .liquid-btn-primary:hover { filter: brightness(1.07) saturate(1.1); }
     }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* === 3. СВЕЧЕНИЕ ВЕКТОРНЫХ ИЛЛЮСТРАЦИЙ (SVG GLOW) === */
-    .svg-glow-emerald { filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.75)); }
-    .svg-glow-cyan    { filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.75)); }
-    .svg-glow-rose    { filter: drop-shadow(0 0 8px rgba(251, 113, 133, 0.75)); }
-    .svg-glow-amber   { filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.75)); }
-    .svg-glow-purple  { filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.75)); }
+    /* === Свечение иконок === */
+    .svg-glow-emerald { filter: drop-shadow(0 0 7px rgba(52, 211, 153, 0.7)); }
+    .svg-glow-cyan    { filter: drop-shadow(0 0 7px rgba(56, 189, 248, 0.7)); }
+    .svg-glow-rose    { filter: drop-shadow(0 0 7px rgba(251, 113, 133, 0.7)); }
+    .svg-glow-amber   { filter: drop-shadow(0 0 7px rgba(251, 191, 36, 0.7)); }
+    .svg-glow-purple  { filter: drop-shadow(0 0 7px rgba(192, 132, 252, 0.7)); }
 
-    /* === 4. МИКРО-АНИМАЦИИ === */
-    @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(14px) scale(0.985); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
+    /* ========================================================
+       АНИМАЦИИ (пружинные)
+       ======================================================== */
+    @keyframes glassIn {
+      from { opacity: 0; transform: translateY(22px) scale(0.955); }
+      to   { opacity: 1; transform: none; }
     }
-    .animate-card {
-      animation: fadeSlideUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    @keyframes overlayIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
+    .animate-card { animation: glassIn 0.7s var(--spring) both; }
+
+    /* Затемнение модальных окон плавно проявляется */
+    #onboardingModal, #settingsModal, #backupModal { animation: overlayIn 0.35s ease both; }
+
+    /* Кнопки: мягкий «гелевый» отклик — быстро вдавливается, возвращается с пружиной */
     .btn-spring {
-      transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s, box-shadow 0.2s;
+      transition: transform 0.55s var(--spring), filter 0.25s ease, box-shadow 0.3s ease, background 0.3s ease, color 0.25s ease;
+      will-change: transform;
     }
     .btn-spring:active {
-      transform: scale(0.94);
+      transform: scale(0.93);
+      transition-duration: 0.12s, 0.1s, 0.1s, 0.1s, 0.1s;
+      transition-timing-function: var(--ease-out);
     }
 
     .ring-progress {
-      transition: stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: stroke-dashoffset 1s var(--ease-out);
       transform: rotate(-90deg);
       transform-origin: 50% 50%;
       filter: drop-shadow(0 0 9px rgba(52, 211, 153, 0.7));
+    }
+
+    /* Полосы прогресса */
+    #calBar, #pBar, #fBar, #cBar, #stepsProgressBar, #weightProgressBar {
+      transition: width 0.9s var(--spring);
+      box-shadow: 0 0 12px -2px currentColor, inset 0 1px 0 rgba(255,255,255,0.45);
     }
 
     @keyframes wavePulse {
       0%, 100% { transform: translateX(0) scaleY(1); }
       50% { transform: translateX(-15%) scaleY(1.12); }
     }
-    .water-fill {
-      transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    .water-wave-top {
-      animation: wavePulse 2.4s ease-in-out infinite;
-    }
+    .water-fill { transition: height 0.9s var(--spring); }
+    .water-wave-top { animation: wavePulse 2.4s ease-in-out infinite; }
 
     @keyframes laserScan {
       0% { top: 5%; opacity: 0.25; }
@@ -138,10 +231,38 @@
       z-index: 15;
     }
 
+    /* ========================================================
+       НАВИГАЦИЯ: скользящая стеклянная «линза»
+       ======================================================== */
+    .nav-indicator {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border-radius: 999px;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.07) 100%);
+      box-shadow:
+        0 8px 20px -4px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.16),
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.75),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.14),
+        inset 0 0 14px rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(4px) saturate(220%) brightness(1.25);
+      -webkit-backdrop-filter: blur(4px) saturate(220%) brightness(1.25);
+      transition:
+        transform 0.65s var(--spring),
+        width 0.65s var(--spring),
+        height 0.65s var(--spring),
+        scale 0.45s var(--spring);
+    }
+    .nav-indicator.moving { scale: 1.1 1.16; }
+
     /* Уважаем настройку «уменьшить движение» */
     @media (prefers-reduced-motion: reduce) {
-      .animate-card, .water-wave-top, .scanner-laser { animation: none !important; }
-      .ring-progress, .water-fill { transition: none !important; }
+      .animate-card, .water-wave-top, .scanner-laser, #onboardingModal, #settingsModal, #backupModal { animation: none !important; }
+      .ring-progress, .water-fill, .nav-indicator, .btn-spring { transition-duration: 0.01s !important; }
     }
   </style>
 </head>
@@ -222,8 +343,8 @@
   </div>
 
   <!-- ШАПКА ПРИЛОЖЕНИЯ -->
-  <header class="sticky top-0 z-30 liquid-glass border-t-0 border-x-0">
-    <div class="max-w-4xl mx-auto px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
+  <header class="sticky top-2 z-30 liquid-glass rounded-[28px] w-[calc(100%-20px)] max-w-4xl mx-auto mt-2">
+    <div class="px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
       <div class="flex items-center gap-2.5">
         <div class="w-9 h-9 rounded-xl liquid-btn-primary flex items-center justify-center font-extrabold text-slate-950 text-sm">
           <svg class="w-5 h-5 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -242,7 +363,8 @@
       </div>
 
       <!-- Навигация для ПК -->
-      <nav class="hidden sm:flex items-center gap-1 liquid-pill p-1 rounded-2xl">
+      <nav class="hidden sm:flex items-center gap-1 liquid-pill p-1 rounded-full relative">
+        <span id="navIndicatorDesktop" class="nav-indicator" aria-hidden="true"></span>
         <button onclick="switchTab('diary')" id="tabBtnDesktop-diary" class="btn-spring px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5">
           <svg class="w-4 h-4 svg-glow-emerald text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           <span>Дневник</span>
@@ -275,7 +397,8 @@
   </header>
 
   <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ ДЛЯ ТЕЛЕФОНА -->
-  <nav class="sm:hidden fixed bottom-2.5 left-3 right-3 z-40 liquid-glass rounded-3xl px-2 py-1.5 grid grid-cols-4 gap-1">
+  <nav class="sm:hidden fixed left-3 right-3 z-40 liquid-glass rounded-[32px] px-2 py-1.5 grid grid-cols-4 gap-1" style="bottom:max(10px, env(safe-area-inset-bottom))">
+    <span id="navIndicatorMobile" class="nav-indicator" aria-hidden="true"></span>
     <button onclick="switchTab('diary')" id="tabBtnMobile-diary" class="btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium gap-0.5">
       <svg class="w-5 h-5 svg-glow-emerald text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       <span>Дневник</span>
@@ -985,9 +1108,9 @@
       const orbs = [
         { x: 0.2, y: 0.2, r: 340, color: '16, 185, 129', vx: 0.0004, vy: 0.0003, phase: 0 },
         { x: 0.8, y: 0.3, r: 380, color: '14, 165, 233', vx: -0.0003, vy: 0.0005, phase: 2 },
-        { x: 0.5, y: 0.75, r: 360, color: '20, 184, 166', vx: 0.00035, vy: -0.0004, phase: 4 },
+        { x: 0.5, y: 0.75, r: 360, color: '139, 92, 246', vx: 0.00035, vy: -0.0004, phase: 4 },
         { x: 0.15, y: 0.8, r: 300, color: '99, 102, 241', vx: 0.0005, vy: 0.0002, phase: 1 },
-        { x: 0.85, y: 0.85, r: 320, color: '52, 211, 153', vx: -0.0004, vy: -0.0003, phase: 3 }
+        { x: 0.85, y: 0.85, r: 320, color: '236, 100, 170', vx: -0.0004, vy: -0.0003, phase: 3 }
       ];
 
       let tick = 0;
@@ -999,8 +1122,8 @@
           const cy = (orb.y + Math.cos(tick * orb.vy * 18 + idx) * 0.18) * height;
           const radius = Math.min(width, height) * 0.48 + (orb.r * 0.35);
           const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, radius);
-          grad.addColorStop(0, `rgba(${orb.color}, 0.32)`);
-          grad.addColorStop(0.5, `rgba(${orb.color}, 0.11)`);
+          grad.addColorStop(0, `rgba(${orb.color}, 0.42)`);
+          grad.addColorStop(0.5, `rgba(${orb.color}, 0.15)`);
           grad.addColorStop(1, `rgba(${orb.color}, 0)`);
           ctx.fillStyle = grad;
           ctx.beginPath();
@@ -1590,6 +1713,7 @@
 
     function switchTab(tabId) {
       triggerHaptic('light');
+      requestAnimationFrame(() => moveNavIndicators(tabId));
       if (tabId !== 'ai') stopLiveCamera();
       ['diary', 'ai', 'progress', 'profile'].forEach(t => {
         const sectionEl = document.getElementById('tab-' + t);
@@ -1599,10 +1723,10 @@
         } else sectionEl.classList.add('hidden');
 
         const deskBtn = document.getElementById('tabBtnDesktop-' + t);
-        if (deskBtn) deskBtn.className = t === tabId ? 'btn-spring px-3 py-1.5 rounded-xl text-xs font-bold bg-white/15 text-white border border-white/20 shadow flex items-center gap-1.5' : 'btn-spring px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5';
+        if (deskBtn) deskBtn.className = t === tabId ? 'btn-spring relative z-10 px-3.5 py-1.5 rounded-full text-xs font-semibold text-white flex items-center gap-1.5' : 'btn-spring relative z-10 px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5';
 
         const mobBtn = document.getElementById('tabBtnMobile-' + t);
-        if (mobBtn) mobBtn.className = t === tabId ? 'btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-bold bg-white/15 text-white border border-white/20 gap-0.5' : 'btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium text-slate-300 gap-0.5';
+        if (mobBtn) mobBtn.className = t === tabId ? 'btn-spring relative z-10 flex flex-col items-center justify-center py-1.5 rounded-full text-[11px] font-semibold text-white gap-0.5' : 'btn-spring relative z-10 flex flex-col items-center justify-center py-1.5 rounded-full text-[11px] font-semibold text-slate-300 gap-0.5';
       });
     }
 
@@ -2345,6 +2469,69 @@
     });
     window.addEventListener('pagehide', flushPending);
     setInterval(checkDateRollover, 60000);
+
+
+    // =====================================================================
+    // 14. LIQUID GLASS: индикатор навигации, блик от касания, шапка
+    // =====================================================================
+    let currentNavTab = 'diary';
+    function moveNavIndicators(tabId) {
+      currentNavTab = tabId;
+      [['Mobile', 'navIndicatorMobile'], ['Desktop', 'navIndicatorDesktop']].forEach(([kind, id]) => {
+        const ind = document.getElementById(id);
+        const btn = document.getElementById(`tabBtn${kind}-${tabId}`);
+        if (!ind || !btn || !btn.offsetWidth) return;
+        const first = !ind.dataset.ready;
+        if (first) ind.style.transition = 'none';
+        ind.style.width = btn.offsetWidth + 'px';
+        ind.style.height = btn.offsetHeight + 'px';
+        ind.style.transform = `translate(${btn.offsetLeft}px, ${btn.offsetTop}px)`;
+        if (first) {
+          void ind.offsetWidth;
+          ind.style.transition = '';
+          ind.dataset.ready = '1';
+        } else {
+          // «растягивание» линзы во время перемещения
+          ind.classList.add('moving');
+          clearTimeout(ind._moveTimer);
+          ind._moveTimer = setTimeout(() => ind.classList.remove('moving'), 360);
+        }
+      });
+    }
+    window.addEventListener('resize', () => moveNavIndicators(currentNavTab));
+
+    (function initGlassLight() {
+      let raf = 0, el = null, px = 0, py = 0;
+      function apply() {
+        raf = 0;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--mx', (px - r.left) + 'px');
+        el.style.setProperty('--my', (py - r.top) + 'px');
+        el.style.setProperty('--glow', '1');
+      }
+      function onPointer(e) {
+        const target = e.target && e.target.closest ? e.target.closest('.liquid-glass') : null;
+        if (el && el !== target) el.style.setProperty('--glow', '0.55');
+        el = target;
+        if (!el) return;
+        px = e.clientX; py = e.clientY;
+        if (!raf) raf = requestAnimationFrame(apply);
+      }
+      document.addEventListener('pointerdown', onPointer, { passive: true });
+      document.addEventListener('pointermove', onPointer, { passive: true });
+      const release = () => { if (el) el.style.setProperty('--glow', '0.55'); };
+      document.addEventListener('pointerup', release, { passive: true });
+      document.addEventListener('pointercancel', release, { passive: true });
+    })();
+
+    (function initHeaderScroll() {
+      const hdr = document.querySelector('header');
+      if (!hdr) return;
+      const update = () => hdr.classList.toggle('is-scrolled', window.scrollY > 8);
+      window.addEventListener('scroll', update, { passive: true });
+      update();
+    })();
 
     loadState(); switchTab('diary');
   </script>
