@@ -1068,6 +1068,9 @@
             </button>
           </div>
           <p id="sbpRequestFeedback" class="hidden text-[11px] text-emerald-300 bg-emerald-500/15 border border-emerald-400/30 rounded-xl p-2.5 leading-snug"></p>
+          <button type="button" id="btnMessageAdminTg" onclick="openAdminDirectChat()" class="hidden btn-spring liquid-pill w-full py-2 px-3 rounded-xl font-bold text-xs text-sky-300 border border-sky-400/35 flex items-center justify-center gap-1.5">
+            <span>💬 Написать администратору в Telegram / скинуть чек</span>
+          </button>
         </div>
       </div>
 
@@ -1215,6 +1218,14 @@
             <label class="block text-slate-300 mb-1">Ссылка СБП / QR НСПК / ЮKassa (опционально)</label>
             <input type="url" id="admCfgSbpLink" oninput="onAdminConfigInput()" placeholder="https://qr.nspk.ru/... или пусто" class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
           </div>
+          <div>
+            <label class="block text-slate-300 mb-1">Токен бота (от @BotFather) для уведомлений в ТГ</label>
+            <input type="password" id="admCfgBotToken" oninput="onAdminConfigInput()" placeholder="123456789:AAH... (чтобы бот писал тебе в ЛС)" class="liquid-input w-full rounded-xl px-3 py-2 font-mono text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-300 mb-1">Твой @username в ТГ (для связи / чеков)</label>
+            <input type="text" id="admCfgAdminUsername" oninput="onAdminConfigInput()" placeholder="@username (необязательно)" class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
+          </div>
         </div>
 
         <!-- Живой предпросмотр реквизитов -->
@@ -1226,9 +1237,14 @@
           <span id="admAutoSaveIndicator" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">Автосохранение активно</span>
         </div>
 
-        <button type="button" id="btnSaveAdminCfg" onclick="saveAdminPaymentConfig()" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-xl font-extrabold text-xs">
-          Сохранить настройки оплаты СБП (299 ₽)
-        </button>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" id="btnSaveAdminCfg" onclick="saveAdminPaymentConfig()" class="btn-spring liquid-btn-primary flex-1 py-2.5 px-3 rounded-xl font-extrabold text-xs">
+            Сохранить настройки оплаты СБП (299 ₽)
+          </button>
+          <button type="button" id="btnTestTgNotify" onclick="testTelegramNotification()" class="btn-spring liquid-pill py-2.5 px-3.5 rounded-xl font-bold text-xs text-sky-300 border border-sky-400/40">
+            🔔 Тест сообщения в ТГ
+          </button>
+        </div>
 
         <!-- Переключатель для теста глазами пользователя -->
         <div class="liquid-pill rounded-2xl p-3 space-y-2 border border-amber-400/30">
@@ -3385,6 +3401,8 @@
     const ADMIN_DB_CACHE_KEY = 'nutribalance_admin_db_cache_v1';
     const PRO_CODE_SALT = 'NB_LIQUID_PRO_299_SALT';
 
+    // Если хочешь, чтобы токен бота был вшит сразу для всех пользователей на GitHub Pages,
+    // укажи его в админке во вкладке «Реквизиты» или впиши в поле tgBotToken ниже:
     let paymentConfig = {
       priceRub: 299,
       trialDays: 14,
@@ -3393,6 +3411,8 @@
       sbpRecipient: 'Константин К.',
       sbpLink: '',
       universalPromo: 'NUTVIP299',
+      tgBotToken: '',
+      adminTgUsername: '',
       updatedAt: 0
     };
 
@@ -3681,15 +3701,7 @@
         stDesc.textContent = `Ты можешь активировать пожизненный PRO за ${paymentConfig.priceRub} ₽ прямо сейчас или после окончания триала.`;
       }
 
-      const fb = document.getElementById('sbpRequestFeedback');
-      if (fb) {
-        if (subState.pendingSbpRequest && !info.isPro) {
-          fb.classList.remove('hidden');
-          fb.textContent = `Заявка на проверку оплаты (${paymentConfig.priceRub} ₽) отправлена администратору (ID ${ADMIN_TG_ID}). Нажми «↻ Проверить» после подтверждения или введи полученный PRO-код ниже.`;
-        } else {
-          fb.classList.add('hidden');
-        }
-      }
+      updateSbpSubmitButtonState();
 
       document.getElementById('paywallModal').classList.remove('hidden');
     }
@@ -3780,12 +3792,91 @@
       }
     }
 
-    async function submitSbpPaymentRequest() {
-      const note = (document.getElementById('sbpSenderNoteInput')?.value || '').trim();
+    const SBP_SPAM_COOLDOWN_MS = 15 * 60 * 1000; // 15 минут между повторными заявками
+    const SBP_MAX_DAILY_ATTEMPTS = 3;            // максимум 3 заявки в сутки с одного устройства/ID
+
+    function getSbpCooldownRemainingMs() {
+      const lastTs = Number(subState.pendingSbpAtTs) || 0;
+      if (!lastTs) return 0;
+      return Math.max(0, (lastTs + SBP_SPAM_COOLDOWN_MS) - Date.now());
+    }
+
+    function updateSbpSubmitButtonState() {
       const btn = document.getElementById('btnSubmitSbpPayment');
       const fb = document.getElementById('sbpRequestFeedback');
+      const msgBtn = document.getElementById('btnMessageAdminTg');
+      const price = Number(paymentConfig.priceRub) || 299;
+      const info = getAccessInfo();
+
+      if (info.isPro) {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<span>💎 Доступ PRO уже активирован навсегда</span>';
+        }
+        if (fb) fb.classList.add('hidden');
+        return;
+      }
+
+      const remainMs = getSbpCooldownRemainingMs();
+      if (subState.pendingSbpRequest && remainMs > 0) {
+        const remainMin = Math.max(1, Math.ceil(remainMs / 60000));
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = `<span>⏳ Заявка отправлена (повтор через ${remainMin} мин.)</span>`;
+        }
+        if (fb) {
+          fb.classList.remove('hidden');
+          fb.textContent = `Заявка на проверку оплаты (${price} ₽) уже отправлена администратору (ID ${ADMIN_TG_ID}). Нажми «↻ Проверить» после подтверждения или введи PRO-код ниже.`;
+        }
+        if (msgBtn) msgBtn.classList.remove('hidden');
+      } else {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>✅ Я оплатил <span id="btnConfirmPrice">${price}</span> ₽ по СБП</span>`;
+        }
+        if (subState.pendingSbpRequest && fb) {
+          fb.classList.remove('hidden');
+          fb.textContent = `Заявка на проверку оплаты (${price} ₽) ожидает подтверждения администратором. Нажми «↻ Проверить».`;
+        } else if (fb) {
+          fb.classList.add('hidden');
+        }
+      }
+    }
+
+    let isSubmittingSbp = false;
+    async function submitSbpPaymentRequest() {
+      if (isSubmittingSbp) return;
+      const info = getAccessInfo();
+      if (info.isPro) {
+        return showNotice('💎 У тебя уже активирован пожизненный PRO!');
+      }
+
+      // 1) Проверка 15-минутного анти-спам таймера
+      const remainMs = getSbpCooldownRemainingMs();
+      if (remainMs > 0) {
+        const remainMin = Math.max(1, Math.ceil(remainMs / 60000));
+        triggerHaptic('warning');
+        updateSbpSubmitButtonState();
+        return showNotice(`Заявка уже отправлена! Повторно нажать можно через ${remainMin} мин.`);
+      }
+
+      // 2) Проверка дневного лимита (не более 3 раз за сутки)
+      const todayKey = getLocalDateString();
+      if (subState.sbpAttemptsDate !== todayKey) {
+        subState.sbpAttemptsDate = todayKey;
+        subState.sbpAttemptsCount = 0;
+      }
+      if ((subState.sbpAttemptsCount || 0) >= SBP_MAX_DAILY_ATTEMPTS) {
+        triggerHaptic('error');
+        return showNotice('Превышен лимит заявок на сегодня (максимум 3 в сутки). Напиши администратору в личные сообщения.');
+      }
+
+      isSubmittingSbp = true;
+      const note = (document.getElementById('sbpSenderNoteInput')?.value || '').trim().slice(0, 100);
+      const btn = document.getElementById('btnSubmitSbpPayment');
       if (btn) { btn.disabled = true; btn.textContent = 'Отправляем заявку...'; }
 
+      const nowTs = Date.now();
       const reqObj = {
         id: uid('pay'),
         userId: String(tgUserId),
@@ -3794,22 +3885,26 @@
         amountRub: Number(paymentConfig.priceRub) || 299,
         senderNote: note,
         status: 'pending',
-        createdAt: new Date().toLocaleString('ru-RU')
+        createdAt: new Date(nowTs).toLocaleString('ru-RU'),
+        createdAtTs: nowTs
       };
 
-      // Сохраняем локально в кэш заявок
+      // Сохраняем локально в кэш заявок и включаем анти-спам блокировку на 15 минут
       adminDataCache.requests = [reqObj, ...(adminDataCache.requests || []).filter(r => r.userId !== String(tgUserId) || r.status !== 'pending')];
       saveAdminCacheLocal();
 
       subState.pendingSbpRequest = true;
-      subState.pendingSbpAt = new Date().toISOString();
+      subState.pendingSbpAt = new Date(nowTs).toISOString();
+      subState.pendingSbpAtTs = nowTs;
+      subState.sbpAttemptsCount = (subState.sbpAttemptsCount || 0) + 1;
       saveSubscriptionLocal();
 
-      // Пытаемся отправить заявку на Cloudflare Worker (он же пришлёт уведомление админу 939208462 в Telegram)
+      let notifiedViaWorker = false;
+      let rateLimitedByServer = false;
       try {
         const proxyUrl = (AI_PROXY_URL || '').trim();
         if (proxyUrl) {
-          await fetchWithTimeout(proxyUrl, {
+          const wResp = await fetchWithTimeout(proxyUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -3817,22 +3912,124 @@
             },
             body: JSON.stringify({
               action: 'payment_request',
-              request: reqObj
+              request: reqObj,
+              botToken: paymentConfig.tgBotToken || ''
             })
-          }, 10000);
+          }, 8000);
+          const wData = await wResp.json().catch(() => null);
+          if (wData && wData.tgSent) notifiedViaWorker = true;
+          if (wData && wData.rateLimited) rateLimitedByServer = true;
         }
       } catch (e) {}
 
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = `<span>✅ Заявка на ${paymentConfig.priceRub} ₽ отправлена</span>`;
+      // Прямой резервный вызов Telegram Bot API (только если сервер не заблокировал за спам и сам не отправил)
+      if (!notifiedViaWorker && !rateLimitedByServer && paymentConfig.tgBotToken) {
+        await sendDirectTelegramBotNotice(reqObj);
       }
-      if (fb) {
-        fb.classList.remove('hidden');
-        fb.textContent = `Заявка принята! Администратор (ID ${ADMIN_TG_ID}) получил уведомление об оплате ${paymentConfig.priceRub} ₽ по СБП для твоего ID (${tgUserId}). Как только перевод будет подтверждён, нажми «↻ Проверить» — и PRO откроется навсегда.`;
-      }
+
+      isSubmittingSbp = false;
+      updateSbpSubmitButtonState();
       triggerHaptic('success');
       renderProAndAdminUI();
+    }
+
+    async function sendDirectTelegramBotNotice(reqObj) {
+      const token = (paymentConfig.tgBotToken || '').trim();
+      if (!token) return false;
+      const personalCode = computeProCodeForUser(reqObj.userId);
+      const textLines = [
+        `💳 <b>Новая заявка на оплату СБП (${reqObj.amountRub} ₽)</b>`,
+        `👤 Пользователь: <b>${escapeHtml(reqObj.name)}</b> ${escapeHtml(reqObj.username || '')}`,
+        `🆔 Telegram ID: <code>${escapeHtml(reqObj.userId)}</code>`,
+        reqObj.senderNote ? `📝 Отправитель / прим.: <i>${escapeHtml(reqObj.senderNote)}</i>` : '',
+        `🔑 Готовый PRO-код покупателя: <code>${personalCode}</code>`,
+        `🕒 Время: ${escapeHtml(reqObj.createdAt)}`,
+        `
+Выдай доступ в админке по ID <code>${escapeHtml(reqObj.userId)}</code> или отправь покупателю его код <code>${personalCode}</code>.`
+      ].filter(Boolean).join('\n');
+
+      try {
+        const res = await fetchWithTimeout(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: ADMIN_TG_ID,
+            text: textLines,
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [[
+                { text: `✅ Выдать PRO (${reqObj.amountRub} ₽)`, callback_data: `approve_pro:${reqObj.userId}:${reqObj.id}` },
+                { text: '❌ Отклонить', callback_data: `reject_pro:${reqObj.userId}:${reqObj.id}` }
+              ]]
+            }
+          })
+        }, 8000);
+        const data = await res.json().catch(() => null);
+        return Boolean(data && data.ok);
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function openAdminDirectChat() {
+      const note = (document.getElementById('sbpSenderNoteInput')?.value || '').trim();
+      const msg = `Привет! Я оплатил(а) ${paymentConfig.priceRub} ₽ по СБП за NutriBalance PRO.\nМой Telegram ID: ${tgUserId}${note ? '\nОтправитель: ' + note : ''}`;
+      const cleanUser = (paymentConfig.adminTgUsername || '').replace(/^@/, '').trim();
+      const url = cleanUser
+        ? `https://t.me/${cleanUser}?text=${encodeURIComponent(msg)}`
+        : `tg://user?id=${ADMIN_TG_ID}`;
+      try {
+        if (tg && typeof tg.openTelegramLink === 'function' && url.startsWith('https://t.me/')) {
+          tg.openTelegramLink(url);
+          return;
+        }
+      } catch (e) {}
+      window.open(url, '_blank', 'noopener');
+    }
+
+    async function testTelegramNotification() {
+      readAdminConfigInputs();
+      const btn = document.getElementById('btnTestTgNotify');
+      if (btn) { btn.disabled = true; btn.textContent = 'Отправка...'; }
+      try {
+        const sampleReq = {
+          id: 'test_' + Date.now(),
+          userId: String(tgUserId),
+          name: tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : 'Тестовый покупатель',
+          username: tgUser?.username ? `@${tgUser.username}` : '@test_user',
+          amountRub: paymentConfig.priceRub || 299,
+          senderNote: 'Тестовая проверка уведомления из Админ-панели',
+          createdAt: new Date().toLocaleString('ru-RU')
+        };
+
+        let sent = false;
+        if (paymentConfig.tgBotToken) {
+          sent = await sendDirectTelegramBotNotice(sampleReq);
+        }
+        if (!sent) {
+          const proxyUrl = (AI_PROXY_URL || '').trim();
+          if (proxyUrl) {
+            const resp = await fetchWithTimeout(proxyUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'payment_request', request: sampleReq, botToken: paymentConfig.tgBotToken || '' })
+            }, 8000);
+            const data = await resp.json().catch(() => null);
+            if (data && data.tgSent) sent = true;
+          }
+        }
+
+        if (sent) {
+          triggerHaptic('success');
+          showNotice(`✅ Сообщение успешно отправлено в Telegram на твой ID ${ADMIN_TG_ID}! Проверь чат со своим ботом.`);
+        } else {
+          showNotice('Чтобы бот присылал уведомления тебе в личку, вставь токен своего бота (от @BotFather) в поле «Токен бота» выше и убедись, что ты нажал /start в своём боте.');
+        }
+      } catch (e) {
+        showNotice('Ошибка отправки: ' + e.message);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🔔 Тест сообщения в ТГ'; }
+      }
     }
 
     async function syncUserAccessFromServer(manualClick = false) {
@@ -3931,6 +4128,8 @@
       setVal('admCfgSbpBank', paymentConfig.sbpBank ?? 'Т-Банк / Сбербанк');
       setVal('admCfgSbpRecipient', paymentConfig.sbpRecipient ?? 'Константин К.');
       setVal('admCfgSbpLink', paymentConfig.sbpLink ?? '');
+      setVal('admCfgBotToken', paymentConfig.tgBotToken ?? '');
+      setVal('admCfgAdminUsername', paymentConfig.adminTgUsername ?? '');
       setVal('admUniversalPromoInput', paymentConfig.universalPromo ?? 'NUTVIP299');
     }
 
@@ -3939,6 +4138,8 @@
       const bankRaw = document.getElementById('admCfgSbpBank')?.value;
       const recRaw = document.getElementById('admCfgSbpRecipient')?.value;
       const linkRaw = document.getElementById('admCfgSbpLink')?.value;
+      const tokenRaw = document.getElementById('admCfgBotToken')?.value;
+      const userRaw = document.getElementById('admCfgAdminUsername')?.value;
       const promoRaw = document.getElementById('admUniversalPromoInput')?.value;
 
       paymentConfig = {
@@ -3949,6 +4150,8 @@
         sbpBank: bankRaw !== undefined ? bankRaw.trim() : paymentConfig.sbpBank,
         sbpRecipient: recRaw !== undefined ? recRaw.trim() : paymentConfig.sbpRecipient,
         sbpLink: linkRaw !== undefined ? linkRaw.trim() : paymentConfig.sbpLink,
+        tgBotToken: tokenRaw !== undefined ? tokenRaw.trim() : paymentConfig.tgBotToken,
+        adminTgUsername: userRaw !== undefined ? userRaw.trim() : paymentConfig.adminTgUsername,
         universalPromo: promoRaw !== undefined ? promoRaw.trim().toUpperCase() : paymentConfig.universalPromo,
         updatedAt: Date.now()
       };
