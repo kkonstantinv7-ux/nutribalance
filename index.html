@@ -263,8 +263,17 @@
         </button>
       </nav>
 
-      <!-- Быстрые кнопки -->
+      <!-- Быстрые кнопки: PRO статус, Админка, Бэкап -->
       <div class="flex items-center gap-1.5">
+        <button type="button" id="proStatusHeaderBtn" onclick="openPaywallModal()" class="btn-spring liquid-pill px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-emerald-300 border border-emerald-400/35 flex items-center gap-1.5" title="Статус доступа NutriBalance PRO">
+          <span id="proStatusHeaderIcon">🎁</span>
+          <span id="proStatusHeaderText">Триал 14 дн.</span>
+        </button>
+        <button type="button" id="adminHeaderBtn" onclick="openAdminModal()" class="hidden btn-spring liquid-pill px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-amber-300 border border-amber-400/40 flex items-center gap-1.5 relative" title="Админ-панель (ID 939208462)">
+          <svg class="w-3.5 h-3.5 svg-glow-amber text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2l3 6 6 .9-4.5 4.3 1.1 6.3L12 16.5 6.4 19.5l1.1-6.3L3 8.9 9 8l3-6z"/></svg>
+          <span class="hidden md:inline">Админ</span>
+          <span id="adminPendingBadge" class="hidden px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-extrabold">0</span>
+        </button>
         <button onclick="openBackupModal()" class="btn-spring liquid-pill px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-200 flex items-center gap-1.5" title="Бэкап данных">
           <svg class="w-4 h-4 svg-glow-cyan text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           <span class="hidden sm:inline">Бэкап</span>
@@ -576,6 +585,19 @@
     <!-- ВКЛАДКА 2: ИИ-СКАНЕР -->
     <!-- ========================================== -->
     <section id="tab-ai" class="hidden space-y-4 animate-card">
+      <!-- Баннер статуса триала / PRO для ИИ-функций -->
+      <div id="aiAccessBanner" class="liquid-glass rounded-3xl p-3.5 sm:p-4 max-w-xl mx-auto flex flex-wrap items-center justify-between gap-3 border border-emerald-400/30">
+        <div class="flex items-center gap-3">
+          <div id="aiAccessBannerIcon" class="w-10 h-10 rounded-2xl liquid-pill flex items-center justify-center text-lg">✨</div>
+          <div>
+            <div id="aiAccessBannerTitle" class="text-xs sm:text-sm font-extrabold text-white">Бесплатный пробный период ИИ активен</div>
+            <div id="aiAccessBannerSub" class="text-[11px] text-slate-300">Тебе доступны все ИИ-функции: распознавание по фото, тексту и разбор дня</div>
+          </div>
+        </div>
+        <button type="button" id="aiAccessBannerBtn" onclick="openPaywallModal()" class="btn-spring liquid-btn-primary px-3.5 py-2 rounded-xl font-extrabold text-xs whitespace-nowrap">
+          PRO навсегда • 299 ₽
+        </button>
+      </div>
       <div class="flex items-center justify-between liquid-glass p-1.5 rounded-2xl max-w-md mx-auto">
         <button onclick="switchAiMode('text')" id="aiModeBtn-text" class="btn-spring flex-1 py-2 rounded-xl text-xs font-bold liquid-btn-primary">Описать текстом</button>
         <button onclick="switchAiMode('photo')" id="aiModeBtn-photo" class="btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-200">Распознать по фото</button>
@@ -872,6 +894,49 @@
           <button onclick="addCustomFood()" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-xl font-bold text-xs">Сохранить продукт в базу</button>
         </div>
       </div>
+
+      <!-- КАРТОЧКА ДОСТУПА PRO И ОПЛАТЫ СБП + ВХОД В АДМИНКУ -->
+      <div class="liquid-glass rounded-3xl p-4 sm:p-5 space-y-3.5">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl liquid-btn-primary flex items-center justify-center font-extrabold text-slate-950 text-base">💎</div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="font-bold text-sm sm:text-base text-white">Доступ NutriBalance PRO</h2>
+                <span id="profProBadge" class="text-[10px] px-2.5 py-0.5 rounded-full font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">Триал 14 дн.</span>
+              </div>
+              <p id="profProDesc" class="text-xs text-slate-300">Дневник питания бесплатен всегда. ИИ-функции: 14 дней бесплатно, далее 299 ₽ единоразово навсегда.</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="openPaywallModal()" class="btn-spring liquid-btn-primary px-4 py-2 rounded-xl font-extrabold text-xs">
+              Открыть PRO • <span id="profPriceLabel">299</span> ₽ (СБП)
+            </button>
+            <button type="button" onclick="openAdminModal()" class="btn-spring liquid-pill px-3 py-2 rounded-xl font-semibold text-xs text-amber-300 border border-amber-400/30 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 6 6 .9-4.5 4.3 1.1 6.3L12 16.5 6.4 19.5l1.1-6.3L3 8.9 9 8l3-6z"/></svg>
+              <span>Админ-панель</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+          <div class="liquid-pill rounded-2xl p-3 flex items-center justify-between">
+            <div>
+              <div class="text-[10px] text-slate-400">Твой Telegram ID</div>
+              <div id="profUserTgId" class="font-mono font-bold text-white mt-0.5">—</div>
+            </div>
+            <button type="button" onclick="copyUserTgId()" class="btn-spring liquid-pill px-2.5 py-1 rounded-lg text-[11px] text-cyan-300 font-semibold">Копировать</button>
+          </div>
+          <div class="liquid-pill rounded-2xl p-3">
+            <div class="text-[10px] text-slate-400">Статус ИИ-функций</div>
+            <div id="profAiStatusText" class="font-bold text-emerald-300 mt-0.5">Активны</div>
+          </div>
+          <div class="liquid-pill rounded-2xl p-3">
+            <div class="text-[10px] text-slate-400">Тариф</div>
+            <div class="font-bold text-white mt-0.5">Единоразовый (без подписок)</div>
+          </div>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -893,6 +958,279 @@
         <label class="block text-xs text-slate-300 mb-1">Восстановить из скопированного кода:</label>
         <textarea id="restoreCodeArea" rows="3" placeholder='{"profile":...}' class="liquid-input w-full rounded-xl p-2.5 text-xs text-white font-mono"></textarea>
         <button onclick="restoreFromText()" class="btn-spring liquid-pill w-full mt-2 py-2 rounded-xl text-cyan-300 font-semibold text-xs">Восстановить данные</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- МОДАЛЬНОЕ ОКНО: ОПЛАТА ПО СБП (NUTRIBALANCE PRO — 299 ₽ НАВСЕГДА) -->
+  <!-- ================================================================= -->
+  <div id="paywallModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="liquid-glass rounded-3xl max-w-md w-full p-4 sm:p-5 space-y-4 my-auto animate-card border border-emerald-400/35">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl liquid-btn-primary flex items-center justify-center text-xl shadow-lg">💎</div>
+          <div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <h3 class="font-extrabold text-base text-white">NutriBalance PRO</h3>
+              <span class="text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">НАВСЕГДА</span>
+            </div>
+            <p id="paywallSubtitle" class="text-[11px] text-slate-300">Единоразовая покупка • Без подписок и автосписаний</p>
+          </div>
+        </div>
+        <button type="button" onclick="closePaywallModal()" class="text-slate-300 hover:text-white px-2 py-1 text-sm">✕</button>
+      </div>
+
+      <!-- Статус текущего пользователя -->
+      <div id="paywallStatusBanner" class="liquid-pill rounded-2xl p-3 flex items-center justify-between gap-2 border border-white/15">
+        <div>
+          <div id="paywallStatusTitle" class="text-xs font-bold text-emerald-300">Пробный период: 14 дней бесплатно</div>
+          <div id="paywallStatusDesc" class="text-[11px] text-slate-300">Дневник питания бесплатен всегда. PRO открывает безлимит на ИИ.</div>
+        </div>
+        <div class="text-right">
+          <div id="paywallPriceBig" class="text-lg font-extrabold text-white whitespace-nowrap">299 ₽</div>
+          <div class="text-[10px] text-emerald-300 font-semibold">один раз</div>
+        </div>
+      </div>
+
+      <!-- Что входит в PRO -->
+      <div class="space-y-1.5 text-xs">
+        <div class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Что открывает PRO-версия навсегда:</div>
+        <div class="grid grid-cols-1 gap-1.5">
+          <div class="liquid-pill rounded-xl px-3 py-2 flex items-center gap-2.5">
+            <span class="text-emerald-300 font-bold">📸</span>
+            <span class="text-slate-100"><b>ИИ-сканер по фото тарелки</b> — определение веса и БЖУ по снимку</span>
+          </div>
+          <div class="liquid-pill rounded-xl px-3 py-2 flex items-center gap-2.5">
+            <span class="text-purple-300 font-bold">✨</span>
+            <span class="text-slate-100"><b>ИИ-расчёт текстом</b> — описывай любые домашние блюда своими словами</span>
+          </div>
+          <div class="liquid-pill rounded-xl px-3 py-2 flex items-center gap-2.5">
+            <span class="text-cyan-300 font-bold">📊</span>
+            <span class="text-slate-100"><b>ИИ-нутрициолог и тренировки</b> — разбор дня, советы на ужин и расчёт спорта</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Блок оплаты СБП -->
+      <div id="paywallSbpSection" class="liquid-pill rounded-2xl p-3.5 space-y-3 border border-sky-400/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <!-- Иконка СБП -->
+            <div class="w-7 h-7 rounded-lg bg-slate-900 border border-white/15 flex items-center justify-center">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <path d="M5 4l7 4v8l-7 4V4z" fill="#5b2d90"/>
+                <path d="M12 8l7-4v8l-7 4V8z" fill="#10b981"/>
+                <path d="M12 12l7 4-7 4v-8z" fill="#f59e0b"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-extrabold text-white">Оплата через СБП (Система быстрых платежей)</div>
+              <div class="text-[10px] text-slate-300">Мгновенный перевод в рублях из любого банка РФ</div>
+            </div>
+          </div>
+          <span id="paywallSbpAmountTag" class="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">299 ₽</span>
+        </div>
+
+        <!-- Кнопка прямой платёжной ссылки СБП (показывается, если ссылка задана в админке) -->
+        <button type="button" id="btnPaySbpLink" onclick="openSbpPaymentLink()" class="hidden btn-spring liquid-btn-primary w-full py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2">
+          <span>Оплатить <span id="btnPaySbpLinkPrice">299</span> ₽ по ссылке СБП</span>
+        </button>
+
+        <!-- Реквизиты для перевода по СБП -->
+        <div id="paywallRequisitesBox" class="bg-slate-950/65 border border-white/10 rounded-xl p-2.5 space-y-2 text-xs">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <div class="text-[10px] text-slate-400">Номер телефона / реквизиты СБП:</div>
+              <div id="sbpPhoneDisplay" class="font-mono font-extrabold text-sm text-white select-all">+7 (999) 000-00-00</div>
+            </div>
+            <button type="button" onclick="copySbpPhone()" class="btn-spring liquid-pill px-2.5 py-1.5 rounded-lg text-[11px] text-emerald-300 font-bold">Скопировать</button>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/10 text-[11px]">
+            <span class="text-slate-300">Банк: <strong id="sbpBankDisplay" class="text-white">СБП (Т-Банк / Сбер)</strong></span>
+            <span class="text-slate-300">Получатель: <strong id="sbpRecipientDisplay" class="text-white">Константин К.</strong></span>
+          </div>
+          <div class="flex items-center justify-between pt-1 border-t border-white/10 text-[11px]">
+            <span class="text-slate-300">Твой ID для комментария/проверки: <strong id="sbpUserIdDisplay" class="font-mono text-cyan-300"></strong></span>
+            <button type="button" onclick="copyUserTgId()" class="text-[10px] text-cyan-300 underline">Скопировать ID</button>
+          </div>
+        </div>
+
+        <!-- Подтверждение оплаты пользователем -->
+        <div class="space-y-2 pt-1">
+          <input type="text" id="sbpSenderNoteInput" placeholder="Имя отправителя или последние 4 цифры карты (необязательно)" class="liquid-input w-full rounded-xl px-3 py-2 text-xs text-white" />
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="btnSubmitSbpPayment" onclick="submitSbpPaymentRequest()" class="btn-spring liquid-btn-primary flex-1 py-2.5 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5">
+              <span>✅ Я оплатил <span id="btnConfirmPrice">299</span> ₽ по СБП</span>
+            </button>
+            <button type="button" id="btnCheckPaymentStatus" onclick="syncUserAccessFromServer(true)" class="btn-spring liquid-pill py-2.5 px-3 rounded-xl font-semibold text-xs text-cyan-300" title="Проверить подтверждение от администратора">
+              ↻ Проверить
+            </button>
+          </div>
+          <p id="sbpRequestFeedback" class="hidden text-[11px] text-emerald-300 bg-emerald-500/15 border border-emerald-400/30 rounded-xl p-2.5 leading-snug"></p>
+        </div>
+      </div>
+
+      <!-- Ввод персонального кода активации PRO / промокода -->
+      <div class="liquid-pill rounded-2xl p-3 space-y-2">
+        <div class="text-[11px] font-semibold text-slate-200">Есть персональный код активации PRO или промокод?</div>
+        <div class="flex gap-1.5">
+          <input type="text" id="proActivationCodeInput" placeholder="Например: NBPRO-..." class="liquid-input flex-1 rounded-xl px-3 py-2 text-xs font-mono text-white uppercase" />
+          <button type="button" onclick="redeemProCode()" class="btn-spring liquid-pill px-3.5 py-2 rounded-xl font-bold text-xs text-emerald-300 border border-emerald-400/40">Активировать</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- МОДАЛЬНОЕ ОКНО: АДМИН-ПАНЕЛЬ (ДЛЯ TELEGRAM ID 939208462)          -->
+  <!-- ================================================================= -->
+  <div id="adminModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto">
+    <div class="liquid-glass rounded-3xl max-w-2xl w-full p-4 sm:p-5 space-y-4 my-auto animate-card border border-amber-400/40">
+      <div class="flex items-center justify-between gap-2 border-b border-white/10 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300 font-extrabold">
+            👑
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-extrabold text-sm sm:text-base text-white">Админ-панель NutriBalance Pro</h3>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 font-mono">ID: 939208462</span>
+            </div>
+            <p id="adminSyncSubtitle" class="text-[11px] text-slate-300">Управление оплатами по СБП, триалом (14 дн.) и пожизненным PRO (299 ₽)</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="fetchAdminDataFromWorker(true)" class="btn-spring liquid-pill px-2.5 py-1.5 rounded-xl text-xs text-cyan-300 font-semibold" title="Обновить данные с сервера">↻ Обновить</button>
+          <button type="button" onclick="closeAdminModal()" class="text-slate-300 hover:text-white px-2 py-1 text-sm">✕</button>
+        </div>
+      </div>
+
+      <!-- Сводка цифр админки -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+        <div class="liquid-pill rounded-2xl p-2.5">
+          <div class="text-[10px] text-slate-400">Всего юзеров</div>
+          <div id="admStatUsers" class="text-base font-extrabold text-white mt-0.5">1</div>
+        </div>
+        <div class="liquid-pill rounded-2xl p-2.5">
+          <div class="text-[10px] text-slate-400">PRO навсегда</div>
+          <div id="admStatPro" class="text-base font-extrabold text-emerald-300 mt-0.5">0</div>
+        </div>
+        <div class="liquid-pill rounded-2xl p-2.5">
+          <div class="text-[10px] text-slate-400">Ждут проверки СБП</div>
+          <div id="admStatPending" class="text-base font-extrabold text-amber-300 mt-0.5">0</div>
+        </div>
+        <div class="liquid-pill rounded-2xl p-2.5">
+          <div class="text-[10px] text-slate-400">Сумма оплат</div>
+          <div id="admStatRevenue" class="text-base font-extrabold text-cyan-300 mt-0.5">0 ₽</div>
+        </div>
+      </div>
+
+      <!-- Вкладки админки -->
+      <div class="grid grid-cols-4 gap-1 liquid-pill p-1 rounded-2xl text-xs">
+        <button type="button" id="admTabBtn-requests" onclick="switchAdminTab('requests')" class="btn-spring py-1.5 rounded-xl font-bold liquid-btn-primary">Заявки СБП</button>
+        <button type="button" id="admTabBtn-users" onclick="switchAdminTab('users')" class="btn-spring py-1.5 rounded-xl font-medium text-slate-200">Юзеры</button>
+        <button type="button" id="admTabBtn-codes" onclick="switchAdminTab('codes')" class="btn-spring py-1.5 rounded-xl font-medium text-slate-200">PRO-Коды</button>
+        <button type="button" id="admTabBtn-settings" onclick="switchAdminTab('settings')" class="btn-spring py-1.5 rounded-xl font-medium text-slate-200">Реквизиты</button>
+      </div>
+
+      <!-- 1. ВКЛАДКА АДМИНКИ: ЗАЯВКИ НА ОПЛАТУ СБП -->
+      <div id="admTab-requests" class="space-y-2.5">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-300 font-semibold">Входящие уведомления «Я оплатил по СБП»:</span>
+          <span class="text-[11px] text-slate-400">Подтверждение выдаёт PRO навсегда</span>
+        </div>
+        <div id="adminRequestsList" class="space-y-2 max-h-[260px] overflow-y-auto pr-1"></div>
+      </div>
+
+      <!-- 2. ВКЛАДКА АДМИНКИ: ПОЛЬЗОВАТЕЛИ И РУЧНАЯ ВЫДАЧА ДОСТУПА -->
+      <div id="admTab-users" class="hidden space-y-3">
+        <div class="liquid-pill rounded-2xl p-3 space-y-2.5">
+          <div class="text-xs font-bold text-white">Быстрое управление доступом по Telegram ID:</div>
+          <div class="flex flex-wrap gap-2">
+            <input type="text" id="admTargetUserIdInput" placeholder="Введи Telegram ID (напр. 123456789)" class="liquid-input flex-1 min-w-[180px] rounded-xl px-3 py-2 text-xs font-mono text-white" />
+            <button type="button" onclick="adminGrantProById('pro')" class="btn-spring liquid-btn-primary px-3 py-2 rounded-xl font-extrabold text-xs">💎 Выдать PRO навсегда</button>
+            <button type="button" onclick="adminGrantProById('trial')" class="btn-spring liquid-pill px-3 py-2 rounded-xl font-semibold text-xs text-cyan-300">+14 дн. триал</button>
+            <button type="button" onclick="adminGrantProById('revoke')" class="btn-spring liquid-pill px-3 py-2 rounded-xl font-semibold text-xs text-rose-300">Забрать PRO</button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-2">
+          <input type="search" id="admUserSearchInput" oninput="renderAdminUsersList()" placeholder="Поиск по Telegram ID или имени..." class="liquid-input w-full rounded-xl px-3 py-1.5 text-xs text-white" />
+        </div>
+        <div id="adminUsersList" class="space-y-1.5 max-h-[220px] overflow-y-auto pr-1"></div>
+      </div>
+
+      <!-- 3. ВКЛАДКА АДМИНКИ: ГЕНЕРАТОР КОДОВ АКТИВАЦИИ (РАБОТАЕТ ДАЖЕ БЕЗ СЕРВЕРА) -->
+      <div id="admTab-codes" class="hidden space-y-3">
+        <div class="liquid-pill rounded-2xl p-3.5 space-y-2.5">
+          <div class="text-xs font-bold text-white">Персональный код активации PRO по ID покупателя</div>
+          <p class="text-[11px] text-slate-300">Код привязывается к Telegram ID покупателя. Даже если сервер/воркер не подключён, покупатель вводит этот код в окне оплаты и получает пожизненный PRO.</p>
+          <div class="flex gap-2">
+            <input type="text" id="admCodeTargetId" placeholder="Telegram ID покупателя (напр. 55443322)" class="liquid-input flex-1 rounded-xl px-3 py-2 text-xs font-mono text-white" />
+            <button type="button" onclick="generatePersonalProCode()" class="btn-spring liquid-btn-primary px-3.5 py-2 rounded-xl font-bold text-xs">Создать код</button>
+          </div>
+          <div id="admGeneratedCodeBox" class="hidden bg-slate-950/75 border border-emerald-400/35 rounded-xl p-2.5 flex items-center justify-between gap-2">
+            <div>
+              <div class="text-[10px] text-slate-400">Готовый PRO-код для покупателя:</div>
+              <div id="admGeneratedCodeText" class="font-mono font-extrabold text-sm text-emerald-300 select-all"></div>
+            </div>
+            <button type="button" onclick="copyGeneratedProCode()" class="btn-spring liquid-pill px-3 py-1.5 rounded-lg text-xs text-white font-bold">Скопировать с инструкцией</button>
+          </div>
+        </div>
+
+        <div class="liquid-pill rounded-2xl p-3.5 space-y-2">
+          <div class="text-xs font-bold text-white">Универсальный промокод (для друзей / акций):</div>
+          <div class="flex gap-2">
+            <input type="text" id="admUniversalPromoInput" placeholder="Например: NUTRI2026" class="liquid-input flex-1 rounded-xl px-3 py-2 text-xs font-mono text-white uppercase" />
+            <button type="button" onclick="saveAdminPaymentConfig()" class="btn-spring liquid-pill px-3.5 py-2 rounded-xl font-bold text-xs text-emerald-300">Сохранить промокод</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. ВКЛАДКА АДМИНКИ: НАСТРОЙКИ СБП, ЦЕНЫ И СИМУЛЯТОР ДОСТУПА -->
+      <div id="admTab-settings" class="hidden space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+          <div>
+            <label class="block text-slate-300 mb-1">Разовая цена PRO (в рублях)</label>
+            <input type="number" id="admCfgPrice" value="299" min="1" max="50000" class="liquid-input w-full rounded-xl px-3 py-2 font-bold text-emerald-300" />
+          </div>
+          <div>
+            <label class="block text-slate-300 mb-1">Бесплатный триал ИИ (дней)</label>
+            <input type="number" id="admCfgTrialDays" value="14" min="0" max="365" class="liquid-input w-full rounded-xl px-3 py-2 font-bold text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-300 mb-1">Телефон / номер для перевода СБП</label>
+            <input type="text" id="admCfgSbpPhone" placeholder="+7 (999) 000-00-00" class="liquid-input w-full rounded-xl px-3 py-2 font-mono text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-300 mb-1">Банк получателя СБП</label>
+            <input type="text" id="admCfgSbpBank" placeholder="Т-Банк / Сбербанк" class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-300 mb-1">Имя получателя (для сверки)</label>
+            <input type="text" id="admCfgSbpRecipient" placeholder="Константин К." class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-300 mb-1">Ссылка СБП / QR НСПК / ЮKassa (опционально)</label>
+            <input type="url" id="admCfgSbpLink" placeholder="https://qr.nspk.ru/... или пусто" class="liquid-input w-full rounded-xl px-3 py-2 text-white" />
+          </div>
+        </div>
+
+        <button type="button" onclick="saveAdminPaymentConfig()" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-xl font-extrabold text-xs">
+          Сохранить настройки оплаты СБП (299 ₽)
+        </button>
+
+        <!-- Переключатель для теста глазами пользователя -->
+        <div class="liquid-pill rounded-2xl p-3 space-y-2 border border-amber-400/30">
+          <div class="text-xs font-bold text-amber-300">Тестирование экрана оплаты (Симулятор статуса для тебя):</div>
+          <p class="text-[11px] text-slate-300">Позволяет проверить, как выглядит приложение в режиме триала, после окончания 14 дней (блокировка ИИ) и после покупки PRO:</p>
+          <div class="grid grid-cols-3 gap-1.5 text-xs">
+            <button type="button" onclick="setAdminTestViewMode('trial')" class="btn-spring liquid-pill py-2 rounded-xl font-semibold text-cyan-300">🎁 Триал (14 дн.)</button>
+            <button type="button" onclick="setAdminTestViewMode('expired')" class="btn-spring liquid-pill py-2 rounded-xl font-semibold text-rose-300">🔒 Триал истёк</button>
+            <button type="button" onclick="setAdminTestViewMode('pro')" class="btn-spring liquid-pill py-2 rounded-xl font-semibold text-emerald-300">💎 PRO активен</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1938,6 +2276,7 @@
     }
 
     async function generateDailyAIReview() {
+      if (!requireProOrTrialAccess('ИИ-разбор дня и персональные рекомендации')) return;
       const day = ensureDay(currentDate);
       if (day.items.length === 0) { showNotice('Сначала добавь хотя бы один приём пищи за этот день!'); return; }
       const targets = calculateTargets();
@@ -1974,6 +2313,7 @@
     }
 
     async function analyzeTextDishWithAI() {
+      if (!requireProOrTrialAccess('ИИ-расчёт КБЖУ блюда по текстовому описанию')) return;
       const text = document.getElementById('aiTextFoodPrompt').value.trim();
       if (!text) return showNotice('Опиши блюдо текстом!');
       const btn = document.getElementById('btnAnalyzeTextAI');
@@ -2119,6 +2459,7 @@
     }
 
     async function analyzeCurrentPhotoWithAI() {
+      if (!requireProOrTrialAccess('ИИ-распознавание тарелки по фотографии')) return;
       if (!currentPhotoBase64) return showNotice('Сначала сделай снимок камерой!');
       const btn = document.getElementById('btnAnalyzeAI');
       const laserEl = document.getElementById('scannerLaserLine');
@@ -2235,6 +2576,7 @@
     function toggleBurnedToTarget(checked) { state.profile.addBurnedToTarget = Boolean(checked); saveState(); }
 
     async function estimateWorkoutWithAI() {
+      if (!requireProOrTrialAccess('ИИ-оценка расхода калорий за тренировку')) return;
       const text = document.getElementById('aiWorkoutPrompt').value.trim();
       if (!text) return showNotice('Опиши тренировку!');
       const btn = document.getElementById('btnAiWorkout'); btn.disabled = true; btn.textContent = '...';
@@ -3024,7 +3366,826 @@
         </div>`;
     };
 
-    loadState(); switchTab('diary');
+
+    // =====================================================================
+    // 14. СИСТЕМА ТРИАЛА (14 ДНЕЙ), РАЗОВОЙ ОПЛАТЫ СБП (299 ₽) И АДМИНКИ
+    // =====================================================================
+    const ADMIN_TG_ID = '939208462';
+    const SUB_STORAGE_KEY = `nutribalance_sub_v1_${tgUserId}`;
+    const ADMIN_CFG_KEY = 'nutribalance_admin_cfg_v1';
+    const ADMIN_DB_CACHE_KEY = 'nutribalance_admin_db_cache_v1';
+    const PRO_CODE_SALT = 'NB_LIQUID_PRO_299_SALT';
+
+    let paymentConfig = {
+      priceRub: 299,
+      trialDays: 14,
+      sbpPhone: '+7 (999) 000-00-00',
+      sbpBank: 'Т-Банк / Сбербанк (СБП)',
+      sbpRecipient: 'Константин К.',
+      sbpLink: '',
+      universalPromo: 'NUTVIP299'
+    };
+
+    let subState = {
+      trialStartTs: Date.now(),
+      isPro: false,
+      proActivatedAt: null,
+      proMethod: '',
+      pendingSbpRequest: false,
+      pendingSbpAt: null,
+      testModeOverride: null // 'trial' | 'expired' | 'pro' | null
+    };
+
+    let adminDataCache = {
+      users: {},
+      requests: []
+    };
+
+    function isUserAdmin() {
+      return String(tgUserId) === ADMIN_TG_ID;
+    }
+
+    function loadSubscriptionAndConfig() {
+      try {
+        const rawCfg = localStorage.getItem(ADMIN_CFG_KEY);
+        if (rawCfg) {
+          const parsedCfg = JSON.parse(rawCfg);
+          if (parsedCfg && typeof parsedCfg === 'object') {
+            paymentConfig = { ...paymentConfig, ...parsedCfg };
+          }
+        }
+      } catch (e) {}
+
+      try {
+        const rawSub = localStorage.getItem(SUB_STORAGE_KEY);
+        if (rawSub) {
+          const parsedSub = JSON.parse(rawSub);
+          if (parsedSub && typeof parsedSub === 'object') {
+            subState = { ...subState, ...parsedSub };
+          }
+        } else {
+          subState.trialStartTs = Date.now();
+          saveSubscriptionLocal();
+        }
+      } catch (e) {}
+
+      // Для владельца бота (ID 939208462) по умолчанию включён PRO
+      if (isUserAdmin() && !subState.testModeOverride) {
+        subState.isPro = true;
+        subState.proMethod = 'admin_owner';
+      }
+
+      try {
+        const rawAdm = localStorage.getItem(ADMIN_DB_CACHE_KEY);
+        if (rawAdm) {
+          const parsedAdm = JSON.parse(rawAdm);
+          if (parsedAdm && typeof parsedAdm === 'object') {
+            adminDataCache = {
+              users: parsedAdm.users || {},
+              requests: Array.isArray(parsedAdm.requests) ? parsedAdm.requests : []
+            };
+          }
+        }
+      } catch (e) {}
+
+      registerCurrentUserInLocalAdminCache();
+      renderProAndAdminUI();
+
+      // Фоновая синхронизация со связкой Cloudflare Worker (если воркер обновлён)
+      setTimeout(() => {
+        syncUserAccessFromServer(false);
+      }, 600);
+    }
+
+    function saveSubscriptionLocal() {
+      try {
+        localStorage.setItem(SUB_STORAGE_KEY, JSON.stringify(subState));
+      } catch (e) {}
+      if (isTelegramMiniApp && tg?.CloudStorage) {
+        cloudSet('nb_sub_v1', JSON.stringify(subState));
+      }
+      registerCurrentUserInLocalAdminCache();
+    }
+
+    function saveAdminCacheLocal() {
+      try {
+        localStorage.setItem(ADMIN_DB_CACHE_KEY, JSON.stringify(adminDataCache));
+      } catch (e) {}
+    }
+
+    function registerCurrentUserInLocalAdminCache() {
+      const uName = tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : 'Локальный пользователь';
+      const uHandle = tgUser?.username ? `@${tgUser.username}` : '';
+      const existing = adminDataCache.users[tgUserId] || {};
+      adminDataCache.users[tgUserId] = {
+        id: tgUserId,
+        name: uName || existing.name || 'Пользователь',
+        username: uHandle || existing.username || '',
+        trialStartTs: subState.trialStartTs || existing.trialStartTs || Date.now(),
+        isPro: Boolean(subState.isPro),
+        proMethod: subState.proMethod || existing.proMethod || '',
+        updatedAt: new Date().toISOString()
+      };
+      saveAdminCacheLocal();
+    }
+
+    function getAccessInfo() {
+      const trialDaysTotal = Math.max(0, Number(paymentConfig.trialDays ?? 14));
+      const msTotal = trialDaysTotal * 86400000;
+      const elapsed = Math.max(0, Date.now() - (Number(subState.trialStartTs) || Date.now()));
+      const remainMs = Math.max(0, msTotal - elapsed);
+      const daysLeft = Math.ceil(remainMs / 86400000);
+
+      if (subState.testModeOverride === 'pro') {
+        return { hasAiAccess: true, isPro: true, isTrial: false, daysLeft: 0, statusLabel: 'PRO Навсегда' };
+      }
+      if (subState.testModeOverride === 'expired') {
+        return { hasAiAccess: false, isPro: false, isTrial: false, daysLeft: 0, statusLabel: `PRO • ${paymentConfig.priceRub} ₽` };
+      }
+      if (subState.testModeOverride === 'trial') {
+        return { hasAiAccess: true, isPro: false, isTrial: true, daysLeft: trialDaysTotal || 14, statusLabel: `Триал: ${trialDaysTotal || 14} дн.` };
+      }
+
+      if (subState.isPro) {
+        return { hasAiAccess: true, isPro: true, isTrial: false, daysLeft: 0, statusLabel: 'PRO Навсегда' };
+      }
+      if (remainMs > 0) {
+        return { hasAiAccess: true, isPro: false, isTrial: true, daysLeft, statusLabel: `Триал: ${daysLeft} дн.` };
+      }
+      return { hasAiAccess: false, isPro: false, isTrial: false, daysLeft: 0, statusLabel: `PRO • ${paymentConfig.priceRub} ₽` };
+    }
+
+    function requireProOrTrialAccess(featureTitle = 'ИИ-функции') {
+      const info = getAccessInfo();
+      if (info.hasAiAccess) return true;
+      triggerHaptic('warning');
+      openPaywallModal(featureTitle);
+      return false;
+    }
+
+    function renderProAndAdminUI() {
+      const info = getAccessInfo();
+      const price = Number(paymentConfig.priceRub) || 299;
+
+      // 1) Кнопка в шапке
+      const hdrBtn = document.getElementById('proStatusHeaderBtn');
+      const hdrIcon = document.getElementById('proStatusHeaderIcon');
+      const hdrText = document.getElementById('proStatusHeaderText');
+      if (hdrBtn && hdrIcon && hdrText) {
+        hdrText.textContent = info.statusLabel;
+        if (info.isPro) {
+          hdrIcon.textContent = '💎';
+          hdrBtn.className = 'btn-spring liquid-pill px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold text-emerald-300 border border-emerald-400/50 flex items-center gap-1.5';
+        } else if (info.isTrial) {
+          hdrIcon.textContent = '🎁';
+          hdrBtn.className = 'btn-spring liquid-pill px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-cyan-300 border border-cyan-400/35 flex items-center gap-1.5';
+        } else {
+          hdrIcon.textContent = '🔒';
+          hdrBtn.className = 'btn-spring liquid-pill px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold text-amber-300 border border-amber-400/50 flex items-center gap-1.5 animate-pulse';
+        }
+      }
+
+      // 2) Кнопка админа в шапке (видна для ID 939208462 или в локальном браузере для владельца)
+      const admBtn = document.getElementById('adminHeaderBtn');
+      const admBadge = document.getElementById('adminPendingBadge');
+      if (admBtn) {
+        const showAdminBtn = isUserAdmin() || tgUserId === 'local_browser_user';
+        admBtn.classList.toggle('hidden', !showAdminBtn);
+      }
+      if (admBadge) {
+        const pendingCount = (adminDataCache.requests || []).filter(r => r.status === 'pending').length;
+        admBadge.textContent = String(pendingCount);
+        admBadge.classList.toggle('hidden', pendingCount === 0);
+      }
+
+      // 3) Баннер во вкладке ИИ-Сканера
+      const aiBanner = document.getElementById('aiAccessBanner');
+      const aiIcon = document.getElementById('aiAccessBannerIcon');
+      const aiTitle = document.getElementById('aiAccessBannerTitle');
+      const aiSub = document.getElementById('aiAccessBannerSub');
+      const aiBtn = document.getElementById('aiAccessBannerBtn');
+      if (aiBanner && aiTitle && aiSub && aiBtn) {
+        if (info.isPro) {
+          aiIcon.textContent = '💎';
+          aiTitle.textContent = 'NutriBalance PRO активен навсегда';
+          aiSub.textContent = 'Безлимитный доступ ко всем ИИ-функциям: распознавание по фото, тексту и разбор рациона';
+          aiBtn.textContent = 'PRO активен ✓';
+          aiBanner.className = 'liquid-glass rounded-3xl p-3.5 sm:p-4 max-w-xl mx-auto flex flex-wrap items-center justify-between gap-3 border border-emerald-400/40';
+        } else if (info.isTrial) {
+          aiIcon.textContent = '🎁';
+          aiTitle.textContent = `Бесплатный пробный период ИИ: осталось ${info.daysLeft} дн.`;
+          aiSub.textContent = `Первые ${paymentConfig.trialDays} дней все ИИ-функции бесплатны. Далее разовая покупка ${price} ₽ навсегда (без подписок).`;
+          aiBtn.textContent = `Открыть PRO • ${price} ₽`;
+          aiBanner.className = 'liquid-glass rounded-3xl p-3.5 sm:p-4 max-w-xl mx-auto flex flex-wrap items-center justify-between gap-3 border border-cyan-400/35';
+        } else {
+          aiIcon.textContent = '🔒';
+          aiTitle.textContent = 'Пробные 14 дней завершены — разблокируй ИИ навсегда';
+          aiSub.textContent = `Базовый дневник остаётся бесплатным. Открой ИИ-сканер по фото, тексту и разбор дня за ${price} ₽ (один раз и навсегда).`;
+          aiBtn.textContent = `Купить PRO по СБП • ${price} ₽`;
+          aiBanner.className = 'liquid-glass rounded-3xl p-3.5 sm:p-4 max-w-xl mx-auto flex flex-wrap items-center justify-between gap-3 border border-amber-400/50';
+        }
+      }
+
+      // 4) Карточка в Профиле
+      const profBadge = document.getElementById('profProBadge');
+      const profAiStatus = document.getElementById('profAiStatusText');
+      const profPriceLbl = document.getElementById('profPriceLabel');
+      const profTgIdEl = document.getElementById('profUserTgId');
+      if (profTgIdEl) profTgIdEl.textContent = tgUserId;
+      if (profPriceLbl) profPriceLbl.textContent = String(price);
+      if (profBadge && profAiStatus) {
+        profBadge.textContent = info.statusLabel;
+        if (info.isPro) {
+          profAiStatus.textContent = 'PRO Навсегда (Безлимит)';
+          profAiStatus.className = 'font-bold text-emerald-300 mt-0.5';
+        } else if (info.isTrial) {
+          profAiStatus.textContent = `Триал активен (осталось ${info.daysLeft} дн.)`;
+          profAiStatus.className = 'font-bold text-cyan-300 mt-0.5';
+        } else {
+          profAiStatus.textContent = `Требуется разовая оплата ${price} ₽`;
+          profAiStatus.className = 'font-bold text-amber-300 mt-0.5';
+        }
+      }
+
+      // 5) Обновляем реквизиты внутри Paywall модалки
+      const priceBig = document.getElementById('paywallPriceBig');
+      const sbpTag = document.getElementById('paywallSbpAmountTag');
+      const confirmPrice = document.getElementById('btnConfirmPrice');
+      const linkPrice = document.getElementById('btnPaySbpLinkPrice');
+      if (priceBig) priceBig.textContent = `${price} ₽`;
+      if (sbpTag) sbpTag.textContent = `${price} ₽`;
+      if (confirmPrice) confirmPrice.textContent = String(price);
+      if (linkPrice) linkPrice.textContent = String(price);
+
+      const phoneEl = document.getElementById('sbpPhoneDisplay');
+      const bankEl = document.getElementById('sbpBankDisplay');
+      const recEl = document.getElementById('sbpRecipientDisplay');
+      const uidEl = document.getElementById('sbpUserIdDisplay');
+      const sbpLinkBtn = document.getElementById('btnPaySbpLink');
+      if (phoneEl) phoneEl.textContent = paymentConfig.sbpPhone || '+7 (999) 000-00-00';
+      if (bankEl) bankEl.textContent = paymentConfig.sbpBank || 'СБП';
+      if (recEl) recEl.textContent = paymentConfig.sbpRecipient || 'Получатель';
+      if (uidEl) uidEl.textContent = tgUserId;
+      if (sbpLinkBtn) sbpLinkBtn.classList.toggle('hidden', !paymentConfig.sbpLink);
+    }
+
+    function openPaywallModal(lockedFeatureName = '') {
+      triggerHaptic('light');
+      renderProAndAdminUI();
+      const info = getAccessInfo();
+      const stTitle = document.getElementById('paywallStatusTitle');
+      const stDesc = document.getElementById('paywallStatusDesc');
+
+      if (lockedFeatureName && !info.hasAiAccess) {
+        stTitle.textContent = `Для «${lockedFeatureName}» нужен PRO-доступ`;
+        stTitle.className = 'text-xs font-extrabold text-amber-300';
+        stDesc.textContent = `Твои 14 бесплатных дней завершились. Оплати ${paymentConfig.priceRub} ₽ один раз по СБП и пользуйся всеми ИИ-функциями без ограничений!`;
+      } else if (info.isPro) {
+        stTitle.textContent = '💎 У тебя уже активирован пожизненный NutriBalance PRO!';
+        stTitle.className = 'text-xs font-extrabold text-emerald-300';
+        stDesc.textContent = 'Все ИИ-функции приложения открыты навсегда без подписок.';
+      } else {
+        stTitle.textContent = `Пробный период активен: осталось ${info.daysLeft} дн. из ${paymentConfig.trialDays}`;
+        stTitle.className = 'text-xs font-extrabold text-cyan-300';
+        stDesc.textContent = `Ты можешь активировать пожизненный PRO за ${paymentConfig.priceRub} ₽ прямо сейчас или после окончания триала.`;
+      }
+
+      const fb = document.getElementById('sbpRequestFeedback');
+      if (fb) {
+        if (subState.pendingSbpRequest && !info.isPro) {
+          fb.classList.remove('hidden');
+          fb.textContent = `Заявка на проверку оплаты (${paymentConfig.priceRub} ₽) отправлена администратору (ID ${ADMIN_TG_ID}). Нажми «↻ Проверить» после подтверждения или введи полученный PRO-код ниже.`;
+        } else {
+          fb.classList.add('hidden');
+        }
+      }
+
+      document.getElementById('paywallModal').classList.remove('hidden');
+    }
+
+    function closePaywallModal() {
+      document.getElementById('paywallModal').classList.add('hidden');
+    }
+
+    function copyTextSafe(text, okMsg) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => showNotice(okMsg)).catch(() => fallbackCopy(text, okMsg));
+      } else {
+        fallbackCopy(text, okMsg);
+      }
+    }
+
+    function fallbackCopy(text, okMsg) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); showNotice(okMsg); } catch (e) { showNotice('Скопируй вручную: ' + text); }
+      document.body.removeChild(ta);
+    }
+
+    function copySbpPhone() {
+      triggerHaptic('light');
+      copyTextSafe(paymentConfig.sbpPhone || '', 'Номер телефона для СБП скопирован!');
+    }
+
+    function copyUserTgId() {
+      triggerHaptic('light');
+      copyTextSafe(String(tgUserId), `Твой ID (${tgUserId}) скопирован!`);
+    }
+
+    function openSbpPaymentLink() {
+      if (!paymentConfig.sbpLink) return;
+      triggerHaptic('light');
+      try {
+        if (tg && typeof tg.openLink === 'function') {
+          tg.openLink(paymentConfig.sbpLink);
+          return;
+        }
+      } catch (e) {}
+      window.open(paymentConfig.sbpLink, '_blank', 'noopener');
+    }
+
+    // Генерация детерминированного персонального PRO-кода для любого Telegram ID
+    function computeProCodeForUser(targetUserId) {
+      const cleanId = String(targetUserId || '').trim();
+      const raw = `${cleanId}:${PRO_CODE_SALT}`;
+      let h1 = 0xdeadbeef ^ raw.length, h2 = 0x41c6ce57 ^ raw.length;
+      for (let i = 0; i < raw.length; i++) {
+        const ch = raw.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+      }
+      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      const sig = (h1 >>> 0).toString(36).toUpperCase().padStart(6, '0').slice(0, 6);
+      return `NBPRO-${cleanId}-${sig}`;
+    }
+
+    function redeemProCode() {
+      const rawCode = (document.getElementById('proActivationCodeInput')?.value || '').trim().toUpperCase();
+      if (!rawCode) return showNotice('Введи код активации PRO!');
+
+      const expectedPersonal = computeProCodeForUser(tgUserId).toUpperCase();
+      const universalPromo = (paymentConfig.universalPromo || 'NUTVIP299').trim().toUpperCase();
+
+      // Поддерживаем как полный код NBPRO-<id>-<sig>, так и короткую подпись <sig>
+      const shortSig = expectedPersonal.split('-').pop();
+      if (rawCode === expectedPersonal || rawCode === `NBPRO-${shortSig}` || (universalPromo && rawCode === universalPromo)) {
+        subState.isPro = true;
+        subState.proActivatedAt = new Date().toISOString();
+        subState.proMethod = 'code';
+        subState.pendingSbpRequest = false;
+        subState.testModeOverride = null;
+        saveSubscriptionLocal();
+        renderProAndAdminUI();
+        launchGoalConfetti();
+        closePaywallModal();
+        showNotice('🎉 Пожизненный доступ NutriBalance PRO успешно активирован!');
+      } else {
+        triggerHaptic('error');
+        showNotice('Неверный код активации для твоего ID. Проверь код или напиши администратору.');
+      }
+    }
+
+    async function submitSbpPaymentRequest() {
+      const note = (document.getElementById('sbpSenderNoteInput')?.value || '').trim();
+      const btn = document.getElementById('btnSubmitSbpPayment');
+      const fb = document.getElementById('sbpRequestFeedback');
+      if (btn) { btn.disabled = true; btn.textContent = 'Отправляем заявку...'; }
+
+      const reqObj = {
+        id: uid('pay'),
+        userId: String(tgUserId),
+        name: tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : 'Пользователь',
+        username: tgUser?.username ? `@${tgUser.username}` : '',
+        amountRub: Number(paymentConfig.priceRub) || 299,
+        senderNote: note,
+        status: 'pending',
+        createdAt: new Date().toLocaleString('ru-RU')
+      };
+
+      // Сохраняем локально в кэш заявок
+      adminDataCache.requests = [reqObj, ...(adminDataCache.requests || []).filter(r => r.userId !== String(tgUserId) || r.status !== 'pending')];
+      saveAdminCacheLocal();
+
+      subState.pendingSbpRequest = true;
+      subState.pendingSbpAt = new Date().toISOString();
+      saveSubscriptionLocal();
+
+      // Пытаемся отправить заявку на Cloudflare Worker (он же пришлёт уведомление админу 939208462 в Telegram)
+      try {
+        const proxyUrl = (AI_PROXY_URL || '').trim();
+        if (proxyUrl) {
+          await fetchWithTimeout(proxyUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Telegram-Init-Data': tg?.initData || ''
+            },
+            body: JSON.stringify({
+              action: 'payment_request',
+              request: reqObj
+            })
+          }, 10000);
+        }
+      } catch (e) {}
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>✅ Заявка на ${paymentConfig.priceRub} ₽ отправлена</span>`;
+      }
+      if (fb) {
+        fb.classList.remove('hidden');
+        fb.textContent = `Заявка принята! Администратор (ID ${ADMIN_TG_ID}) получил уведомление об оплате ${paymentConfig.priceRub} ₽ по СБП для твоего ID (${tgUserId}). Как только перевод будет подтверждён, нажми «↻ Проверить» — и PRO откроется навсегда.`;
+      }
+      triggerHaptic('success');
+      renderProAndAdminUI();
+    }
+
+    async function syncUserAccessFromServer(manualClick = false) {
+      const proxyUrl = (AI_PROXY_URL || '').trim();
+      if (!proxyUrl) return;
+      try {
+        const resp = await fetchWithTimeout(proxyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Telegram-Init-Data': tg?.initData || ''
+          },
+          body: JSON.stringify({
+            action: 'sync_user',
+            userId: String(tgUserId),
+            name: tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : 'Пользователь',
+            username: tgUser?.username ? `@${tgUser.username}` : '',
+            trialStartTs: subState.trialStartTs
+          })
+        }, 8000);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        if (data?.config && typeof data.config === 'object') {
+          paymentConfig = { ...paymentConfig, ...data.config };
+          try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
+        }
+        if (data?.user && typeof data.user === 'object') {
+          const wasPro = subState.isPro;
+          if (typeof data.user.isPro === 'boolean') subState.isPro = data.user.isPro;
+          if (data.user.trialStartTs) subState.trialStartTs = Number(data.user.trialStartTs);
+          if (subState.isPro) subState.pendingSbpRequest = false;
+          saveSubscriptionLocal();
+          renderProAndAdminUI();
+          if (!wasPro && subState.isPro) {
+            launchGoalConfetti();
+            closePaywallModal();
+            showNotice('💎 Оплата подтверждена! Пожизненный доступ NutriBalance PRO активирован!');
+            return;
+          }
+        }
+        if (manualClick) {
+          showNotice(subState.isPro ? '💎 Статус PRO активен навсегда!' : 'Пока ожидает подтверждения администратором.');
+        }
+      } catch (e) {
+        if (manualClick) {
+          showNotice(subState.isPro ? '💎 Статус PRO активен!' : 'Заявка в обработке. Также ты можешь активировать доступ персональным PRO-кодом ниже.');
+        }
+      }
+    }
+
+    // =====================================================================
+    // 15. ЛОГИКА АДМИН-ПАНЕЛИ (ДЛЯ ID 939208462)
+    // =====================================================================
+    function openAdminModal() {
+      // Внутри Telegram пускаем только владельца ID 939208462; в браузере разрешаем тест
+      if (isTelegramMiniApp && !isUserAdmin()) {
+        return showNotice(`Доступ к админ-панели открыт только администратору (ID ${ADMIN_TG_ID}). Твой ID: ${tgUserId}`);
+      }
+      triggerHaptic('light');
+      populateAdminSettingsInputs();
+      renderAdminDashboard();
+      document.getElementById('adminModal').classList.remove('hidden');
+      fetchAdminDataFromWorker(false);
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.add('hidden');
+    }
+
+    function switchAdminTab(tabKey) {
+      triggerHaptic('light');
+      ['requests', 'users', 'codes', 'settings'].forEach(k => {
+        document.getElementById('admTab-' + k)?.classList.toggle('hidden', k !== tabKey);
+        const btn = document.getElementById('admTabBtn-' + k);
+        if (btn) {
+          btn.className = k === tabKey
+            ? 'btn-spring py-1.5 rounded-xl font-bold liquid-btn-primary'
+            : 'btn-spring py-1.5 rounded-xl font-medium text-slate-200 hover:text-white';
+        }
+      });
+    }
+
+    function populateAdminSettingsInputs() {
+      const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+      setVal('admCfgPrice', paymentConfig.priceRub ?? 299);
+      setVal('admCfgTrialDays', paymentConfig.trialDays ?? 14);
+      setVal('admCfgSbpPhone', paymentConfig.sbpPhone || '');
+      setVal('admCfgSbpBank', paymentConfig.sbpBank || '');
+      setVal('admCfgSbpRecipient', paymentConfig.sbpRecipient || '');
+      setVal('admCfgSbpLink', paymentConfig.sbpLink || '');
+      setVal('admUniversalPromoInput', paymentConfig.universalPromo || 'NUTVIP299');
+    }
+
+    async function saveAdminPaymentConfig() {
+      paymentConfig = {
+        ...paymentConfig,
+        priceRub: Math.round(num(document.getElementById('admCfgPrice')?.value, 1, 50000, 299)),
+        trialDays: Math.round(num(document.getElementById('admCfgTrialDays')?.value, 0, 365, 14)),
+        sbpPhone: (document.getElementById('admCfgSbpPhone')?.value || '+7 (999) 000-00-00').trim(),
+        sbpBank: (document.getElementById('admCfgSbpBank')?.value || 'Т-Банк / Сбербанк').trim(),
+        sbpRecipient: (document.getElementById('admCfgSbpRecipient')?.value || 'Константин К.').trim(),
+        sbpLink: (document.getElementById('admCfgSbpLink')?.value || '').trim(),
+        universalPromo: (document.getElementById('admUniversalPromoInput')?.value || 'NUTVIP299').trim().toUpperCase()
+      };
+      try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
+      renderProAndAdminUI();
+
+      // Синхронизируем настройки на Cloudflare Worker
+      try {
+        const proxyUrl = (AI_PROXY_URL || '').trim();
+        if (proxyUrl) {
+          await fetchWithTimeout(proxyUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Telegram-Init-Data': tg?.initData || ''
+            },
+            body: JSON.stringify({
+              action: 'admin_save_config',
+              adminId: ADMIN_TG_ID,
+              config: paymentConfig
+            })
+          }, 8000);
+        }
+      } catch (e) {}
+
+      triggerHaptic('success');
+      showNotice(`Настройки СБП (${paymentConfig.priceRub} ₽, триал ${paymentConfig.trialDays} дн.) сохранены!`);
+    }
+
+    function renderAdminDashboard() {
+      const usersArr = Object.values(adminDataCache.users || {});
+      const reqsArr = adminDataCache.requests || [];
+      const proUsers = usersArr.filter(u => u.isPro);
+      const pendingReqs = reqsArr.filter(r => r.status === 'pending');
+      const approvedReqs = reqsArr.filter(r => r.status === 'approved');
+      const revenue = approvedReqs.reduce((s, r) => s + (Number(r.amountRub) || paymentConfig.priceRub || 299), 0) || (proUsers.filter(u => u.id !== ADMIN_TG_ID).length * (paymentConfig.priceRub || 299));
+
+      document.getElementById('admStatUsers').textContent = String(Math.max(1, usersArr.length));
+      document.getElementById('admStatPro').textContent = String(proUsers.length);
+      document.getElementById('admStatPending').textContent = String(pendingReqs.length);
+      document.getElementById('admStatRevenue').textContent = `${revenue} ₽`;
+
+      renderAdminRequestsList();
+      renderAdminUsersList();
+      renderProAndAdminUI();
+    }
+
+    function renderAdminRequestsList() {
+      const box = document.getElementById('adminRequestsList');
+      if (!box) return;
+      const reqs = adminDataCache.requests || [];
+      if (reqs.length === 0) {
+        box.innerHTML = `<div class="liquid-pill rounded-2xl p-4 text-center text-xs text-slate-400">Новых заявок на проверку оплаты СБП пока нет.</div>`;
+        return;
+      }
+
+      box.innerHTML = reqs.map(r => {
+        const isPending = r.status === 'pending';
+        const statusBadge = isPending
+          ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold">Ждёт проверки</span>'
+          : r.status === 'approved'
+            ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">✓ PRO выдан</span>'
+            : '<span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold">Отклонено</span>';
+
+        const codeForUser = computeProCodeForUser(r.userId);
+        return `<div class="liquid-pill rounded-2xl p-3 space-y-2 border ${isPending ? 'border-amber-400/40' : 'border-white/10'}">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="text-xs font-bold text-white">${escapeHtml(r.name || 'Пользователь')} <span class="text-sky-300">${escapeHtml(r.username || '')}</span></div>
+              <div class="text-[11px] text-slate-300 font-mono">ID: ${escapeHtml(r.userId)} • Сумма: <b class="text-emerald-300">${Number(r.amountRub || 299)} ₽</b></div>
+              ${r.senderNote ? `<div class="text-[11px] text-amber-200 mt-0.5">Отправитель/прим.: ${escapeHtml(r.senderNote)}</div>` : ''}
+              <div class="text-[10px] text-slate-400">${escapeHtml(r.createdAt || '')} • PRO-код: <span class="font-mono text-emerald-300">${escapeHtml(codeForUser)}</span></div>
+            </div>
+            ${statusBadge}
+          </div>
+          ${isPending ? `<div class="flex gap-2 pt-1">
+            <button type="button" data-adm-req-approve="${escapeHtml(r.id)}" class="btn-spring liquid-btn-primary flex-1 py-1.5 rounded-xl font-bold text-xs">✅ Подтвердить и выдать PRO</button>
+            <button type="button" data-adm-req-reject="${escapeHtml(r.id)}" class="btn-spring liquid-pill px-3 py-1.5 rounded-xl text-xs text-rose-300">✕ Отклонить</button>
+          </div>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    document.getElementById('adminRequestsList')?.addEventListener('click', (e) => {
+      const appBtn = e.target.closest('[data-adm-req-approve]');
+      if (appBtn) return handleAdminRequestDecision(appBtn.dataset.admReqApprove, 'approved');
+      const rejBtn = e.target.closest('[data-adm-req-reject]');
+      if (rejBtn) return handleAdminRequestDecision(rejBtn.dataset.admReqReject, 'rejected');
+    });
+
+    async function handleAdminRequestDecision(reqId, newStatus) {
+      const req = (adminDataCache.requests || []).find(r => r.id === reqId);
+      if (!req) return;
+      req.status = newStatus;
+
+      if (newStatus === 'approved') {
+        await applyUserAccessChange(req.userId, 'pro');
+      } else {
+        saveAdminCacheLocal();
+        renderAdminDashboard();
+      }
+
+      try {
+        const proxyUrl = (AI_PROXY_URL || '').trim();
+        if (proxyUrl) {
+          await fetchWithTimeout(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Telegram-Init-Data': tg?.initData || '' },
+            body: JSON.stringify({ action: 'admin_resolve_request', adminId: ADMIN_TG_ID, requestId: reqId, status: newStatus, userId: req.userId })
+          }, 8000);
+        }
+      } catch (e) {}
+
+      triggerHaptic('success');
+      showNotice(newStatus === 'approved' ? `✅ Пользователю ID ${req.userId} выдан пожизненный PRO!` : 'Заявка отклонена');
+    }
+
+    function renderAdminUsersList() {
+      const box = document.getElementById('adminUsersList');
+      if (!box) return;
+      const q = (document.getElementById('admUserSearchInput')?.value || '').trim().toLowerCase();
+      const list = Object.values(adminDataCache.users || {}).filter(u => {
+        if (!q) return true;
+        return String(u.id).toLowerCase().includes(q) || String(u.name || '').toLowerCase().includes(q) || String(u.username || '').toLowerCase().includes(q);
+      });
+
+      if (list.length === 0) {
+        box.innerHTML = `<div class="liquid-pill rounded-2xl p-3 text-center text-xs text-slate-400">Пользователи не найдены</div>`;
+        return;
+      }
+
+      const trialDaysTotal = Math.max(0, Number(paymentConfig.trialDays ?? 14));
+      box.innerHTML = list.map(u => {
+        const remainDays = Math.max(0, Math.ceil(((u.trialStartTs || Date.now()) + trialDaysTotal * 86400000 - Date.now()) / 86400000));
+        const badge = u.isPro
+          ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">💎 PRO Навсегда</span>'
+          : remainDays > 0
+            ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-semibold">Триал: ${remainDays} дн.</span>`
+            : '<span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-semibold">Триал истёк</span>';
+
+        return `<div class="liquid-pill rounded-2xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div>
+            <div class="font-bold text-white">${escapeHtml(u.name || 'Пользователь')} <span class="text-sky-300">${escapeHtml(u.username || '')}</span></div>
+            <div class="text-[10px] text-slate-300 font-mono">ID: ${escapeHtml(u.id)} • Код: <span class="text-emerald-300">${escapeHtml(computeProCodeForUser(u.id))}</span></div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            ${badge}
+            ${u.isPro
+              ? `<button type="button" data-adm-u-action="revoke" data-adm-uid="${escapeHtml(u.id)}" class="btn-spring liquid-pill px-2 py-1 rounded-lg text-[10px] text-rose-300">Снять PRO</button>`
+              : `<button type="button" data-adm-u-action="pro" data-adm-uid="${escapeHtml(u.id)}" class="btn-spring liquid-btn-primary px-2.5 py-1 rounded-lg text-[10px] font-bold">+ PRO</button>`}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    document.getElementById('adminUsersList')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-adm-u-action]');
+      if (!btn) return;
+      applyUserAccessChange(btn.dataset.admUid, btn.dataset.admUAction);
+    });
+
+    async function adminGrantProById(mode) {
+      const targetId = (document.getElementById('admTargetUserIdInput')?.value || '').trim();
+      if (!targetId) return showNotice('Введи Telegram ID пользователя!');
+      await applyUserAccessChange(targetId, mode);
+      document.getElementById('admTargetUserIdInput').value = '';
+    }
+
+    async function applyUserAccessChange(targetId, mode) {
+      const cleanId = String(targetId).trim();
+      if (!cleanId) return;
+
+      const existing = adminDataCache.users[cleanId] || { id: cleanId, name: `Пользователь ${cleanId}`, username: '', trialStartTs: Date.now() };
+      if (mode === 'pro') {
+        existing.isPro = true;
+        existing.proMethod = 'admin_manual';
+      } else if (mode === 'trial') {
+        existing.isPro = false;
+        existing.trialStartTs = Date.now();
+      } else if (mode === 'revoke') {
+        existing.isPro = false;
+        existing.trialStartTs = Date.now() - 30 * 86400000;
+      }
+      adminDataCache.users[cleanId] = existing;
+      saveAdminCacheLocal();
+
+      // Если админ меняет статус самому себе
+      if (cleanId === String(tgUserId)) {
+        subState.isPro = existing.isPro;
+        subState.trialStartTs = existing.trialStartTs;
+        subState.testModeOverride = null;
+        saveSubscriptionLocal();
+      }
+
+      try {
+        const proxyUrl = (AI_PROXY_URL || '').trim();
+        if (proxyUrl) {
+          await fetchWithTimeout(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Telegram-Init-Data': tg?.initData || '' },
+            body: JSON.stringify({ action: 'admin_set_user', adminId: ADMIN_TG_ID, targetId: cleanId, mode })
+          }, 8000);
+        }
+      } catch (e) {}
+
+      triggerHaptic('success');
+      renderAdminDashboard();
+      const msgMap = {
+        pro: `💎 Пользователю ID ${cleanId} выдан пожизненный PRO! Код активации: ${computeProCodeForUser(cleanId)}`,
+        trial: `🎁 Пользователю ID ${cleanId} сброшен триал на ${paymentConfig.trialDays} дней`,
+        revoke: `🔒 У пользователя ID ${cleanId} отозван PRO-доступ`
+      };
+      showNotice(msgMap[mode] || 'Статус обновлён');
+    }
+
+    function generatePersonalProCode() {
+      const targetId = (document.getElementById('admCodeTargetId')?.value || '').trim();
+      if (!targetId) return showNotice('Укажи Telegram ID покупателя!');
+      const code = computeProCodeForUser(targetId);
+      const box = document.getElementById('admGeneratedCodeBox');
+      const txt = document.getElementById('admGeneratedCodeText');
+      if (box && txt) {
+        txt.textContent = code;
+        box.classList.remove('hidden');
+      }
+      triggerHaptic('success');
+    }
+
+    function copyGeneratedProCode() {
+      const code = document.getElementById('admGeneratedCodeText')?.textContent || '';
+      if (!code) return;
+      const msg = `Оплата 299 ₽ получена! Ваш персональный код пожизненной активации NutriBalance PRO: ${code}
+
+Введите его в приложении в окне «NutriBalance PRO» -> «Есть персональный код активации».`;
+      copyTextSafe(msg, 'Код вместе с инструкцией для покупателя скопирован!');
+    }
+
+    function setAdminTestViewMode(mode) {
+      subState.testModeOverride = mode;
+      if (mode === 'pro') subState.isPro = true;
+      if (mode === 'expired') subState.isPro = false;
+      saveSubscriptionLocal();
+      renderProAndAdminUI();
+      closeAdminModal();
+      if (mode === 'expired') {
+        showNotice('Включён режим «Триал 14 дней истёк». Попробуй нажать на любую ИИ-кнопку!');
+      } else if (mode === 'trial') {
+        showNotice(`Включён режим «Триал ${paymentConfig.trialDays} дней активен».`);
+      } else {
+        showNotice('Включён режим «PRO Навсегда активен».');
+      }
+    }
+
+    async function fetchAdminDataFromWorker(showToast = false) {
+      const proxyUrl = (AI_PROXY_URL || '').trim();
+      if (!proxyUrl) return;
+      try {
+        const resp = await fetchWithTimeout(proxyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Telegram-Init-Data': tg?.initData || '' },
+          body: JSON.stringify({ action: 'admin_get_data', adminId: ADMIN_TG_ID })
+        }, 8000);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        if (data?.users && typeof data.users === 'object') {
+          adminDataCache.users = { ...adminDataCache.users, ...data.users };
+        }
+        if (Array.isArray(data?.requests)) {
+          adminDataCache.requests = data.requests;
+        }
+        if (data?.config && typeof data.config === 'object') {
+          paymentConfig = { ...paymentConfig, ...data.config };
+          populateAdminSettingsInputs();
+        }
+        saveAdminCacheLocal();
+        renderAdminDashboard();
+        if (showToast) showNotice('Данные админ-панели синхронизированы с Cloudflare Worker!');
+      } catch (e) {
+        if (showToast) showNotice('Работает локальный кэш админки (для облачной синхронизации обнови код Cloudflare Worker).');
+      }
+    }
+
+    loadState(); loadSubscriptionAndConfig(); switchTab('diary');
   </script>
 </body>
 </html>
