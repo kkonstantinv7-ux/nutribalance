@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -11,22 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
-    /* ========================================================
-       LIQUID GLASS (iOS 26 style)
-       ======================================================== */
-    :root {
-      --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    @supports (transition-timing-function: linear(0, 1)) {
-      :root { --spring: linear(0.0, 0.0658, 0.2197, 0.409, 0.5969, 0.7611, 0.8908, 0.9836, 1.0424, 1.0734, 1.0834, 1.0794, 1.0673, 1.0517, 1.0358, 1.0218, 1.0105, 1.0023, 0.997, 0.9941, 0.9931, 0.9933, 0.9942, 0.9955, 0.9968, 0.998, 0.999, 0.9997, 1.0002, 1.0005, 1.0006, 1.0006, 1.0005, 1.0004, 1.0003, 1.0002, 1.0001, 1.0, 1); }
-    }
-
-    /* Плавное движение блика */
-    @property --mx   { syntax: '<length-percentage>'; inherits: false; initial-value: 22%; }
-    @property --my   { syntax: '<length-percentage>'; inherits: false; initial-value: -6%; }
-    @property --glow { syntax: '<number>'; inherits: false; initial-value: 0.55; }
-
+    /* === 1. БАЗОВЫЕ НАСТРОЙКИ ЭКРАНА === */
     body {
       font-family: 'Inter', sans-serif;
       background-color: #03060c;
@@ -35,175 +21,97 @@
       overflow-x: hidden;
     }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 4px; }
-    input[type="range"] { accent-color: #34d399; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 4px; }
+    input[type="range"] { accent-color: #10b981; }
     input, textarea, select { -webkit-user-select: text !important; user-select: text !important; }
 
-    /* --- Основная стеклянная панель --- */
+    /* === 2. ПРОЗРАЧНОЕ ЖИДКОЕ СТЕКЛО (ГЛЯЦЕВЫЙ IOS СТИЛЬ) === */
     .liquid-glass {
       position: relative;
-      isolation: isolate;
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.17) 0%, rgba(255,255,255,0.045) 42%, rgba(255,255,255,0.085) 100%);
-      backdrop-filter: blur(22px) saturate(185%) brightness(1.1);
-      -webkit-backdrop-filter: blur(22px) saturate(185%) brightness(1.1);
-      border: none;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.035) 100%);
+      backdrop-filter: blur(24px) saturate(210%);
+      -webkit-backdrop-filter: blur(24px) saturate(210%);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       box-shadow:
-        0 22px 44px -14px rgba(0, 0, 0, 0.6),
-        0 3px 8px rgba(0, 0, 0, 0.25),
-        inset 0 1px 0 rgba(255, 255, 255, 0.55),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.1),
-        inset 1px 0 0 rgba(255, 255, 255, 0.14),
-        inset -1px 0 0 rgba(255, 255, 255, 0.14),
-        inset 0 0 26px rgba(255, 255, 255, 0.055);
-      transition: --mx 0.45s var(--ease-out), --my 0.45s var(--ease-out), --glow 0.45s ease, box-shadow 0.4s ease;
-    }
-    /* Световая кромка: яркая сверху-слева и снизу-справа, прозрачная посередине */
-    .liquid-glass::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      padding: 1px;
-      background: linear-gradient(135deg,
-        rgba(255,255,255,0.8) 0%,
-        rgba(255,255,255,0.14) 28%,
-        rgba(255,255,255,0.03) 55%,
-        rgba(255,255,255,0.18) 78%,
-        rgba(255,255,255,0.55) 100%);
-      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-      -webkit-mask-composite: xor;
-      mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-      pointer-events: none;
-      z-index: 2;
-    }
-    /* Бегущий блик: следует за пальцем/курсором */
-    .liquid-glass::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: radial-gradient(280px circle at var(--mx) var(--my), rgba(255,255,255,0.2), rgba(255,255,255,0.05) 45%, transparent 70%);
-      opacity: var(--glow);
-      mix-blend-mode: soft-light;
-      pointer-events: none;
-      z-index: 1;
+        0 20px 45px -10px rgba(0, 0, 0, 0.7),
+        inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.45),
+        inset 0 -1px 2px 0 rgba(16, 185, 129, 0.12);
     }
 
-    /* Шапка при прокрутке становится плотнее */
-    header.liquid-glass.is-scrolled {
-      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.07) 45%, rgba(255,255,255,0.11) 100%);
-      box-shadow:
-        0 18px 36px -12px rgba(0, 0, 0, 0.7),
-        0 3px 8px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.6),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.12),
-        inset 0 0 26px rgba(255, 255, 255, 0.07);
-    }
-
-    /* --- Мелкие стеклянные элементы (без вложенного блюра — он не нужен и дорогой) --- */
     .liquid-pill {
-      background: linear-gradient(160deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.035) 58%, rgba(255,255,255,0.075) 100%);
-      border: none;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.09) 0%, rgba(15, 23, 42, 0.35) 100%);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       box-shadow:
-        0 6px 16px -4px rgba(0, 0, 0, 0.35),
-        inset 0 1px 0 rgba(255, 255, 255, 0.4),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.07),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.075);
+        0 4px 16px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0.5px rgba(255, 255, 255, 0.3);
     }
 
     .liquid-input {
-      background: rgba(10, 16, 30, 0.42);
-      border: none;
-      box-shadow:
-        inset 0 2px 5px rgba(0, 0, 0, 0.38),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.13),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.1);
-      transition: box-shadow 0.35s var(--ease-out), background 0.35s ease;
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
     .liquid-input:focus {
-      background: rgba(10, 16, 30, 0.55);
-      box-shadow:
-        inset 0 2px 5px rgba(0, 0, 0, 0.35),
-        inset 0 0 0 1.5px rgba(52, 211, 153, 0.8),
-        0 0 0 4px rgba(16, 185, 129, 0.18),
-        0 0 22px rgba(16, 185, 129, 0.3);
+      border-color: rgba(52, 211, 153, 0.75);
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.3);
       outline: none;
     }
 
-    /* Основная кнопка: цветное «стеклянное» тело с глянцем */
     .liquid-btn-primary {
-      position: relative;
-      overflow: hidden;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 46%),
-        linear-gradient(135deg, #5eead4 0%, #34d399 45%, #10b981 100%);
+      background: linear-gradient(135deg, #34d399 0%, #10b981 55%, #059669 100%);
       color: #022c22;
       box-shadow:
-        0 10px 26px -6px rgba(16, 185, 129, 0.6),
-        0 2px 6px rgba(0, 0, 0, 0.25),
-        inset 0 1.5px 1px rgba(255, 255, 255, 0.85),
-        inset 0 -2px 4px rgba(4, 120, 87, 0.35);
+        0 8px 24px -4px rgba(16, 185, 129, 0.55),
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.6);
     }
-    @media (hover: hover) {
-      .liquid-btn-primary:hover { filter: brightness(1.07) saturate(1.1); }
+    .liquid-btn-primary:hover {
+      filter: brightness(1.06);
     }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* === Свечение иконок === */
-    .svg-glow-emerald { filter: drop-shadow(0 0 7px rgba(52, 211, 153, 0.7)); }
-    .svg-glow-cyan    { filter: drop-shadow(0 0 7px rgba(56, 189, 248, 0.7)); }
-    .svg-glow-rose    { filter: drop-shadow(0 0 7px rgba(251, 113, 133, 0.7)); }
-    .svg-glow-amber   { filter: drop-shadow(0 0 7px rgba(251, 191, 36, 0.7)); }
-    .svg-glow-purple  { filter: drop-shadow(0 0 7px rgba(192, 132, 252, 0.7)); }
+    /* === 3. СВЕЧЕНИЕ ВЕКТОРНЫХ ИЛЛЮСТРАЦИЙ (SVG GLOW) === */
+    .svg-glow-emerald { filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.75)); }
+    .svg-glow-cyan    { filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.75)); }
+    .svg-glow-rose    { filter: drop-shadow(0 0 8px rgba(251, 113, 133, 0.75)); }
+    .svg-glow-amber   { filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.75)); }
+    .svg-glow-purple  { filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.75)); }
 
-    /* ========================================================
-       АНИМАЦИИ (пружинные)
-       ======================================================== */
-    @keyframes glassIn {
-      from { opacity: 0; transform: translateY(22px) scale(0.955); }
-      to   { opacity: 1; transform: none; }
+    /* === 4. МИКРО-АНИМАЦИИ === */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(14px) scale(0.985); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-    @keyframes overlayIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
+    .animate-card {
+      animation: fadeSlideUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-    .animate-card { animation: glassIn 0.7s var(--spring) both; }
-
-    /* Затемнение модальных окон плавно проявляется */
-    #onboardingModal, #settingsModal, #backupModal { animation: overlayIn 0.35s ease both; }
-
-    /* Кнопки: мягкий «гелевый» отклик — быстро вдавливается, возвращается с пружиной */
     .btn-spring {
-      transition: transform 0.55s var(--spring), filter 0.25s ease, box-shadow 0.3s ease, background 0.3s ease, color 0.25s ease;
-      will-change: transform;
+      transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s, box-shadow 0.2s;
     }
     .btn-spring:active {
-      transform: scale(0.93);
-      transition-duration: 0.12s, 0.1s, 0.1s, 0.1s, 0.1s;
-      transition-timing-function: var(--ease-out);
+      transform: scale(0.94);
     }
 
     .ring-progress {
-      transition: stroke-dashoffset 1s var(--ease-out);
+      transition: stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1);
       transform: rotate(-90deg);
       transform-origin: 50% 50%;
       filter: drop-shadow(0 0 9px rgba(52, 211, 153, 0.7));
-    }
-
-    /* Полосы прогресса */
-    #calBar, #pBar, #fBar, #cBar, #stepsProgressBar, #weightProgressBar {
-      transition: width 0.9s var(--spring);
-      box-shadow: 0 0 12px -2px currentColor, inset 0 1px 0 rgba(255,255,255,0.45);
     }
 
     @keyframes wavePulse {
       0%, 100% { transform: translateX(0) scaleY(1); }
       50% { transform: translateX(-15%) scaleY(1.12); }
     }
-    .water-fill { transition: height 0.9s var(--spring); }
-    .water-wave-top { animation: wavePulse 2.4s ease-in-out infinite; }
+    .water-fill {
+      transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .water-wave-top {
+      animation: wavePulse 2.4s ease-in-out infinite;
+    }
 
     @keyframes laserScan {
       0% { top: 5%; opacity: 0.25; }
@@ -231,38 +139,10 @@
       z-index: 15;
     }
 
-    /* ========================================================
-       НАВИГАЦИЯ: скользящая стеклянная «линза»
-       ======================================================== */
-    .nav-indicator {
-      position: absolute;
-      top: 0;
-      left: 0;
-      border-radius: 999px;
-      pointer-events: none;
-      z-index: 0;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.07) 100%);
-      box-shadow:
-        0 8px 20px -4px rgba(0, 0, 0, 0.45),
-        0 0 0 1px rgba(255, 255, 255, 0.16),
-        inset 0 1.5px 1px rgba(255, 255, 255, 0.75),
-        inset 0 -1px 2px rgba(255, 255, 255, 0.14),
-        inset 0 0 14px rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(4px) saturate(220%) brightness(1.25);
-      -webkit-backdrop-filter: blur(4px) saturate(220%) brightness(1.25);
-      transition:
-        transform 0.65s var(--spring),
-        width 0.65s var(--spring),
-        height 0.65s var(--spring),
-        scale 0.45s var(--spring);
-    }
-    .nav-indicator.moving { scale: 1.1 1.16; }
-
     /* Уважаем настройку «уменьшить движение» */
     @media (prefers-reduced-motion: reduce) {
-      .animate-card, .water-wave-top, .scanner-laser, #onboardingModal, #settingsModal, #backupModal { animation: none !important; }
-      .ring-progress, .water-fill, .nav-indicator, .btn-spring { transition-duration: 0.01s !important; }
+      .animate-card, .water-wave-top, .scanner-laser { animation: none !important; }
+      .ring-progress, .water-fill { transition: none !important; }
     }
   </style>
 </head>
@@ -343,8 +223,8 @@
   </div>
 
   <!-- ШАПКА ПРИЛОЖЕНИЯ -->
-  <header class="sticky top-2 z-30 liquid-glass rounded-[28px] w-[calc(100%-20px)] max-w-4xl mx-auto mt-2">
-    <div class="px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
+  <header class="sticky top-0 z-30 liquid-glass border-t-0 border-x-0">
+    <div class="max-w-4xl mx-auto px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
       <div class="flex items-center gap-2.5">
         <div class="w-9 h-9 rounded-xl liquid-btn-primary flex items-center justify-center font-extrabold text-slate-950 text-sm">
           <svg class="w-5 h-5 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -363,8 +243,7 @@
       </div>
 
       <!-- Навигация для ПК -->
-      <nav class="hidden sm:flex items-center gap-1 liquid-pill p-1 rounded-full relative">
-        <span id="navIndicatorDesktop" class="nav-indicator" aria-hidden="true"></span>
+      <nav class="hidden sm:flex items-center gap-1 liquid-pill p-1 rounded-2xl">
         <button onclick="switchTab('diary')" id="tabBtnDesktop-diary" class="btn-spring px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5">
           <svg class="w-4 h-4 svg-glow-emerald text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           <span>Дневник</span>
@@ -397,8 +276,7 @@
   </header>
 
   <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ ДЛЯ ТЕЛЕФОНА -->
-  <nav class="sm:hidden fixed left-3 right-3 z-40 liquid-glass rounded-[32px] px-2 py-1.5 grid grid-cols-4 gap-1" style="bottom:max(10px, env(safe-area-inset-bottom))">
-    <span id="navIndicatorMobile" class="nav-indicator" aria-hidden="true"></span>
+  <nav class="sm:hidden fixed bottom-2.5 left-3 right-3 z-40 liquid-glass rounded-3xl px-2 py-1.5 grid grid-cols-4 gap-1">
     <button onclick="switchTab('diary')" id="tabBtnMobile-diary" class="btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium gap-0.5">
       <svg class="w-5 h-5 svg-glow-emerald text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       <span>Дневник</span>
@@ -585,9 +463,15 @@
             <button type="button" onclick="selectMealType('snack')" id="mealBtn-snack" class="btn-spring py-1.5 rounded-xl font-medium text-slate-200 flex items-center justify-center gap-1"><span>Перек.</span></button>
           </div>
 
-          <div class="relative">
-            <input type="search" id="diaryFoodSearch" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Начни вводить: творог, банан, борщ..." class="liquid-input w-full rounded-2xl pl-3.5 pr-8 py-2.5 text-xs sm:text-sm text-white" />
-            <button type="button" id="clearSearchBtn" onclick="clearFoodSearch()" class="hidden absolute right-3 top-2.5 text-slate-300 hover:text-white text-xs">✕</button>
+          <!-- Поиск продукта + кнопка сканера штрихкодов -->
+          <div class="flex gap-1.5">
+            <div class="relative flex-1">
+              <input type="search" id="diaryFoodSearch" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Начни вводить: творог, банан, борщ..." class="liquid-input w-full rounded-2xl pl-3.5 pr-8 py-2.5 text-xs sm:text-sm text-white" />
+              <button type="button" id="clearSearchBtn" onclick="clearFoodSearch()" class="hidden absolute right-3 top-2.5 text-slate-300 hover:text-white text-xs">✕</button>
+            </div>
+            <button type="button" onclick="scanBarcode()" title="Сканировать штрихкод" class="btn-spring liquid-pill px-3 rounded-2xl text-emerald-300 flex items-center justify-center">
+              <svg class="w-4 h-4 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>
+            </button>
           </div>
 
           <div class="flex items-center justify-between text-[11px] text-slate-300 px-0.5">
@@ -1007,7 +891,7 @@
         <div>
           <label class="block text-slate-200 font-semibold mb-1">1. Провайдер ИИ</label>
           <select id="aiProviderSelect" class="liquid-input w-full rounded-xl px-3 py-2 text-white">
-            <option value="gemini" class="bg-slate-900">Google Gemini API (gemini-3.5-flash-lite)</option>
+            <option value="gemini" class="bg-slate-900">Google Gemini API (gemini-2.5-flash)</option>
             <option value="openrouter" class="bg-slate-900">OpenRouter API</option>
           </select>
         </div>
@@ -1108,9 +992,9 @@
       const orbs = [
         { x: 0.2, y: 0.2, r: 340, color: '16, 185, 129', vx: 0.0004, vy: 0.0003, phase: 0 },
         { x: 0.8, y: 0.3, r: 380, color: '14, 165, 233', vx: -0.0003, vy: 0.0005, phase: 2 },
-        { x: 0.5, y: 0.75, r: 360, color: '139, 92, 246', vx: 0.00035, vy: -0.0004, phase: 4 },
+        { x: 0.5, y: 0.75, r: 360, color: '20, 184, 166', vx: 0.00035, vy: -0.0004, phase: 4 },
         { x: 0.15, y: 0.8, r: 300, color: '99, 102, 241', vx: 0.0005, vy: 0.0002, phase: 1 },
-        { x: 0.85, y: 0.85, r: 320, color: '236, 100, 170', vx: -0.0004, vy: -0.0003, phase: 3 }
+        { x: 0.85, y: 0.85, r: 320, color: '52, 211, 153', vx: -0.0004, vy: -0.0003, phase: 3 }
       ];
 
       let tick = 0;
@@ -1122,8 +1006,8 @@
           const cy = (orb.y + Math.cos(tick * orb.vy * 18 + idx) * 0.18) * height;
           const radius = Math.min(width, height) * 0.48 + (orb.r * 0.35);
           const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, radius);
-          grad.addColorStop(0, `rgba(${orb.color}, 0.42)`);
-          grad.addColorStop(0.5, `rgba(${orb.color}, 0.15)`);
+          grad.addColorStop(0, `rgba(${orb.color}, 0.32)`);
+          grad.addColorStop(0.5, `rgba(${orb.color}, 0.11)`);
           grad.addColorStop(1, `rgba(${orb.color}, 0)`);
           ctx.fillStyle = grad;
           ctx.beginPath();
@@ -1249,7 +1133,51 @@
       try {
         if (tg && isTelegramMiniApp && typeof tg.showAlert === 'function') { tg.showAlert(msg); return; }
       } catch (e) {}
-      alert(msg);
+      let toast = document.getElementById('nbToastNotice');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'nbToastNotice';
+        toast.className = 'fixed top-16 left-1/2 -translate-x-1/2 z-50 liquid-glass px-4 py-2.5 rounded-2xl text-xs font-semibold text-white shadow-2xl border border-emerald-400/40 transition-all duration-300 max-w-sm text-center';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.classList.remove('hidden', 'opacity-0');
+      clearTimeout(toast._hideTimer);
+      toast._hideTimer = setTimeout(() => toast.classList.add('hidden'), 3200);
+    }
+
+    function openCustomPromptModal(titleText, defaultVal, onConfirm) {
+      let modal = document.getElementById('nbPromptModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'nbPromptModal';
+        modal.className = 'fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4';
+        modal.innerHTML = `
+          <div class="liquid-glass rounded-3xl max-w-xs w-full p-5 space-y-3.5 animate-card">
+            <div id="nbPromptTitle" class="font-bold text-sm text-white"></div>
+            <input type="number" id="nbPromptInput" min="1" max="3000" class="liquid-input w-full rounded-xl px-3 py-2 text-sm font-bold text-white" />
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" id="nbPromptCancel" class="btn-spring liquid-pill px-3.5 py-1.5 rounded-xl text-xs text-slate-200">Отмена</button>
+              <button type="button" id="nbPromptOk" class="btn-spring liquid-btn-primary px-4 py-1.5 rounded-xl font-bold text-xs">Сохранить</button>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
+      }
+      const titleEl = document.getElementById('nbPromptTitle');
+      const inputEl = document.getElementById('nbPromptInput');
+      const cancelBtn = document.getElementById('nbPromptCancel');
+      const okBtn = document.getElementById('nbPromptOk');
+      titleEl.textContent = titleText;
+      inputEl.value = defaultVal;
+      modal.classList.remove('hidden');
+      setTimeout(() => { inputEl.focus(); inputEl.select(); }, 30);
+      const close = () => modal.classList.add('hidden');
+      cancelBtn.onclick = close;
+      okBtn.onclick = () => { close(); onConfirm(inputEl.value); };
+      inputEl.onkeydown = (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); okBtn.click(); }
+        if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+      };
     }
 
     // =====================================================================
@@ -1319,8 +1247,6 @@
     let searchDebounceTimer = null;
     let searchAbortController = null;
     let cachedGeminiModel = null;
-    const quotaExhaustedModels = new Map(); // модель -> время (мс), до которого считаем лимит исчерпанным
-    const GEMINI_FALLBACKS = ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
     let currentPhotoBase64 = null; // только в памяти
     let currentPhotoItems = [];
     let lastAiTextFood = null;
@@ -1713,7 +1639,6 @@
 
     function switchTab(tabId) {
       triggerHaptic('light');
-      requestAnimationFrame(() => moveNavIndicators(tabId));
       if (tabId !== 'ai') stopLiveCamera();
       ['diary', 'ai', 'progress', 'profile'].forEach(t => {
         const sectionEl = document.getElementById('tab-' + t);
@@ -1723,10 +1648,10 @@
         } else sectionEl.classList.add('hidden');
 
         const deskBtn = document.getElementById('tabBtnDesktop-' + t);
-        if (deskBtn) deskBtn.className = t === tabId ? 'btn-spring relative z-10 px-3.5 py-1.5 rounded-full text-xs font-semibold text-white flex items-center gap-1.5' : 'btn-spring relative z-10 px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5';
+        if (deskBtn) deskBtn.className = t === tabId ? 'btn-spring px-3 py-1.5 rounded-xl text-xs font-bold bg-white/15 text-white border border-white/20 shadow flex items-center gap-1.5' : 'btn-spring px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5';
 
         const mobBtn = document.getElementById('tabBtnMobile-' + t);
-        if (mobBtn) mobBtn.className = t === tabId ? 'btn-spring relative z-10 flex flex-col items-center justify-center py-1.5 rounded-full text-[11px] font-semibold text-white gap-0.5' : 'btn-spring relative z-10 flex flex-col items-center justify-center py-1.5 rounded-full text-[11px] font-semibold text-slate-300 gap-0.5';
+        if (mobBtn) mobBtn.className = t === tabId ? 'btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-bold bg-white/15 text-white border border-white/20 gap-0.5' : 'btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium text-slate-300 gap-0.5';
       });
     }
 
@@ -1749,7 +1674,7 @@
         const data = await res.json();
         if (data && Array.isArray(data.models)) {
           const supported = data.models.filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace('models/', ''));
-          const priority = ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-flash-latest'];
+          const priority = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
           for (const pref of priority) {
             const match = supported.find(s => s === pref || s.startsWith(pref));
             if (match) { cachedGeminiModel = match; return match; }
@@ -1758,7 +1683,7 @@
           if (anyFlash) { cachedGeminiModel = anyFlash; return anyFlash; }
         }
       } catch (e) {}
-      return 'gemini-3.5-flash-lite';
+      return 'gemini-2.5-flash';
     }
 
     async function callAIJson(promptText, base64ImageOrNull = null) {
@@ -1776,16 +1701,11 @@
         return { parsed: extractJson(raw), model: 'OpenRouter' };
       } else {
         const detectedModel = await detectWorkingGeminiModel(state.apiKey);
-        const allCandidates = [...new Set([detectedModel, ...GEMINI_FALLBACKS])];
-        const nowMs = Date.now();
-        const freshCandidates = allCandidates.filter(m => (quotaExhaustedModels.get(m) || 0) <= nowMs);
-        // Модели с исчерпанным лимитом идут в конец очереди — на случай, если лимит уже сбросился
-        const candidateModels = [...freshCandidates, ...allCandidates.filter(m => !freshCandidates.includes(m))];
+        const candidateModels = [...new Set([detectedModel, 'gemini-2.5-flash', 'gemini-2.0-flash'])];
         const parts = [{ text: promptText }];
         if (base64ImageOrNull) parts.push({ inline_data: { mime_type: 'image/jpeg', data: base64ImageOrNull.split(',')[1] } });
 
         let firstRealErr = '';
-        let sawQuotaErr = false;
         for (let i = 0; i < candidateModels.length; i++) {
           const modelName = candidateModels[i];
           try {
@@ -1800,14 +1720,7 @@
               return { parsed: extractJson(rawText), model: modelName };
             } else {
               const errMsg = data?.error?.message || `Модель ${modelName} не ответила`;
-              const isQuota = resp.status === 429 || /quota|RESOURCE_EXHAUSTED|rate.?limit/i.test(errMsg) || data?.error?.status === 'RESOURCE_EXHAUSTED';
-              if (isQuota) {
-                sawQuotaErr = true;
-                // Запоминаем: эту модель пока пропускаем (по подсказке Google «retry in …» или на 10 минут)
-                const retryMatch = errMsg.match(/retry in ([0-9.]+)s/i);
-                const waitMs = retryMatch ? Math.min(6 * 3600 * 1000, Number(retryMatch[1]) * 1000) : 10 * 60 * 1000;
-                quotaExhaustedModels.set(modelName, Date.now() + waitMs);
-              } else if (!firstRealErr) firstRealErr = errMsg;
+              if (!firstRealErr) firstRealErr = errMsg;
               const suggestedMatch = errMsg.match(/use models\/([a-zA-Z0-9._-]+)/i);
               if (suggestedMatch && suggestedMatch[1]) {
                 const suggestedModel = suggestedMatch[1].trim();
@@ -1816,7 +1729,6 @@
             }
           } catch (netErr) { if (!firstRealErr) firstRealErr = netErr.message; }
         }
-        if (sawQuotaErr && !firstRealErr) throw new Error('Дневной лимит бесплатного Gemini API исчерпан для всех доступных моделей. Попробуй позже, включи биллинг в Google AI Studio или переключись на OpenRouter в настройках.');
         throw new Error(firstRealErr || 'Ошибка запроса к Gemini API');
       }
     }
@@ -2281,27 +2193,115 @@
       document.getElementById('cBar').style.width = cPct + '%';
     }
 
+    // Получаем дату предыдущего дня
+    function getPrevDateString(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      dt.setDate(dt.getDate() - 1);
+      return getLocalDateString(dt);
+    }
+
+    // Рендерим карточки приёмов пищи с поддержкой повтора вчерашнего дня и редактирования веса
     function renderMeals() {
       const day = ensureDay(currentDate);
+      const prevDayItems = state.days[getPrevDateString(currentDate)]?.items || [];
       const mealsMeta = [
         { key: 'breakfast', title: 'Завтрак' }, { key: 'lunch', title: 'Обед' },
         { key: 'dinner', title: 'Ужин' }, { key: 'snack', title: 'Перекус' }
       ];
+
       document.getElementById('mealsContainer').innerHTML = mealsMeta.map((m, idx) => {
         const list = day.items.filter(i => i.meal === m.key);
         const mKcal = Math.round(list.reduce((s, x) => s + x.kcal, 0));
-        return `<div class="liquid-glass rounded-3xl p-3.5 sm:p-4 animate-card" style="animation-delay: ${idx * 45}ms"><div class="flex items-center justify-between mb-2 pb-2 border-b border-white/10"><h3 class="font-bold text-xs sm:text-sm text-white flex items-center gap-2">${getMealSvgIcon(m.key)}<span>${m.title}</span></h3><span class="text-xs font-extrabold text-emerald-300">${mKcal} ккал</span></div>${list.length === 0 ? `<p class="text-[11px] text-slate-400">Пока пусто</p>` : `<div class="space-y-1.5">${list.map(item => `<div class="flex items-center justify-between liquid-pill rounded-2xl px-3 py-2 text-xs"><div class="min-w-0 pr-2"><div class="font-semibold text-white truncate">${escapeHtml(item.name)} <span class="text-slate-300">(${Number(item.grams)}г)</span></div><div class="text-[10px] text-slate-300">Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г</div></div><div class="flex items-center gap-2"><span class="font-bold text-emerald-300 whitespace-nowrap">${Number(item.kcal)}</span><button type="button" data-remove-id="${escapeHtml(item.id)}" class="text-slate-400 hover:text-rose-400 px-1">✕</button></div></div>`).join('')}</div>`}</div>`;
+        const prevMealList = prevDayItems.filter(i => i.meal === m.key);
+        const prevKcal = Math.round(prevMealList.reduce((s, x) => s + x.kcal, 0));
+
+        let emptyStateHtml = `<p class="text-[11px] text-slate-400">Пока пусто</p>`;
+        if (list.length === 0 && prevMealList.length > 0) {
+          emptyStateHtml = `<div class="flex items-center justify-between">
+            <span class="text-[11px] text-slate-400">Пока пусто</span>
+            <button type="button" data-copy-meal="${m.key}" class="btn-spring liquid-pill px-2.5 py-1 rounded-xl text-[11px] text-emerald-300 font-semibold">
+              ↻ Повторить вчерашний (${prevKcal} ккал)
+            </button>
+          </div>`;
+        }
+
+        return `<div class="liquid-glass rounded-3xl p-3.5 sm:p-4 animate-card" style="animation-delay: ${idx * 45}ms">
+          <div class="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+            <h3 class="font-bold text-xs sm:text-sm text-white flex items-center gap-2">${getMealSvgIcon(m.key)}<span>${m.title}</span></h3>
+            <span class="text-xs font-extrabold text-emerald-300">${mKcal} ккал</span>
+          </div>
+          ${list.length === 0 ? emptyStateHtml : `<div class="space-y-1.5">${list.map(item => `
+            <div class="flex items-center justify-between liquid-pill rounded-2xl px-3 py-2 text-xs">
+              <div class="min-w-0 pr-2 flex-1 cursor-pointer" data-edit-id="${escapeHtml(item.id)}" title="Нажми, чтобы изменить вес">
+                <div class="font-semibold text-white truncate">${escapeHtml(item.name)} <span class="text-emerald-300 underline decoration-dotted">(${Number(item.grams)}г)</span></div>
+                <div class="text-[10px] text-slate-300">Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-emerald-300 whitespace-nowrap">${Number(item.kcal)}</span>
+                <button type="button" data-remove-id="${escapeHtml(item.id)}" class="text-slate-400 hover:text-rose-400 px-1">✕</button>
+              </div>
+            </div>`).join('')}</div>`}
+        </div>`;
       }).join('');
     }
 
+    // Единый обработчик кликов для дневника (удаление, редактирование веса, повтор вчерашнего)
     document.getElementById('mealsContainer').addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-remove-id]');
-      if (btn) removeDiaryItem(btn.dataset.removeId);
+      const removeBtn = e.target.closest('[data-remove-id]');
+      if (removeBtn) return removeDiaryItem(removeBtn.dataset.removeId);
+
+      const editBlock = e.target.closest('[data-edit-id]');
+      if (editBlock) return editDiaryItemGrams(editBlock.dataset.editId);
+
+      const copyBtn = e.target.closest('[data-copy-meal]');
+      if (copyBtn) return copyMealFromYesterday(copyBtn.dataset.copyMeal);
     });
 
     function removeDiaryItem(itemId) {
       const day = ensureDay(currentDate);
       day.items = day.items.filter(i => i.id !== itemId);
+      saveState();
+    }
+
+    // Пропорциональный пересчёт КБЖУ при смене веса в дневнике
+    function applyDiaryItemGrams(day, item, rawInput) {
+      if (rawInput === null || rawInput === undefined) return;
+      const newGrams = Math.round(num(parseFloat(rawInput), 1, 3000, 0));
+      if (!newGrams || newGrams === item.grams) return;
+
+      const ratio = newGrams / item.grams;
+      item.grams = newGrams;
+      item.kcal = Math.round(item.kcal * ratio);
+      item.p = round1(item.p * ratio);
+      item.f = round1(item.f * ratio);
+      item.c = round1(item.c * ratio);
+
+      triggerHaptic('light');
+      checkAndCelebrateGoals(day);
+      saveState();
+    }
+
+    function editDiaryItemGrams(itemId) {
+      const day = ensureDay(currentDate);
+      const item = day.items.find(i => i.id === itemId);
+      if (!item || !item.grams) return;
+
+      openCustomPromptModal(`Новый вес для «${item.name}» (в граммах):`, item.grams, (input) => {
+        applyDiaryItemGrams(day, item, input);
+      });
+    }
+
+    // Копирование приёма пищи за вчерашний день
+    function copyMealFromYesterday(mealKey) {
+      const prevDate = getPrevDateString(currentDate);
+      const prevItems = (state.days[prevDate]?.items || []).filter(i => i.meal === mealKey);
+      if (!prevItems.length) return;
+
+      const today = ensureDay(currentDate);
+      prevItems.forEach(it => today.items.push({ ...it, id: uid('item') }));
+      triggerHaptic('success');
+      checkAndCelebrateGoals(today);
       saveState();
     }
 
@@ -2470,70 +2470,118 @@
     window.addEventListener('pagehide', flushPending);
     setInterval(checkDateRollover, 60000);
 
-
-    // =====================================================================
-    // 14. LIQUID GLASS: индикатор навигации, блик от касания, шапка
-    // =====================================================================
-    let currentNavTab = 'diary';
-    function moveNavIndicators(tabId) {
-      currentNavTab = tabId;
-      [['Mobile', 'navIndicatorMobile'], ['Desktop', 'navIndicatorDesktop']].forEach(([kind, id]) => {
-        const ind = document.getElementById(id);
-        const btn = document.getElementById(`tabBtn${kind}-${tabId}`);
-        if (!ind || !btn || !btn.offsetWidth) return;
-        const first = !ind.dataset.ready;
-        if (first) ind.style.transition = 'none';
-        ind.style.width = btn.offsetWidth + 'px';
-        ind.style.height = btn.offsetHeight + 'px';
-        ind.style.transform = `translate(${btn.offsetLeft}px, ${btn.offsetTop}px)`;
-        if (first) {
-          void ind.offsetWidth;
-          ind.style.transition = '';
-          ind.dataset.ready = '1';
-        } else {
-          // «растягивание» линзы во время перемещения
-          ind.classList.add('moving');
-          clearTimeout(ind._moveTimer);
-          ind._moveTimer = setTimeout(() => ind.classList.remove('moving'), 360);
+    // Переопределяем поиск рабочей модели Gemini на реальные версии API
+    detectWorkingGeminiModel = async function(apiKey) {
+      if (cachedGeminiModel) return cachedGeminiModel;
+      try {
+        const res = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': apiKey } }, 15000);
+        const data = await res.json();
+        if (data && Array.isArray(data.models)) {
+          const supported = data.models.filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace('models/', ''));
+          const priority = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
+          for (const pref of priority) {
+            const match = supported.find(s => s === pref || s.startsWith(pref));
+            if (match) { cachedGeminiModel = match; return match; }
+          }
         }
+      } catch (e) {}
+      return 'gemini-2.5-flash';
+    };
+
+    // Сканирование штрихкода через камеру Telegram и запрос к OpenFoodFacts
+    function scanBarcode() {
+      if (!tg?.showScanQrPopup) {
+        return showNotice('Сканер штрихкодов работает в мобильном приложении Telegram');
+      }
+      tg.showScanQrPopup({ text: 'Наведи камеру на штрихкод упаковки' }, async (barcode) => {
+        const code = String(barcode).trim();
+        if (!/^\d{8,14}$/.test(code)) return false;
+        tg.closeScanQrPopup();
+        triggerHaptic('light');
+
+        try {
+          const res = await fetchWithTimeout(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_ru,brands,nutriments`, {}, 10000);
+          const data = await res.json();
+          const p = data?.product;
+          if (!p) throw new Error('Не найден');
+
+          const nut = p.nutriments || {};
+          const kcal = Math.round(Number(nut['energy-kcal_100g'] || (nut['energy_100g'] ? nut['energy_100g'] / 4.184 : 0)));
+          const prot = round1(Number(nut.proteins_100g) || 0);
+          const fat = round1(Number(nut.fat_100g) || 0);
+          const carb = round1(Number(nut.carbohydrates_100g) || 0);
+          const name = (p.product_name_ru || p.product_name || `Штрихкод ${code}`).trim();
+
+          if (!kcal && !prot && !fat && !carb) throw new Error('Нет КБЖУ');
+
+          const item = { id: `off_${code}`, name: name.slice(0, 90), kcal, p: prot, f: fat, c: carb, isOnline: true };
+          onlineFoundFoods.unshift(item);
+          selectedFoodObj = item;
+          renderFoodSearchResults();
+          triggerHaptic('success');
+        } catch (e) {
+          showNotice('Продукт с этим штрихкодом не найден в базе OpenFoodFacts');
+        }
+        return true;
       });
     }
-    window.addEventListener('resize', () => moveNavIndicators(currentNavTab));
 
-    (function initGlassLight() {
-      let raf = 0, el = null, px = 0, py = 0;
-      function apply() {
-        raf = 0;
-        if (!el) return;
-        const r = el.getBoundingClientRect();
-        el.style.setProperty('--mx', (px - r.left) + 'px');
-        el.style.setProperty('--my', (py - r.top) + 'px');
-        el.style.setProperty('--glow', '1');
-      }
-      function onPointer(e) {
-        const target = e.target && e.target.closest ? e.target.closest('.liquid-glass') : null;
-        if (el && el !== target) el.style.setProperty('--glow', '0.55');
-        el = target;
-        if (!el) return;
-        px = e.clientX; py = e.clientY;
-        if (!raf) raf = requestAnimationFrame(apply);
-      }
-      document.addEventListener('pointerdown', onPointer, { passive: true });
-      document.addEventListener('pointermove', onPointer, { passive: true });
-      const release = () => { if (el) el.style.setProperty('--glow', '0.55'); };
-      document.addEventListener('pointerup', release, { passive: true });
-      document.addEventListener('pointercancel', release, { passive: true });
-    })();
+    // Отрисовка графика калорий за 7 дней во вкладке «Прогресс»
+    const _origRenderProgressTab = renderProgressTab;
+    renderProgressTab = function() {
+      _origRenderProgressTab();
 
-    (function initHeaderScroll() {
-      const hdr = document.querySelector('header');
-      if (!hdr) return;
-      const update = () => hdr.classList.toggle('is-scrolled', window.scrollY > 8);
-      window.addEventListener('scroll', update, { passive: true });
-      update();
-    })();
+      let chartCard = document.getElementById('weeklyCalChartCard');
+      if (!chartCard) {
+        const progressSection = document.getElementById('tab-progress');
+        chartCard = document.createElement('div');
+        chartCard.id = 'weeklyCalChartCard';
+        chartCard.className = 'lg:col-span-2 liquid-glass rounded-3xl p-4 space-y-2';
+        progressSection.appendChild(chartCard);
+      }
+
+      const targets = calculateTargets();
+      const [y, m, d] = currentDate.split('-').map(Number);
+      const daysData = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const dt = new Date(y, m - 1, d - i);
+        const key = getLocalDateString(dt);
+        const items = state.days[key]?.items || [];
+        const kcal = Math.round(items.reduce((sum, x) => sum + x.kcal, 0));
+        const label = dt.toLocaleDateString('ru-RU', { weekday: 'short' });
+        daysData.push({ key, kcal, label });
+      }
+
+      const maxKcal = Math.max(targets.targetKcal * 1.15, ...daysData.map(x => x.kcal), 1);
+      const nonZeroDays = daysData.filter(x => x.kcal > 0);
+      const avgKcal = nonZeroDays.length ? Math.round(nonZeroDays.reduce((s, x) => s + x.kcal, 0) / nonZeroDays.length) : 0;
+
+      chartCard.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-sm text-white">Калории за 7 дней</h3>
+            <p class="text-[11px] text-slate-300">Цель: ${targets.targetKcal} ккал • Среднее за неделю: <b class="text-emerald-300">${avgKcal} ккал</b></p>
+          </div>
+        </div>
+        <div class="grid grid-cols-7 gap-2 items-end h-28 pt-3">
+          ${daysData.map(day => {
+            const heightPct = Math.min(100, Math.round((day.kcal / maxKcal) * 100));
+            const isOver = day.kcal > targets.targetKcal * 1.08;
+            const barColor = day.kcal === 0 ? 'bg-white/10' : isOver ? 'bg-gradient-to-t from-amber-500 to-yellow-300' : 'bg-gradient-to-t from-emerald-500 to-cyan-300';
+            return `<div class="flex flex-col items-center gap-1 h-full justify-end">
+              <span class="text-[9px] text-slate-300 font-semibold">${day.kcal || '—'}</span>
+              <div class="w-full bg-white/5 rounded-xl h-full flex items-end overflow-hidden p-0.5">
+                <div class="w-full ${barColor} rounded-lg transition-all duration-500" style="height: ${Math.max(6, heightPct)}%"></div>
+              </div>
+              <span class="text-[10px] ${day.key === currentDate ? 'text-emerald-300 font-bold' : 'text-slate-400'}">${day.label}</span>
+            </div>`;
+          }).join('')}
+        </div>`;
+    };
 
     loadState(); switchTab('diary');
   </script>
 </body>
 </html>
+```
