@@ -60,26 +60,27 @@
       touch-action: manipulation;
     }
 
-    /* === 2. ПРОЗРАЧНОЕ ЖИДКОЕ СТЕКЛО (ГЛЯЦЕВЫЙ IOS СТИЛЬ) === */
+    /* === 2. ПРОЗРАЧНОЕ ЖИДКОЕ СТЕКЛО (ГЛЯЦЕВЫЙ IOS СТИЛЬ С ПОВЫШЕННОЙ ПРОЗРАЧНОСТЬЮ) === */
     .liquid-glass {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.035) 100%);
-      backdrop-filter: blur(24px) saturate(210%);
-      -webkit-backdrop-filter: blur(24px) saturate(210%);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      position: relative;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.065) 0%, rgba(255, 255, 255, 0.015) 100%);
+      backdrop-filter: blur(16px) saturate(190%);
+      -webkit-backdrop-filter: blur(16px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.13);
       box-shadow:
-        0 20px 45px -10px rgba(0, 0, 0, 0.7),
-        inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.45),
-        inset 0 -1px 2px 0 rgba(16, 185, 129, 0.12);
+        0 12px 32px -4px rgba(0, 0, 0, 0.35),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -1px 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     .liquid-pill {
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.09) 0%, rgba(15, 23, 42, 0.35) 100%);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+      backdrop-filter: blur(10px) saturate(180%);
+      -webkit-backdrop-filter: blur(10px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       box-shadow:
-        0 4px 16px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0.5px rgba(255, 255, 255, 0.3);
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0.5px rgba(255, 255, 255, 0.25);
     }
 
     .liquid-input {
@@ -926,6 +927,15 @@
           </div>
           <input type="number" id="newFoodKcal" placeholder="Ккал на 100г (если пусто — посчитается само)" class="liquid-input w-full rounded-xl px-3 py-2 text-xs text-white" />
           <button onclick="addCustomFood()" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-xl font-bold text-xs">Сохранить продукт в базу</button>
+
+          <!-- Список сохранённых продуктов пользователя с возможностью удаления -->
+          <div class="pt-3 border-t border-white/10 space-y-2">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold text-slate-200">Мои сохранённые продукты</h3>
+              <span id="customFoodsCountLabel" class="text-[10px] text-emerald-300 font-semibold">0 шт.</span>
+            </div>
+            <div id="customFoodsList" class="space-y-1.5 max-h-[220px] overflow-y-auto pr-1"></div>
+          </div>
         </div>
       </div>
 
@@ -1502,8 +1512,8 @@
           const cy = (orb.y + Math.cos(tick * orb.vy * 18 + idx) * 0.18) * height;
           const radius = Math.min(width, height) * 0.48 + (orb.r * 0.35);
           const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, radius);
-          grad.addColorStop(0, `rgba(${orb.color}, 0.32)`);
-          grad.addColorStop(0.5, `rgba(${orb.color}, 0.11)`);
+          grad.addColorStop(0, `rgba(${orb.color}, 0.45)`);
+          grad.addColorStop(0.5, `rgba(${orb.color}, 0.18)`);
           grad.addColorStop(1, `rgba(${orb.color}, 0)`);
           ctx.fillStyle = grad;
           ctx.beginPath();
@@ -1961,8 +1971,14 @@
       }
     });
 
-    // Делегирование: id продукта берём из data-атрибута, а не из inline-JS
+    // Делегирование: выбор или удаление своего продукта
     document.getElementById('foodSearchResults').addEventListener('click', (e) => {
+      const delBtn = e.target.closest('[data-delete-custom-id]');
+      if (delBtn) {
+        e.stopPropagation();
+        deleteCustomFood(delBtn.dataset.deleteCustomId);
+        return;
+      }
       const btn = e.target.closest('[data-food-id]');
       if (btn) selectFoodFromList(btn.dataset.foodId);
     });
@@ -2038,7 +2054,8 @@
 
       container.innerHTML = filtered.map(f => {
         const isSelected = selectedFoodObj && selectedFoodObj.id === f.id;
-        return `<button type="button" data-food-id="${escapeHtml(f.id)}" class="w-full text-left px-3 py-2 rounded-2xl border transition flex items-center justify-between gap-2 ${isSelected ? 'bg-emerald-500/25 border-emerald-400/60 text-white' : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-200'}"><div class="min-w-0 flex-1"><div class="text-xs font-semibold truncate">${escapeHtml(f.name)}${f.isOnline ? '<span class="text-[9px] ml-1 px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300">Онлайн</span>' : ''}</div><div class="text-[10px] text-slate-300">Б: ${Number(f.p)}г • Ж: ${Number(f.f)}г • У: ${Number(f.c)}г (на 100г)</div></div><div class="text-xs font-bold text-emerald-300 whitespace-nowrap">${Number(f.kcal)} ккал</div></button>`;
+        const isCustom = (state.customFoods || []).some(c => c.id === f.id);
+        return `<div class="w-full text-left px-3 py-2 rounded-2xl border transition flex items-center justify-between gap-2 ${isSelected ? 'bg-emerald-500/25 border-emerald-400/60 text-white' : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-200'}"><button type="button" data-food-id="${escapeHtml(f.id)}" class="min-w-0 flex-1 text-left"><div class="text-xs font-semibold truncate">${escapeHtml(f.name)}${isCustom ? '<span class="text-[9px] ml-1 px-1.5 py-0.5 rounded bg-emerald-500/25 text-emerald-300 border border-emerald-400/30">Свой</span>' : ''}${f.isOnline ? '<span class="text-[9px] ml-1 px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300">Онлайн</span>' : ''}</div><div class="text-[10px] text-slate-300">Б: ${Number(f.p)}г • Ж: ${Number(f.f)}г • У: ${Number(f.c)}г (на 100г)</div></button><div class="flex items-center gap-2"><span class="text-xs font-bold text-emerald-300 whitespace-nowrap">${Number(f.kcal)} ккал</span>${isCustom ? `<button type="button" data-delete-custom-id="${escapeHtml(f.id)}" class="text-slate-400 hover:text-rose-400 p-1 text-xs" title="Удалить свой продукт">✕</button>` : ''}</div></div>`;
       }).join('');
       updateQuickPreview();
     }
@@ -3083,7 +3100,58 @@
       const floorNote = t.floorApplied ? `<br><span class="text-amber-300">Норма поднята до безопасного минимума (${t.minSafe} ккал) — дефицит ${p.goal}% оказался слишком жёстким.</span>` : '';
       document.getElementById('calcResultSummary').innerHTML = `Базовый обмен: <b>${t.bmr} ккал</b> • Поддержание: <b>${t.tdee} ккал</b><br>Ваша дневная норма: <b class="text-emerald-300">${t.targetKcal} ккал</b> (Б: ${t.p}г, Ж: ${t.f}г, У: ${t.c}г)${floorNote}`;
       document.getElementById('foodsCountBadge').textContent = `В базе: ${getAllFoods().length} поз.`;
+      renderCustomFoodsList();
     }
+
+    function renderCustomFoodsList() {
+      const box = document.getElementById('customFoodsList');
+      const countLabel = document.getElementById('customFoodsCountLabel');
+      if (!box) return;
+      const list = state.customFoods || [];
+      if (countLabel) countLabel.textContent = `${list.length} шт.`;
+
+      if (list.length === 0) {
+        box.innerHTML = `<div class="p-3 rounded-2xl liquid-pill text-center text-[11px] text-slate-400">Вы пока не сохранили свои продукты</div>`;
+        return;
+      }
+
+      box.innerHTML = list.map(item => `
+        <div class="flex items-center justify-between liquid-pill rounded-2xl px-3 py-2 text-xs gap-2">
+          <div class="min-w-0 pr-2 flex-1">
+            <div class="font-semibold text-white truncate">${escapeHtml(item.name)}</div>
+            <div class="text-[10px] text-slate-300">
+              <span class="text-emerald-300 font-bold">${Number(item.kcal)} ккал</span> • Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г
+            </div>
+          </div>
+          <button type="button" data-custom-del-id="${escapeHtml(item.id)}" class="btn-spring liquid-pill px-2.5 py-1 rounded-xl text-rose-300 hover:text-rose-200 text-xs font-bold flex items-center gap-1 flex-shrink-0" title="Удалить продукт">
+            <span>✕</span>
+            <span class="text-[10px] hidden sm:inline">Удалить</span>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function deleteCustomFood(foodId) {
+      const list = state.customFoods || [];
+      const item = list.find(f => f.id === foodId);
+      const name = item ? item.name : 'Продукт';
+      state.customFoods = list.filter(f => f.id !== foodId);
+      if (selectedFoodObj && selectedFoodObj.id === foodId) {
+        selectedFoodObj = VERIFIED_FOODS_DB[0];
+      }
+      triggerHaptic('light');
+      saveState();
+      renderFoodSearchResults();
+      renderProfileForm();
+      showNotice(`«${name}» удалён из базы`);
+    }
+
+    document.getElementById('customFoodsList')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-custom-del-id]');
+      if (btn) {
+        deleteCustomFood(btn.dataset.customDelId);
+      }
+    });
 
     function saveProfileAndRecalc() {
       state.profile = {
