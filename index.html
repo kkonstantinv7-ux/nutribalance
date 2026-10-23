@@ -47,7 +47,7 @@
       transform: translateY(120%);
     }
     body.kb-open #appMainContent {
-      padding-bottom: 42vh !important;
+      padding-bottom: max(55vh, 380px) !important;
     }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
@@ -83,6 +83,9 @@
     }
 
     .liquid-input {
+      position: relative;
+      z-index: 2;
+      transform: translateZ(0);
       background: rgba(15, 23, 42, 0.45);
       border: 1px solid rgba(255, 255, 255, 0.15);
       box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -113,13 +116,9 @@
     .svg-glow-amber   { filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.75)); }
     .svg-glow-purple  { filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.75)); }
 
-    /* === 4. МИКРО-АНИМАЦИИ (БЕЗ TRANSFORM НА КОНТЕЙНЕРАХ С ПОЛЯМИ ВВОДА) === */
-    @keyframes fadeSlideUp {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
+    /* === 4. МИКРО-АНИМАЦИИ (БЕЗ АНИМАЦИИ НА КОНТЕЙНЕРАХ С ПОЛЯМИ ВВОДА ДЛЯ СТАБИЛЬНОГО IME В WEBVIEW) === */
     .animate-card {
-      animation: fadeSlideUp 0.18s ease-out;
+      animation: none;
     }
     .btn-spring {
       transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s, box-shadow 0.2s;
@@ -1349,10 +1348,10 @@
     }
 
     // =====================================================================
-    // 1. КОНТРОЛЬ ВЫСОТЫ VIEWPORT, ФОКУСА ПОЛЕЙ ВВОДА И ФОН ПЛАЗМЫ
+    // 1. КОНТРОЛЬ ВЫСОТЫ VIEWPORT, ПРОКРУТКИ НАД КЛАВИАТУРОЙ И ФОНА ПЛАЗМЫ
     // =====================================================================
     let isTextInputFocused = false;
-    let isRebindingFocus = false;
+    let maxObservedViewportHeight = window.innerHeight || 780;
 
     function isTextEditableElement(el) {
       if (!el || !el.tagName) return false;
@@ -1365,20 +1364,58 @@
       return false;
     }
 
-    function syncViewportHeight() {
-      if (isTextInputFocused) return;
+    function getVisibleViewportHeight() {
       const candidates = [window.innerHeight];
-      if (window.visualViewport && window.visualViewport.height > 200) {
+      if (window.visualViewport && window.visualViewport.height > 150) {
         candidates.push(window.visualViewport.height);
       }
       const tgApp = window.Telegram?.WebApp;
-      if (tgApp && tgApp.isExpanded && tgApp.viewportStableHeight && tgApp.viewportStableHeight > 200) {
+      if (!isTextInputFocused && tgApp && tgApp.isExpanded && tgApp.viewportStableHeight && tgApp.viewportStableHeight > 200) {
         candidates.push(tgApp.viewportStableHeight);
       }
-      const valid = candidates.filter(v => Number.isFinite(v) && v > 200);
-      if (valid.length > 0) {
-        const h = Math.round(Math.min(...valid));
+      const valid = candidates.filter(v => Number.isFinite(v) && v > 150);
+      return valid.length > 0 ? Math.round(Math.min(...valid)) : window.innerHeight;
+    }
+
+    function scrollActiveInputIntoView(el) {
+      const target = el || document.activeElement;
+      if (!isTextEditableElement(target)) return;
+      const modalScroller = target.closest('#onboardingModal, #paywallModal, #adminModal, #backupModal, #barcodeScannerModal');
+      const scroller = modalScroller || document.getElementById('appScrollContainer');
+      if (!scroller) return;
+
+      const rect = target.getBoundingClientRect();
+      const visH = getVisibleViewportHeight();
+      // Если система не уменьшает высоту viewport при открытии клавиатуры (режим adjustPan),
+      // ориентируемся на верхнюю видимую половину экрана над клавиатурой
+      const effectiveBottom = (visH > maxObservedViewportHeight * 0.82)
+        ? Math.round(visH * 0.48)
+        : (visH - 24);
+      const topSafe = 66;
+
+      if (rect.bottom > effectiveBottom || rect.top < topSafe) {
+        const desiredTop = Math.max(topSafe + 10, Math.round((effectiveBottom - Math.min(rect.height, 110)) * 0.45));
+        const delta = rect.top - desiredTop;
+        scroller.scrollTop = Math.max(0, scroller.scrollTop + delta);
+      }
+    }
+
+    function syncViewportHeight() {
+      const h = getVisibleViewportHeight();
+      if (h > maxObservedViewportHeight) {
+        maxObservedViewportHeight = h;
+      }
+      if (h > 150) {
         document.documentElement.style.setProperty('--app-height', `${h}px`);
+      }
+      const kbShrunk = h < maxObservedViewportHeight - 100;
+      if (kbShrunk || isTextInputFocused) {
+        document.body.classList.add('kb-open');
+      } else {
+        document.body.classList.remove('kb-open');
+      }
+      if (kbShrunk && isTextEditableElement(document.activeElement)) {
+        scrollActiveInputIntoView(document.activeElement);
       }
     }
 
@@ -1386,66 +1423,31 @@
       syncViewportHeight();
       window.addEventListener('resize', syncViewportHeight);
       if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', () => {
-          if (!isTextInputFocused) syncViewportHeight();
-        });
+        window.visualViewport.addEventListener('resize', syncViewportHeight);
         window.visualViewport.addEventListener('scroll', () => {
-          if (!isTextInputFocused && (window.scrollY !== 0 || window.scrollX !== 0)) {
+          if (window.scrollY !== 0 || window.scrollX !== 0) {
             window.scrollTo(0, 0);
           }
         });
       }
 
-      // Снимаем возможные остаточные анимации и активируем окно WebView при касании поля ввода
+      // При касании любого поля ввода активируем окно WebView без сброса фокуса
       const onPointerDownInput = (e) => {
         const el = e.target && e.target.closest ? e.target.closest('input, textarea, select') : null;
         if (!el) return;
         try { window.focus(); } catch (err) {}
-        el._wasActiveBeforeTap = (document.activeElement === el);
-        let node = el.parentElement;
-        while (node && node !== document.body) {
-          if (node.classList && node.classList.contains('animate-card')) {
-            node.classList.remove('animate-card');
-          }
-          node = node.parentElement;
-        }
       };
       document.addEventListener('touchstart', onPointerDownInput, { passive: true, capture: true });
       document.addEventListener('mousedown', onPointerDownInput, { passive: true, capture: true });
 
-      // Гарантируем привязку IME клавиатуры с первого касания в Telegram WebView (без необходимости переключать вкладки)
       document.addEventListener('click', (e) => {
         const el = e.target && e.target.closest ? e.target.closest('input, textarea') : null;
         if (!isTextEditableElement(el)) return;
         try { window.focus(); } catch (err) {}
-        if (!el._nbTypedInSession) {
-          isRebindingFocus = true;
-          try {
-            const val = el.value;
-            el.blur();
-            el.focus({ preventScroll: true });
-            if (typeof el.setSelectionRange === 'function' && ['text', 'search', 'tel', 'url', 'password'].includes((el.type || 'text').toLowerCase())) {
-              const len = (val || '').length;
-              el.setSelectionRange(len, len);
-            }
-          } catch (err) {
-            try { el.focus(); } catch (e2) {}
-          } finally {
-            isRebindingFocus = false;
-          }
+        if (document.activeElement !== el) {
+          try { el.focus({ preventScroll: true }); } catch (err) {}
         }
-      }, true);
-
-      document.addEventListener('input', (e) => {
-        if (e.target && isTextEditableElement(e.target)) {
-          e.target._nbTypedInSession = true;
-        }
-      }, true);
-
-      document.addEventListener('keydown', (e) => {
-        if (e.target && isTextEditableElement(e.target)) {
-          e.target._nbTypedInSession = true;
-        }
+        scrollActiveInputIntoView(el);
       }, true);
 
       let blurTimer = null;
@@ -1453,29 +1455,15 @@
         if (!isTextEditableElement(e.target)) return;
         clearTimeout(blurTimer);
         const el = e.target;
-        if (!isRebindingFocus) {
-          el._nbTypedInSession = false;
-        }
         isTextInputFocused = true;
         document.body.classList.add('kb-open');
-        setTimeout(() => {
-          if (document.activeElement !== el) return;
-          const scroller = document.getElementById('appScrollContainer');
-          if (!scroller || !scroller.contains(el)) return;
-          const rect = el.getBoundingClientRect();
-          const visH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-          if (rect.bottom > visH - 28 || rect.top < 64) {
-            const targetTop = scroller.scrollTop + rect.top - Math.max(80, Math.round(visH * 0.28));
-            scroller.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
-          }
-        }, 150);
+        syncViewportHeight();
+        setTimeout(() => scrollActiveInputIntoView(el), 80);
+        setTimeout(() => scrollActiveInputIntoView(el), 240);
+        setTimeout(() => scrollActiveInputIntoView(el), 420);
       });
 
-      document.addEventListener('focusout', (e) => {
-        if (isRebindingFocus) return;
-        if (e.target && isTextEditableElement(e.target)) {
-          e.target._nbTypedInSession = false;
-        }
+      document.addEventListener('focusout', () => {
         clearTimeout(blurTimer);
         blurTimer = setTimeout(() => {
           if (isTextEditableElement(document.activeElement)) return;
@@ -1485,7 +1473,7 @@
           document.documentElement.scrollTop = 0;
           document.body.scrollTop = 0;
           syncViewportHeight();
-        }, 90);
+        }, 100);
       });
     })();
 
@@ -1624,7 +1612,7 @@
         if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#03060c');
         if (typeof tg.onEvent === 'function') {
           tg.onEvent('viewportChanged', () => {
-            if (!isTextInputFocused) syncViewportHeight();
+            syncViewportHeight();
           });
         }
       } catch (e) {}
@@ -4734,6 +4722,19 @@
       }
     }
 
+    // Предварительная инициализация разметки всех вкладок при старте, чтобы поля ввода работали с первого касания без переключения вкладок
+    (function warmupTabsForWebViewIME() {
+      const tabs = ['diary', 'ai', 'progress', 'profile'];
+      tabs.forEach(t => {
+        const s = document.getElementById('tab-' + t);
+        if (s) s.classList.remove('hidden', 'animate-card');
+      });
+      void document.body.offsetHeight;
+      tabs.forEach(t => {
+        const s = document.getElementById('tab-' + t);
+        if (s && t !== 'diary') s.classList.add('hidden');
+      });
+    })();
     loadState(); loadSubscriptionAndConfig(); switchTab('diary');
   </script>
 </body>
