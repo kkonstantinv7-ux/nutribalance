@@ -1,3 +1,4 @@
+html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -524,9 +525,9 @@
           <div id="foodSearchResults" class="space-y-1.5 max-h-[210px] overflow-y-auto pr-1"></div>
 
           <div class="p-3 rounded-2xl liquid-pill space-y-2.5">
-            <div class="flex items-center justify-between gap-2">
-              <div id="selectedFoodTitle" class="text-xs font-bold text-white truncate">Куриная грудка (филе)</div>
-              <div id="quickPreviewKcal" class="text-xs font-extrabold text-emerald-300 whitespace-nowrap">248 ккал</div>
+            <div class="flex items-start justify-between gap-2">
+              <div id="selectedFoodTitle" class="text-xs font-bold text-white break-words leading-snug flex-1 min-w-0">Куриная грудка (филе)</div>
+              <div id="quickPreviewKcal" class="text-xs font-extrabold text-emerald-300 whitespace-nowrap flex-shrink-0">248 ккал</div>
             </div>
 
             <div class="flex items-center gap-1.5">
@@ -2021,7 +2022,7 @@
             const carb = round1(Number(nut.carbohydrates_100g) || 0);
             if (name && isPlausibleFood(kcal, prot, fat, carb)) {
               const brand = p.brands ? ` (${p.brands.split(',')[0].trim()})` : '';
-              fetched.push({ id: `off_${p.code || idx}`, name: `${name}${brand}`.slice(0, 90), kcal, p: prot, f: fat, c: carb, isOnline: true });
+              fetched.push({ id: `off_${p.code || idx}`, name: `${name}${brand}`.slice(0, 160), kcal, p: prot, f: fat, c: carb, isOnline: true });
             }
           });
           onlineFoundFoods = fetched.slice(0, 12);
@@ -2055,7 +2056,7 @@
       container.innerHTML = filtered.map(f => {
         const isSelected = selectedFoodObj && selectedFoodObj.id === f.id;
         const isCustom = (state.customFoods || []).some(c => c.id === f.id);
-        return `<div class="w-full text-left px-3 py-2 rounded-2xl border transition flex items-center justify-between gap-2 ${isSelected ? 'bg-emerald-500/25 border-emerald-400/60 text-white' : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-200'}"><button type="button" data-food-id="${escapeHtml(f.id)}" class="min-w-0 flex-1 text-left"><div class="text-xs font-semibold truncate">${escapeHtml(f.name)}${isCustom ? '<span class="text-[9px] ml-1 px-1.5 py-0.5 rounded bg-emerald-500/25 text-emerald-300 border border-emerald-400/30">Свой</span>' : ''}${f.isOnline ? '<span class="text-[9px] ml-1 px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300">Онлайн</span>' : ''}</div><div class="text-[10px] text-slate-300">Б: ${Number(f.p)}г • Ж: ${Number(f.f)}г • У: ${Number(f.c)}г (на 100г)</div></button><div class="flex items-center gap-2"><span class="text-xs font-bold text-emerald-300 whitespace-nowrap">${Number(f.kcal)} ккал</span>${isCustom ? `<button type="button" data-delete-custom-id="${escapeHtml(f.id)}" class="text-slate-400 hover:text-rose-400 p-1 text-xs" title="Удалить свой продукт">✕</button>` : ''}</div></div>`;
+        return `<div class="w-full text-left px-3 py-2.5 rounded-2xl border transition flex items-start justify-between gap-2 ${isSelected ? 'bg-emerald-500/25 border-emerald-400/60 text-white' : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-200'}"><button type="button" data-food-id="${escapeHtml(f.id)}" class="min-w-0 flex-1 text-left"><div class="text-xs font-semibold break-words leading-snug">${escapeHtml(f.name)}${isCustom ? '<span class="inline-block text-[9px] ml-1 px-1.5 py-0.5 rounded bg-emerald-500/25 text-emerald-300 border border-emerald-400/30 align-middle">Свой</span>' : ''}${f.isOnline ? '<span class="inline-block text-[9px] ml-1 px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 align-middle">Онлайн</span>' : ''}</div><div class="text-[10px] text-slate-300 mt-0.5">Б: ${Number(f.p)}г • Ж: ${Number(f.f)}г • У: ${Number(f.c)}г (на 100г)</div></button><div class="flex items-center gap-1.5 flex-shrink-0 pt-0.5"><span class="text-xs font-bold text-emerald-300 whitespace-nowrap">${Number(f.kcal)} ккал</span>${isCustom ? `<button type="button" data-delete-custom-id="${escapeHtml(f.id)}" class="text-slate-400 hover:text-rose-400 p-1 text-xs" title="Удалить свой продукт">✕</button>` : ''}</div></div>`;
       }).join('');
       updateQuickPreview();
     }
@@ -2095,7 +2096,7 @@
 
     function makeDiaryItem(meal, name, grams, kcal100, p100, f100, c100) {
       return {
-        id: uid('item'), meal, name: String(name).slice(0, 90), grams,
+        id: uid('item'), meal, name: String(name).slice(0, 160), grams,
         kcal: Math.round((kcal100 * grams) / 100),
         p: round1((p100 * grams) / 100),
         f: round1((f100 * grams) / 100),
@@ -2315,7 +2316,7 @@
         const factor = 100 / Math.max(1, totalGrams);
         const title = rawText.trim().charAt(0).toUpperCase() + rawText.trim().slice(1);
         return {
-          name: title.slice(0, 90),
+          name: title.slice(0, 160),
           portionGrams: Math.round(totalGrams),
           kcal100: Math.round(totalKcal * factor),
           p100: round1(totalP * factor),
@@ -2339,7 +2340,7 @@
           const kcal100 = Math.round(Number(nut['energy-kcal_100g'] || (nut['energy_100g'] ? nut['energy_100g'] / 4.184 : 0))) || Math.round(p100 * 4 + f100 * 9 + c100 * 4);
           if (kcal100 > 0) {
             return {
-              name: (prod.product_name_ru || prod.product_name || rawText).trim().slice(0, 90),
+              name: (prod.product_name_ru || prod.product_name || rawText).trim().slice(0, 160),
               portionGrams: 200,
               kcal100, p100, f100, c100,
               components: [{ name: (prod.product_name_ru || prod.product_name || rawText).trim().slice(0, 70), grams: 200, kcal100, p100, f100, c100 }]
@@ -2351,7 +2352,7 @@
       // Умная оценка по умолчанию для домашнего блюда
       const gMatch = rawText.match(/(\d+)\s*(?:г|гр|грамм|мл)/i);
       return {
-        name: (rawText.trim().charAt(0).toUpperCase() + rawText.trim().slice(1)).slice(0, 90),
+        name: (rawText.trim().charAt(0).toUpperCase() + rawText.trim().slice(1)).slice(0, 160),
         portionGrams: gMatch ? num(parseInt(gMatch[1], 10), 20, 2000, 250) : 250,
         kcal100: 155,
         p100: 10.5,
@@ -2557,7 +2558,7 @@
         const per = sanitizePer100(parsed);
         if (per.kcal100 <= 0) throw new Error('Не удалось определить калорийность. Уточни описание блюда.');
         lastAiTextFood = {
-          name: String(parsed.name || text).slice(0, 90),
+          name: String(parsed.name || text).slice(0, 160),
           portionGrams: Math.round(num(parsed.portionGrams, 1, 3000, 200)),
           ...per
         };
@@ -2970,12 +2971,12 @@
             <span class="text-xs font-extrabold text-emerald-300">${mKcal} ккал</span>
           </div>
           ${list.length === 0 ? emptyStateHtml : `<div class="space-y-1.5">${list.map(item => `
-            <div class="flex items-center justify-between liquid-pill rounded-2xl px-3 py-2 text-xs">
-              <div class="min-w-0 pr-2 flex-1 cursor-pointer" data-edit-id="${escapeHtml(item.id)}" title="Нажми, чтобы изменить вес">
-                <div class="font-semibold text-white truncate">${escapeHtml(item.name)} <span class="text-emerald-300 underline decoration-dotted">(${Number(item.grams)}г)</span></div>
-                <div class="text-[10px] text-slate-300">Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г</div>
+            <div class="flex items-start justify-between liquid-pill rounded-2xl px-3 py-2.5 text-xs gap-2">
+              <div class="min-w-0 pr-1 flex-1 cursor-pointer" data-edit-id="${escapeHtml(item.id)}" title="Нажми, чтобы изменить вес">
+                <div class="font-semibold text-white break-words leading-snug">${escapeHtml(item.name)} <span class="text-emerald-300 underline decoration-dotted whitespace-nowrap">(${Number(item.grams)}г)</span></div>
+                <div class="text-[10px] text-slate-300 mt-0.5">Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г</div>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-shrink-0 pt-0.5">
                 <span class="font-bold text-emerald-300 whitespace-nowrap">${Number(item.kcal)}</span>
                 <button type="button" data-remove-id="${escapeHtml(item.id)}" class="text-slate-400 hover:text-rose-400 px-1">✕</button>
               </div>
@@ -3116,14 +3117,14 @@
       }
 
       box.innerHTML = list.map(item => `
-        <div class="flex items-center justify-between liquid-pill rounded-2xl px-3 py-2 text-xs gap-2">
-          <div class="min-w-0 pr-2 flex-1">
-            <div class="font-semibold text-white truncate">${escapeHtml(item.name)}</div>
-            <div class="text-[10px] text-slate-300">
+        <div class="flex items-start justify-between liquid-pill rounded-2xl px-3 py-2.5 text-xs gap-2">
+          <div class="min-w-0 pr-1 flex-1">
+            <div class="font-semibold text-white break-words leading-snug">${escapeHtml(item.name)}</div>
+            <div class="text-[10px] text-slate-300 mt-0.5">
               <span class="text-emerald-300 font-bold">${Number(item.kcal)} ккал</span> • Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г
             </div>
           </div>
-          <button type="button" data-custom-del-id="${escapeHtml(item.id)}" class="btn-spring liquid-pill px-2.5 py-1 rounded-xl text-rose-300 hover:text-rose-200 text-xs font-bold flex items-center gap-1 flex-shrink-0" title="Удалить продукт">
+          <button type="button" data-custom-del-id="${escapeHtml(item.id)}" class="btn-spring liquid-pill px-2.5 py-1 rounded-xl text-rose-300 hover:text-rose-200 text-xs font-bold flex items-center gap-1 flex-shrink-0 mt-0.5" title="Удалить продукт">
             <span>✕</span>
             <span class="text-[10px] hidden sm:inline">Удалить</span>
           </button>
@@ -3172,7 +3173,7 @@
       const f = num(parseFloat(document.getElementById('newFoodF').value), 0, 100, 0);
       const c = num(parseFloat(document.getElementById('newFoodC').value), 0, 100, 0);
       const kcal = Math.round(num(document.getElementById('newFoodKcal').value, 0, 900, 0)) || Math.round(p * 4 + f * 9 + c * 4);
-      const newObj = { id: uid('custom'), name: name.slice(0, 90), kcal, p, f, c };
+      const newObj = { id: uid('custom'), name: name.slice(0, 160), kcal, p, f, c };
       state.customFoods.unshift(newObj); selectedFoodObj = newObj;
       document.getElementById('newFoodName').value = ''; document.getElementById('newFoodP').value = '';
       document.getElementById('newFoodF').value = ''; document.getElementById('newFoodC').value = ''; document.getElementById('newFoodKcal').value = '';
@@ -3573,7 +3574,7 @@
 
         if (!kcal && !prot && !fat && !carb) throw new Error('Нет КБЖУ');
 
-        const item = { id: `off_${code}`, name: name.slice(0, 90), kcal, p: prot, f: fat, c: carb, isOnline: true };
+        const item = { id: `off_${code}`, name: name.slice(0, 160), kcal, p: prot, f: fat, c: carb, isOnline: true };
         selectScannedFoodItem(item);
       } catch (e) {
         const fallback = BARCODE_FALLBACK_DB[code];
