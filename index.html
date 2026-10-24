@@ -951,7 +951,7 @@
                 <h2 class="font-bold text-sm sm:text-base text-white">Локальные уведомления и напоминания</h2>
                 <span id="notifStatusBadge" class="text-[10px] px-2.5 py-0.5 rounded-full font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">Включены</span>
               </div>
-              <p class="text-[11px] text-slate-300">Напоминания о приёмах пищи и воде по твоему расписанию (внутри приложения и через системные пуши)</p>
+              <p class="text-[11px] text-slate-300">Всплывающие напоминания со звуком и вибрацией при открытом приложении и при входе в него</p>
             </div>
           </div>
 
@@ -960,11 +960,8 @@
               <input type="checkbox" id="notifMasterEnabled" onchange="saveNotificationSettingsFromInputs(true)" class="rounded accent-emerald-500 w-4 h-4" />
               <span>Включить все</span>
             </label>
-            <button type="button" id="btnReqBrowserNotif" onclick="requestLocalNotificationPermission()" class="btn-spring liquid-pill px-3 py-1.5 rounded-xl text-[11px] font-semibold text-cyan-300 border border-cyan-400/35">
-              Разрешить системные пуши
-            </button>
             <button type="button" onclick="sendTestLocalNotification()" class="btn-spring liquid-btn-primary px-3 py-1.5 rounded-xl text-[11px] font-extrabold">
-              🔔 Проверить
+              🔔 Проверить уведомление
             </button>
           </div>
         </div>
@@ -5092,16 +5089,7 @@
           : 'text-[10px] px-2.5 py-0.5 rounded-full font-semibold bg-slate-500/20 text-slate-300 border border-white/15';
       }
 
-      const permBtn = document.getElementById('btnReqBrowserNotif');
-      if (permBtn) {
-        if ('Notification' in window && Notification.permission === 'granted') {
-          permBtn.textContent = '✓ Системные пуши активны';
-          permBtn.className = 'btn-spring liquid-pill px-3 py-1.5 rounded-xl text-[11px] font-semibold text-emerald-300 border border-emerald-400/35';
-        } else {
-          permBtn.textContent = 'Разрешить системные пуши';
-          permBtn.className = 'btn-spring liquid-pill px-3 py-1.5 rounded-xl text-[11px] font-semibold text-cyan-300 border border-cyan-400/35';
-        }
-      }
+
 
       const activeParts = [];
       if (n.enabled) {
@@ -5163,6 +5151,7 @@
       if (masterToggled) {
         showNotice(state.notifications.enabled ? '🔔 Локальные напоминания включены' : '🔕 Напоминания приостановлены');
       }
+      setTimeout(checkScheduledLocalNotifications, 300);
     }
 
     function sendTestLocalNotification() {
@@ -5211,7 +5200,8 @@
         if (n.firedLog[logKey]) continue;
 
         const hasMealLogged = (todayData.items || []).some(it => it.meal === m.key);
-        if (hasMealLogged) {
+        const isExactScheduledWindow = (nowMins >= targetMins && nowMins <= targetMins + 2);
+        if (hasMealLogged && !isExactScheduledWindow) {
           n.firedLog[logKey] = true;
           continue;
         }
