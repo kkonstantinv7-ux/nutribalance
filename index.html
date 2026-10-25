@@ -86,11 +86,27 @@
     .liquid-input {
       position: relative;
       z-index: 2;
-      transform: translateZ(0);
       background: rgba(15, 23, 42, 0.45);
       border: 1px solid rgba(255, 255, 255, 0.15);
       box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    /* Во время набора текста отключаем тяжелый backdrop-filter на карточках, чтобы в Android Telegram WebView не сбивалась связь с клавиатурой (IME) */
+    body.kb-open .liquid-glass,
+    body.kb-open .liquid-pill {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    .tab-offscreen {
+      position: fixed !important;
+      top: 0 !important;
+      left: -200vw !important;
+      width: 100% !important;
+      height: 0 !important;
+      overflow: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      z-index: -10 !important;
     }
     .liquid-input:focus {
       border-color: rgba(52, 211, 153, 0.75);
@@ -619,7 +635,7 @@
     <!-- ========================================== -->
     <!-- ВКЛАДКА 2: ИИ-СКАНЕР -->
     <!-- ========================================== -->
-    <section id="tab-ai" class="hidden space-y-4 animate-card">
+    <section id="tab-ai" class="tab-offscreen space-y-4 animate-card">
       <!-- Баннер статуса триала / PRO для ИИ-функций -->
       <div id="aiAccessBanner" class="liquid-glass rounded-3xl p-3.5 sm:p-4 max-w-xl mx-auto flex flex-wrap items-center justify-between gap-3 border border-emerald-400/30">
         <div class="flex items-center gap-3">
@@ -683,7 +699,7 @@
         </div>
       </div>
 
-      <div id="aiSubTab-photo" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4 animate-card">
+      <div id="aiSubTab-photo" class="tab-offscreen grid grid-cols-1 lg:grid-cols-2 gap-4 animate-card">
         <div class="liquid-glass rounded-3xl p-4 space-y-3">
           <div class="flex items-center justify-between">
             <div>
@@ -760,7 +776,7 @@
     <!-- ========================================== -->
     <!-- ВКЛАДКА 3: ПРОГРЕСС -->
     <!-- ========================================== -->
-    <section id="tab-progress" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4 animate-card">
+    <section id="tab-progress" class="tab-offscreen grid grid-cols-1 lg:grid-cols-2 gap-4 animate-card">
       <div class="liquid-glass rounded-3xl p-4 space-y-4 h-fit">
         <div class="flex items-center justify-between">
           <div>
@@ -867,7 +883,7 @@
     <!-- ========================================== -->
     <!-- ВКЛАДКА 4: ПРОФИЛЬ -->
     <!-- ========================================== -->
-    <section id="tab-profile" class="hidden space-y-4 animate-card">
+    <section id="tab-profile" class="tab-offscreen space-y-4 animate-card">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div class="liquid-glass rounded-3xl p-4 space-y-3.5 h-fit">
           <h2 class="font-bold text-sm sm:text-base text-white">Мои параметры и расчёт нормы</h2>
@@ -1401,17 +1417,17 @@
 
       const rect = target.getBoundingClientRect();
       const visH = getVisibleViewportHeight();
-      // Если система не уменьшает высоту viewport при открытии клавиатуры (режим adjustPan),
-      // ориентируемся на верхнюю видимую половину экрана над клавиатурой
       const effectiveBottom = (visH > maxObservedViewportHeight * 0.82)
-        ? Math.round(visH * 0.48)
-        : (visH - 24);
+        ? Math.round(visH * 0.46)
+        : (visH - 20);
       const topSafe = 66;
 
       if (rect.bottom > effectiveBottom || rect.top < topSafe) {
-        const desiredTop = Math.max(topSafe + 10, Math.round((effectiveBottom - Math.min(rect.height, 110)) * 0.45));
+        const desiredTop = Math.max(topSafe + 12, Math.round((effectiveBottom - Math.min(rect.height, 110)) * 0.45));
         const delta = rect.top - desiredTop;
-        scroller.scrollTop = Math.max(0, scroller.scrollTop + delta);
+        if (Math.abs(delta) > 8) {
+          scroller.scrollTop = Math.max(0, scroller.scrollTop + delta);
+        }
       }
     }
 
@@ -1420,17 +1436,16 @@
       if (h > maxObservedViewportHeight) {
         maxObservedViewportHeight = h;
       }
-      if (h > 150) {
+      const kbShrunk = h < maxObservedViewportHeight - 100;
+      // ВАЖНО: Никогда не меняем --app-height (высоту html/body), пока открыта клавиатура или фокус в поле ввода!
+      // Изменение высоты корневого контейнера во время открытия клавиатуры в Android WebView обрывает связь с клавиатурой (InputConnection).
+      if (!isTextInputFocused && !kbShrunk && h > 200) {
         document.documentElement.style.setProperty('--app-height', `${h}px`);
       }
-      const kbShrunk = h < maxObservedViewportHeight - 100;
       if (kbShrunk || isTextInputFocused) {
         document.body.classList.add('kb-open');
       } else {
         document.body.classList.remove('kb-open');
-      }
-      if (kbShrunk && isTextEditableElement(document.activeElement)) {
-        scrollActiveInputIntoView(document.activeElement);
       }
     }
 
@@ -1438,32 +1453,13 @@
       syncViewportHeight();
       window.addEventListener('resize', syncViewportHeight);
       if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', syncViewportHeight);
-        window.visualViewport.addEventListener('scroll', () => {
-          if (window.scrollY !== 0 || window.scrollX !== 0) {
-            window.scrollTo(0, 0);
+        window.visualViewport.addEventListener('resize', () => {
+          syncViewportHeight();
+          if (isTextInputFocused && isTextEditableElement(document.activeElement)) {
+            scrollActiveInputIntoView(document.activeElement);
           }
         });
       }
-
-      // При касании любого поля ввода активируем окно WebView без сброса фокуса
-      const onPointerDownInput = (e) => {
-        const el = e.target && e.target.closest ? e.target.closest('input, textarea, select') : null;
-        if (!el) return;
-        try { window.focus(); } catch (err) {}
-      };
-      document.addEventListener('touchstart', onPointerDownInput, { passive: true, capture: true });
-      document.addEventListener('mousedown', onPointerDownInput, { passive: true, capture: true });
-
-      document.addEventListener('click', (e) => {
-        const el = e.target && e.target.closest ? e.target.closest('input, textarea') : null;
-        if (!isTextEditableElement(el)) return;
-        try { window.focus(); } catch (err) {}
-        if (document.activeElement !== el) {
-          try { el.focus({ preventScroll: true }); } catch (err) {}
-        }
-        scrollActiveInputIntoView(el);
-      }, true);
 
       let blurTimer = null;
       document.addEventListener('focusin', (e) => {
@@ -1472,10 +1468,10 @@
         const el = e.target;
         isTextInputFocused = true;
         document.body.classList.add('kb-open');
-        syncViewportHeight();
-        setTimeout(() => scrollActiveInputIntoView(el), 80);
-        setTimeout(() => scrollActiveInputIntoView(el), 240);
-        setTimeout(() => scrollActiveInputIntoView(el), 420);
+        // Даём Android WebView спокойно завершить привязку IME (InputConnection) и только затем плавно докручиваем контейнер
+        setTimeout(() => {
+          if (document.activeElement === el) scrollActiveInputIntoView(el);
+        }, 280);
       });
 
       document.addEventListener('focusout', () => {
@@ -1484,11 +1480,8 @@
           if (isTextEditableElement(document.activeElement)) return;
           isTextInputFocused = false;
           document.body.classList.remove('kb-open');
-          window.scrollTo(0, 0);
-          document.documentElement.scrollTop = 0;
-          document.body.scrollTop = 0;
           syncViewportHeight();
-        }, 100);
+        }, 120);
       });
     })();
 
@@ -2173,9 +2166,10 @@
       ['diary', 'ai', 'progress', 'profile'].forEach(t => {
         const sectionEl = document.getElementById('tab-' + t);
         if (t === tabId) {
-          sectionEl.classList.remove('hidden'); sectionEl.classList.remove('animate-card');
-          void sectionEl.offsetWidth; sectionEl.classList.add('animate-card');
-        } else sectionEl.classList.add('hidden');
+          sectionEl.classList.remove('hidden', 'tab-offscreen');
+        } else {
+          sectionEl.classList.add('tab-offscreen');
+        }
 
         const deskBtn = document.getElementById('tabBtnDesktop-' + t);
         if (deskBtn) deskBtn.className = t === tabId ? 'btn-spring px-3 py-1.5 rounded-xl text-xs font-bold bg-white/15 text-white border border-white/20 shadow flex items-center gap-1.5' : 'btn-spring px-3 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5';
@@ -2189,8 +2183,8 @@
 
     function switchAiMode(mode) {
       triggerHaptic('light');
-      document.getElementById('aiSubTab-text').classList.toggle('hidden', mode !== 'text');
-      document.getElementById('aiSubTab-photo').classList.toggle('hidden', mode !== 'photo');
+      document.getElementById('aiSubTab-text').classList.toggle('tab-offscreen', mode !== 'text');
+      document.getElementById('aiSubTab-photo').classList.toggle('tab-offscreen', mode !== 'photo');
       document.getElementById('aiModeBtn-text').className = mode === 'text' ? 'btn-spring flex-1 py-2 rounded-xl text-xs font-bold liquid-btn-primary' : 'btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-200';
       document.getElementById('aiModeBtn-photo').className = mode === 'photo' ? 'btn-spring flex-1 py-2 rounded-xl text-xs font-bold liquid-btn-primary' : 'btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-200';
       if (mode === 'photo') startLiveCamera(); else stopLiveCamera();
@@ -4795,19 +4789,7 @@
       }
     }
 
-    // Предварительная инициализация разметки всех вкладок при старте, чтобы поля ввода работали с первого касания без переключения вкладок
-    (function warmupTabsForWebViewIME() {
-      const tabs = ['diary', 'ai', 'progress', 'profile'];
-      tabs.forEach(t => {
-        const s = document.getElementById('tab-' + t);
-        if (s) s.classList.remove('hidden', 'animate-card');
-      });
-      void document.body.offsetHeight;
-      tabs.forEach(t => {
-        const s = document.getElementById('tab-' + t);
-        if (s && t !== 'diary') s.classList.add('hidden');
-      });
-    })();
+    // Все вкладки рендерятся с полноценным LayoutTree через .tab-offscreen (без display:none), чтобы Android WebView IME мгновенно печатал с первого касания
     loadState(); loadSubscriptionAndConfig(); switchTab('diary');
   </script>
 </body>
