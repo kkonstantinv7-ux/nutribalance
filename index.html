@@ -939,119 +939,6 @@
         </div>
       </div>
 
-      <!-- КАРТОЧКА НАСТРОЙКИ ЛОКАЛЬНЫХ УВЕДОМЛЕНИЙ И НАПОМИНАНИЙ -->
-      <div class="liquid-glass rounded-3xl p-4 sm:p-5 space-y-3.5">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl liquid-pill flex items-center justify-center text-emerald-300 border border-emerald-400/35">
-              <svg class="w-5 h-5 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            </div>
-            <div>
-              <div class="flex items-center gap-2 flex-wrap">
-                <h2 class="font-bold text-sm sm:text-base text-white">Локальные уведомления и напоминания</h2>
-                <span id="notifStatusBadge" class="text-[10px] px-2.5 py-0.5 rounded-full font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">Включены</span>
-              </div>
-              <p class="text-[11px] text-slate-300">Всплывающие напоминания со звуком и вибрацией при открытом приложении и при входе в него</p>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2">
-            <label class="btn-spring liquid-pill px-3 py-1.5 rounded-xl text-xs font-bold text-white flex items-center gap-2 cursor-pointer border border-white/15">
-              <input type="checkbox" id="notifMasterEnabled" onchange="saveNotificationSettingsFromInputs(true)" class="rounded accent-emerald-500 w-4 h-4" />
-              <span>Включить все</span>
-            </label>
-            <button type="button" onclick="sendTestLocalNotification()" class="btn-spring liquid-btn-primary px-3 py-1.5 rounded-xl text-[11px] font-extrabold">
-              🔔 Проверить уведомление
-            </button>
-          </div>
-        </div>
-
-        <!-- Настройка приёмов пищи: Завтрак, Обед, Ужин -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-          <div class="liquid-pill rounded-2xl p-3 space-y-2 border border-white/10">
-            <div class="flex items-center justify-between gap-2">
-              <label class="flex items-center gap-2 font-bold text-white cursor-pointer">
-                <input type="checkbox" id="notifBreakfastEnabled" onchange="saveNotificationSettingsFromInputs()" class="rounded accent-emerald-500 w-4 h-4" />
-                <span>☀️ Завтрак</span>
-              </label>
-              <span class="text-[10px] text-amber-300 font-semibold">Утро</span>
-            </div>
-            <div class="flex items-center justify-between gap-2 pt-1 border-t border-white/10">
-              <span class="text-[11px] text-slate-300">Время:</span>
-              <input type="time" id="notifBreakfastTime" onchange="saveNotificationSettingsFromInputs()" value="09:00" class="liquid-input rounded-xl px-2.5 py-1 text-xs font-bold text-white" />
-            </div>
-          </div>
-
-          <div class="liquid-pill rounded-2xl p-3 space-y-2 border border-white/10">
-            <div class="flex items-center justify-between gap-2">
-              <label class="flex items-center gap-2 font-bold text-white cursor-pointer">
-                <input type="checkbox" id="notifLunchEnabled" onchange="saveNotificationSettingsFromInputs()" class="rounded accent-emerald-500 w-4 h-4" />
-                <span>🍲 Обед</span>
-              </label>
-              <span class="text-[10px] text-emerald-300 font-semibold">День</span>
-            </div>
-            <div class="flex items-center justify-between gap-2 pt-1 border-t border-white/10">
-              <span class="text-[11px] text-slate-300">Время:</span>
-              <input type="time" id="notifLunchTime" onchange="saveNotificationSettingsFromInputs()" value="13:30" class="liquid-input rounded-xl px-2.5 py-1 text-xs font-bold text-white" />
-            </div>
-          </div>
-
-          <div class="liquid-pill rounded-2xl p-3 space-y-2 border border-white/10">
-            <div class="flex items-center justify-between gap-2">
-              <label class="flex items-center gap-2 font-bold text-white cursor-pointer">
-                <input type="checkbox" id="notifDinnerEnabled" onchange="saveNotificationSettingsFromInputs()" class="rounded accent-emerald-500 w-4 h-4" />
-                <span>🌙 Ужин</span>
-              </label>
-              <span class="text-[10px] text-cyan-300 font-semibold">Вечер</span>
-            </div>
-            <div class="flex items-center justify-between gap-2 pt-1 border-t border-white/10">
-              <span class="text-[11px] text-slate-300">Время:</span>
-              <input type="time" id="notifDinnerTime" onchange="saveNotificationSettingsFromInputs()" value="19:00" class="liquid-input rounded-xl px-2.5 py-1 text-xs font-bold text-white" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Настройка напоминаний о воде по интервалам -->
-        <div class="liquid-pill rounded-2xl p-3.5 space-y-3 border border-cyan-400/25 text-xs">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <label class="flex items-center gap-2 font-bold text-white cursor-pointer">
-              <input type="checkbox" id="notifWaterEnabled" onchange="saveNotificationSettingsFromInputs()" class="rounded accent-emerald-500 w-4 h-4" />
-              <span>💧 Напоминания пить воду (по интервалам)</span>
-            </label>
-            <span id="notifNextWaterHint" class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 font-semibold">Цель: 2000 мл</span>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-white/10">
-            <div>
-              <label class="block text-[11px] text-slate-300 mb-1">Интервал напоминаний</label>
-              <select id="notifWaterInterval" onchange="saveNotificationSettingsFromInputs()" class="liquid-input w-full rounded-xl px-2.5 py-2 text-xs font-bold text-cyan-300">
-                <option value="30" class="bg-slate-900">Каждые 30 минут</option>
-                <option value="60" class="bg-slate-900">Каждый 1 час</option>
-                <option value="90" class="bg-slate-900">Каждые 1.5 часа</option>
-                <option value="120" selected class="bg-slate-900">Каждые 2 часа</option>
-                <option value="180" class="bg-slate-900">Каждые 3 часа</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] text-slate-300 mb-1">Начало дня (с)</label>
-              <input type="time" id="notifWaterStart" onchange="saveNotificationSettingsFromInputs()" value="09:00" class="liquid-input w-full rounded-xl px-2.5 py-1.5 text-xs font-bold text-white" />
-            </div>
-            <div>
-              <label class="block text-[11px] text-slate-300 mb-1">Конец дня (до)</label>
-              <input type="time" id="notifWaterEnd" onchange="saveNotificationSettingsFromInputs()" value="21:30" class="liquid-input w-full rounded-xl px-2.5 py-1.5 text-xs font-bold text-white" />
-            </div>
-          </div>
-
-          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10 text-[11px]">
-            <label class="flex items-center gap-2 text-slate-200 cursor-pointer">
-              <input type="checkbox" id="notifSoundEnabled" onchange="saveNotificationSettingsFromInputs()" class="rounded accent-emerald-500 w-3.5 h-3.5" />
-              <span>Мягкий звуковой сигнал и вибрация при уведомлении</span>
-            </label>
-            <span id="notifScheduleSummary" class="text-[10px] text-slate-400"></span>
-          </div>
-        </div>
-      </div>
-
       <!-- КАРТОЧКА ДОСТУПА PRO И ОПЛАТЫ СБП + ВХОД В АДМИНКУ -->
       <div class="liquid-glass rounded-3xl p-4 sm:p-5 space-y-3.5">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
@@ -1837,23 +1724,10 @@
     const STORAGE_KEY = `nutribalance_user_v3_${tgUserId}`;
     const LEGACY_PHOTO_KEY = `nutribalance_last_photo_${tgUserId}`;
 
-    function defaultNotificationsConfig() {
-      return {
-        enabled: true,
-        sound: true,
-        breakfast: { enabled: true, time: '09:00' },
-        lunch: { enabled: true, time: '13:30' },
-        dinner: { enabled: true, time: '19:00' },
-        water: { enabled: true, intervalMinutes: 120, startTime: '09:00', endTime: '21:30', lastNotifiedTs: 0 },
-        firedLog: {}
-      };
-    }
-
     function defaultState() {
       return {
         isConfigured: false,
         profile: { gender: 'male', age: 28, height: 175, weight: 80, targetWeight: 72, activity: 1.375, goal: -20, addBurnedToTarget: false },
-        notifications: defaultNotificationsConfig(),
         customFoods: [],
         days: {},
         weightHistory: [],
@@ -1871,17 +1745,6 @@
       const src = (obj && typeof obj === 'object') ? obj : {};
       const out = { ...base, ...src };
       out.profile = { ...base.profile, ...((src.profile && typeof src.profile === 'object') ? src.profile : {}) };
-      const defNotif = defaultNotificationsConfig();
-      const srcNotif = (src.notifications && typeof src.notifications === 'object') ? src.notifications : {};
-      out.notifications = {
-        ...defNotif,
-        ...srcNotif,
-        breakfast: { ...defNotif.breakfast, ...((srcNotif.breakfast && typeof srcNotif.breakfast === 'object') ? srcNotif.breakfast : {}) },
-        lunch: { ...defNotif.lunch, ...((srcNotif.lunch && typeof srcNotif.lunch === 'object') ? srcNotif.lunch : {}) },
-        dinner: { ...defNotif.dinner, ...((srcNotif.dinner && typeof srcNotif.dinner === 'object') ? srcNotif.dinner : {}) },
-        water: { ...defNotif.water, ...((srcNotif.water && typeof srcNotif.water === 'object') ? srcNotif.water : {}) },
-        firedLog: (srcNotif.firedLog && typeof srcNotif.firedLog === 'object') ? srcNotif.firedLog : {}
-      };
       out.customFoods = Array.isArray(src.customFoods) ? src.customFoods.filter(f => f && f.name) : [];
       out.days = (src.days && typeof src.days === 'object' && !Array.isArray(src.days)) ? src.days : {};
       out.weightHistory = Array.isArray(src.weightHistory) ? src.weightHistory.filter(w => w && isFinite(Number(w.weight))) : [];
@@ -1941,7 +1804,7 @@
         let history = (s.weightHistory || []).slice(-30);
         let metaStr = '';
         while (true) {
-          metaStr = JSON.stringify({ isConfigured: s.isConfigured, profile: s.profile, notifications: s.notifications, weightHistory: history, aiProvider: s.aiProvider, apiKey: s.apiKey, firebaseUrl: s.firebaseUrl });
+          metaStr = JSON.stringify({ isConfigured: s.isConfigured, profile: s.profile, weightHistory: history, aiProvider: s.aiProvider, apiKey: s.apiKey, firebaseUrl: s.firebaseUrl });
           if (metaStr.length <= CLOUD_LIMIT || history.length <= 2) break;
           history = history.slice(1);
         }
@@ -3238,7 +3101,6 @@
       document.getElementById('calcResultSummary').innerHTML = `Базовый обмен: <b>${t.bmr} ккал</b> • Поддержание: <b>${t.tdee} ккал</b><br>Ваша дневная норма: <b class="text-emerald-300">${t.targetKcal} ккал</b> (Б: ${t.p}г, Ж: ${t.f}г, У: ${t.c}г)${floorNote}`;
       document.getElementById('foodsCountBadge').textContent = `В базе: ${getAllFoods().length} поз.`;
       renderCustomFoodsList();
-      if (typeof renderNotificationSettings === 'function') renderNotificationSettings();
     }
 
     function renderCustomFoodsList() {
@@ -3330,9 +3192,6 @@
       triggerHaptic('light');
       const day = ensureDay(currentDate);
       day.water = Math.max(0, day.water + ml);
-      if (ml > 0 && state.notifications && state.notifications.water) {
-        state.notifications.water.lastNotifiedTs = Date.now();
-      }
       if (!day.celebratedWater && day.water >= 2000) { day.celebratedWater = true; launchGoalConfetti(); }
       saveState();
     }
@@ -4930,346 +4789,6 @@
         if (showToast) showNotice('Работает локальный кэш админки (проверь деплой Cloudflare Worker).');
       }
     }
-
-    // =====================================================================
-    // 16. СИСТЕМА ЛОКАЛЬНЫХ УВЕДОМЛЕНИЙ И НАПОМИНАНИЙ (ЗАВТРАК, ОБЕД, УЖИН, ВОДА)
-    // =====================================================================
-    function parseTimeToMinutes(timeStr, fallbackMinutes = 540) {
-      if (!timeStr || typeof timeStr !== 'string') return fallbackMinutes;
-      const parts = timeStr.split(':').map(Number);
-      if (parts.length < 2 || !Number.isFinite(parts[0]) || !Number.isFinite(parts[1])) return fallbackMinutes;
-      return Math.max(0, Math.min(1439, parts[0] * 60 + parts[1]));
-    }
-
-    function playNotificationChime() {
-      if (!state.notifications?.sound) return;
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        const now = ctx.currentTime;
-        const notes = [587.33, 880]; // D5 -> A5 мягкий стеклянный аккорд
-        notes.forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.11);
-          gain.gain.setValueAtTime(0.001, now + idx * 0.11);
-          gain.gain.exponentialRampToValueAtTime(0.11, now + idx * 0.11 + 0.03);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.11 + 0.35);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(now + idx * 0.11);
-          osc.stop(now + idx * 0.11 + 0.36);
-        });
-        setTimeout(() => { try { ctx.close(); } catch (e) {} }, 900);
-      } catch (e) {}
-    }
-
-    function showLocalNotificationBanner(item) {
-      triggerHaptic('warning');
-      playNotificationChime();
-
-      // 1) Системное браузерное / WebView уведомление (если разрешено)
-      try {
-        if ('Notification' in window && Notification.permission === 'granted') {
-          const sysNotif = new Notification(item.title, {
-            body: item.body,
-            tag: item.tag || 'nutribalance-reminder',
-            renotify: true
-          });
-          sysNotif.onclick = () => {
-            try { window.focus(); } catch (e) {}
-            if (typeof item.onAction === 'function') item.onAction();
-            sysNotif.close();
-          };
-        }
-      } catch (e) {}
-
-      // 2) Внутриприложенческий интерактивный стеклянный баннер сверху экрана
-      let banner = document.getElementById('nbLocalNotifBanner');
-      if (!banner) {
-        banner = document.createElement('div');
-        banner.id = 'nbLocalNotifBanner';
-        banner.className = 'fixed top-3 left-3 right-3 max-w-md mx-auto z-50 liquid-glass rounded-3xl p-3.5 shadow-2xl border border-emerald-400/50 transition-all duration-300';
-        document.body.appendChild(banner);
-      }
-
-      banner.innerHTML = `
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex items-start gap-2.5 min-w-0 flex-1">
-            <div class="w-9 h-9 rounded-2xl liquid-btn-primary flex items-center justify-center text-base flex-shrink-0 shadow-md">
-              ${item.icon || '🔔'}
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="font-extrabold text-xs sm:text-sm text-white leading-snug break-words">${escapeHtml(item.title)}</div>
-              <div class="text-[11px] text-slate-200 mt-0.5 leading-snug break-words">${escapeHtml(item.body)}</div>
-              <div class="flex flex-wrap items-center gap-2 mt-2.5">
-                ${item.actionLabel ? `<button type="button" id="nbNotifActionBtn" class="btn-spring liquid-btn-primary px-3 py-1.5 rounded-xl font-extrabold text-[11px]">${escapeHtml(item.actionLabel)}</button>` : ''}
-                <button type="button" id="nbNotifDismissBtn" class="btn-spring liquid-pill px-2.5 py-1.5 rounded-xl text-[11px] text-slate-200 font-semibold">Закрыть</button>
-              </div>
-            </div>
-          </div>
-          <button type="button" id="nbNotifCloseIcon" class="text-slate-300 hover:text-white px-1 text-xs">✕</button>
-        </div>
-      `;
-
-      banner.classList.remove('hidden');
-      clearTimeout(banner._autoHideTimer);
-
-      const closeBanner = () => {
-        banner.classList.add('hidden');
-        clearTimeout(banner._autoHideTimer);
-      };
-
-      banner.querySelector('#nbNotifDismissBtn')?.addEventListener('click', closeBanner);
-      banner.querySelector('#nbNotifCloseIcon')?.addEventListener('click', closeBanner);
-      banner.querySelector('#nbNotifActionBtn')?.addEventListener('click', () => {
-        closeBanner();
-        if (typeof item.onAction === 'function') item.onAction();
-      });
-
-      banner._autoHideTimer = setTimeout(closeBanner, 14000);
-    }
-
-    async function requestLocalNotificationPermission() {
-      triggerHaptic('light');
-      if (!('Notification' in window)) {
-        showNotice('В этом окне Telegram работают встроенные баннеры, звук и вибрация (системные Web-пуши браузером не поддерживаются).');
-        renderNotificationSettings();
-        return;
-      }
-      try {
-        const perm = await Notification.requestPermission();
-        renderNotificationSettings();
-        if (perm === 'granted') {
-          triggerHaptic('success');
-          showNotice('✅ Системные уведомления разрешены!');
-        } else {
-          showNotice('Уведомления будут приходить в виде всплывающих карточек со звуком внутри приложения.');
-        }
-      } catch (e) {
-        showNotice('Включены встроенные локальные уведомления со звуком.');
-      }
-    }
-
-    function renderNotificationSettings() {
-      if (!state.notifications) state.notifications = defaultNotificationsConfig();
-      const n = state.notifications;
-
-      const setCheck = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.checked = Boolean(val);
-      };
-      const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el && document.activeElement !== el) el.value = val;
-      };
-
-      setCheck('notifMasterEnabled', n.enabled);
-      setCheck('notifSoundEnabled', n.sound !== false);
-      setCheck('notifBreakfastEnabled', n.breakfast?.enabled);
-      setVal('notifBreakfastTime', n.breakfast?.time || '09:00');
-      setCheck('notifLunchEnabled', n.lunch?.enabled);
-      setVal('notifLunchTime', n.lunch?.time || '13:30');
-      setCheck('notifDinnerEnabled', n.dinner?.enabled);
-      setVal('notifDinnerTime', n.dinner?.time || '19:00');
-
-      setCheck('notifWaterEnabled', n.water?.enabled);
-      setVal('notifWaterInterval', String(n.water?.intervalMinutes || 120));
-      setVal('notifWaterStart', n.water?.startTime || '09:00');
-      setVal('notifWaterEnd', n.water?.endTime || '21:30');
-
-      const badge = document.getElementById('notifStatusBadge');
-      if (badge) {
-        const anyActive = n.enabled && (n.breakfast?.enabled || n.lunch?.enabled || n.dinner?.enabled || n.water?.enabled);
-        badge.textContent = anyActive ? 'Включены' : 'Выключены';
-        badge.className = anyActive
-          ? 'text-[10px] px-2.5 py-0.5 rounded-full font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
-          : 'text-[10px] px-2.5 py-0.5 rounded-full font-semibold bg-slate-500/20 text-slate-300 border border-white/15';
-      }
-
-
-
-      const activeParts = [];
-      if (n.enabled) {
-        if (n.breakfast?.enabled) activeParts.push(`Завтрак ${n.breakfast.time}`);
-        if (n.lunch?.enabled) activeParts.push(`Обед ${n.lunch.time}`);
-        if (n.dinner?.enabled) activeParts.push(`Ужин ${n.dinner.time}`);
-        if (n.water?.enabled) activeParts.push(`Вода каждые ${n.water.intervalMinutes} мин (${n.water.startTime}–${n.water.endTime})`);
-      }
-      const sumEl = document.getElementById('notifScheduleSummary');
-      if (sumEl) {
-        sumEl.textContent = activeParts.length > 0
-          ? `Активно: ${activeParts.join(' • ')}`
-          : 'Все напоминания сейчас отключены';
-      }
-
-      const waterHintEl = document.getElementById('notifNextWaterHint');
-      if (waterHintEl) {
-        const todayData = ensureDay(getLocalDateString());
-        waterHintEl.textContent = `Выпито сегодня: ${todayData.water || 0} / 2000 мл`;
-      }
-    }
-
-    function saveNotificationSettingsFromInputs(masterToggled = false) {
-      if (!state.notifications) state.notifications = defaultNotificationsConfig();
-      const prevWaterInterval = state.notifications.water?.intervalMinutes || 120;
-      const newInterval = Math.round(num(document.getElementById('notifWaterInterval')?.value, 15, 360, 120));
-
-      state.notifications = {
-        ...state.notifications,
-        enabled: Boolean(document.getElementById('notifMasterEnabled')?.checked),
-        sound: Boolean(document.getElementById('notifSoundEnabled')?.checked),
-        breakfast: {
-          enabled: Boolean(document.getElementById('notifBreakfastEnabled')?.checked),
-          time: document.getElementById('notifBreakfastTime')?.value || '09:00'
-        },
-        lunch: {
-          enabled: Boolean(document.getElementById('notifLunchEnabled')?.checked),
-          time: document.getElementById('notifLunchTime')?.value || '13:30'
-        },
-        dinner: {
-          enabled: Boolean(document.getElementById('notifDinnerEnabled')?.checked),
-          time: document.getElementById('notifDinnerTime')?.value || '19:00'
-        },
-        water: {
-          enabled: Boolean(document.getElementById('notifWaterEnabled')?.checked),
-          intervalMinutes: newInterval,
-          startTime: document.getElementById('notifWaterStart')?.value || '09:00',
-          endTime: document.getElementById('notifWaterEnd')?.value || '21:30',
-          lastNotifiedTs: (prevWaterInterval !== newInterval || !state.notifications.water?.lastNotifiedTs)
-            ? Date.now()
-            : state.notifications.water.lastNotifiedTs
-        },
-        firedLog: state.notifications.firedLog || {}
-      };
-
-      triggerHaptic('light');
-      saveState(true, true);
-      renderNotificationSettings();
-      if (masterToggled) {
-        showNotice(state.notifications.enabled ? '🔔 Локальные напоминания включены' : '🔕 Напоминания приостановлены');
-      }
-      setTimeout(checkScheduledLocalNotifications, 300);
-    }
-
-    function sendTestLocalNotification() {
-      saveNotificationSettingsFromInputs();
-      const day = ensureDay(getLocalDateString());
-      showLocalNotificationBanner({
-        icon: '💧',
-        title: 'Тестовое напоминание NutriBalance',
-        body: `Уведомления работают! Сегодня выпито ${day.water} мл воды. Нажми кнопку ниже, чтобы сразу добавить +250 мл или перейти в дневник.`,
-        actionLabel: '+250 мл воды',
-        tag: 'nb-test-notif',
-        onAction: () => {
-          currentDate = getLocalDateString();
-          addWater(250);
-          showNotice('💧 +250 мл воды добавлено!');
-        }
-      });
-    }
-
-    function checkScheduledLocalNotifications() {
-      if (!state.isConfigured || !state.notifications || !state.notifications.enabled) return;
-      const n = state.notifications;
-      const now = new Date();
-      const todayKey = getLocalDateString(now);
-      const nowMins = now.getHours() * 60 + now.getMinutes();
-      const todayData = ensureDay(todayKey);
-
-      if (!n.firedLog || typeof n.firedLog !== 'object') n.firedLog = {};
-      // Очищаем лог старых дней, чтобы не раздувать память
-      Object.keys(n.firedLog).forEach(k => {
-        if (!k.startsWith(todayKey)) delete n.firedLog[k];
-      });
-
-      // 1) Проверка напоминаний о приёмах пищи (Завтрак, Обед, Ужин)
-      // Уведомление срабатывает, если наступило указанное время (в пределах 90 минут после времени) и приём пищи ещё пуст
-      const mealConfigs = [
-        { key: 'breakfast', cfg: n.breakfast, icon: '☀️', title: 'Время завтрака!', body: 'Ты ещё не записал(а) завтрак сегодня. Запиши еду, чтобы точно держать дневную норму КБЖУ.' },
-        { key: 'lunch',     cfg: n.lunch,     icon: '🍲', title: 'Время обеда!',    body: 'Пора пообедать и отметить блюдо в дневнике или через ИИ-сканер.' },
-        { key: 'dinner',    cfg: n.dinner,    icon: '🌙', title: 'Время ужина!',    body: 'Не забудь внести ужин в дневник питания и проверить остаток белка и калорий.' }
-      ];
-
-      for (const m of mealConfigs) {
-        if (!m.cfg || !m.cfg.enabled) continue;
-        const targetMins = parseTimeToMinutes(m.cfg.time, 540);
-        const logKey = `${todayKey}_meal_${m.key}_${m.cfg.time}`;
-        if (n.firedLog[logKey]) continue;
-
-        const hasMealLogged = (todayData.items || []).some(it => it.meal === m.key);
-        const isExactScheduledWindow = (nowMins >= targetMins && nowMins <= targetMins + 2);
-        if (hasMealLogged && !isExactScheduledWindow) {
-          n.firedLog[logKey] = true;
-          continue;
-        }
-
-        if (nowMins >= targetMins && nowMins <= targetMins + 90) {
-          n.firedLog[logKey] = true;
-          saveState(true, true);
-          showLocalNotificationBanner({
-            icon: m.icon,
-            title: m.title,
-            body: m.body,
-            actionLabel: `Записать ${m.key === 'breakfast' ? 'завтрак' : m.key === 'lunch' ? 'обед' : 'ужин'}`,
-            tag: `nb-meal-${m.key}`,
-            onAction: () => {
-              currentDate = todayKey;
-              switchTab('diary');
-              selectMealType(m.key);
-              const searchEl = document.getElementById('diaryFoodSearch');
-              if (searchEl) searchEl.focus();
-            }
-          });
-          return; // Показываем по одному уведомлению за раз
-        }
-      }
-
-      // 2) Проверка напоминаний о воде по выбранному интервалу
-      if (n.water && n.water.enabled) {
-        const startMins = parseTimeToMinutes(n.water.startTime || '09:00', 540);
-        const endMins = parseTimeToMinutes(n.water.endTime || '21:30', 1290);
-        const inWindow = startMins <= endMins
-          ? (nowMins >= startMins && nowMins <= endMins)
-          : (nowMins >= startMins || nowMins <= endMins);
-
-        if (inWindow && (todayData.water || 0) < 2000) {
-          const intervalMs = Math.max(15, Number(n.water.intervalMinutes) || 120) * 60000;
-          const lastTs = Number(n.water.lastNotifiedTs) || 0;
-          if (!lastTs) {
-            n.water.lastNotifiedTs = Date.now();
-            saveState(true, true);
-          } else if (Date.now() - lastTs >= intervalMs) {
-            n.water.lastNotifiedTs = Date.now();
-            saveState(true, true);
-            renderNotificationSettings();
-            const remainMl = Math.max(250, 2000 - (todayData.water || 0));
-            showLocalNotificationBanner({
-              icon: '💧',
-              title: 'Пора выпить стакан воды!',
-              body: `Сегодня выпито ${todayData.water || 0} мл (до нормы осталось ${remainMl} мл). Поддерживай водный баланс!`,
-              actionLabel: '+250 мл воды',
-              tag: 'nb-water-reminder',
-              onAction: () => {
-                currentDate = todayKey;
-                addWater(250);
-                showNotice('💧 +250 мл воды записано!');
-              }
-            });
-          }
-        }
-      }
-    }
-
-    setInterval(checkScheduledLocalNotifications, 20000);
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        setTimeout(checkScheduledLocalNotifications, 600);
-      }
-    });
-    setTimeout(checkScheduledLocalNotifications, 2200);
 
     // Предварительная инициализация разметки всех вкладок при старте, чтобы поля ввода работали с первого касания без переключения вкладок
     (function warmupTabsForWebViewIME() {
