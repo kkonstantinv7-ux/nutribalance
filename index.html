@@ -28,8 +28,20 @@
       color: #f8fafc;
       -webkit-tap-highlight-color: transparent;
     }
+    header.liquid-glass {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.80) 0%, rgba(3, 6, 12, 0.86) 100%);
+      backdrop-filter: blur(18px) saturate(180%);
+      -webkit-backdrop-filter: blur(18px) saturate(180%);
+    }
     #mobileBottomNav {
       bottom: max(0.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.35rem));
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(8, 15, 30, 0.88) 100%);
+      backdrop-filter: blur(22px) saturate(190%);
+      -webkit-backdrop-filter: blur(22px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow:
+        0 16px 36px -4px rgba(0, 0, 0, 0.65),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.32);
       transition: opacity 0.18s ease, transform 0.18s ease;
     }
     #mobileBottomNav.nav-kb-hidden {
@@ -167,6 +179,28 @@
   <!-- ХОЛСТ ДЛЯ САЛЮТА ЧАСТИЦ -->
   <canvas id="celebrationCanvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
 
+  <!-- СЛУЖЕБНЫЙ МОСТ ДЛЯ МГНОВЕННОЙ ПЕРЕПРИВЯЗКИ ANDROID WEBVIEW IME (GBOARD) -->
+  <input type="text" id="nbImeBridgeInput" tabindex="-1" aria-hidden="true" autocomplete="off" style="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1;border:0;padding:0;margin:0;background:transparent;color:transparent;" />
+
+  <!-- ВСТРОЕННАЯ ПАНЕЛЬ ЛОГИРОВАНИЯ ВВОДА (ДЛЯ ДИАГНОСТИКИ КЛАВИАТУРЫ В TELEGRAM ANDROID) -->
+  <div id="nbImeDebugPanel" class="hidden fixed top-14 left-2 right-2 z-50 max-w-xl mx-auto rounded-2xl bg-slate-950/95 border border-emerald-400/50 p-2.5 shadow-2xl text-[11px] text-slate-200 space-y-1.5">
+    <div class="flex flex-wrap items-center justify-between gap-1.5 border-b border-white/10 pb-1.5">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <strong class="text-xs text-white">Лог клавиатуры (IME Debugger)</strong>
+        <span id="nbImeDebugCount" class="text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-emerald-300 font-mono">0</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button type="button" onmousedown="event.preventDefault()" onclick="manualRebindActiveInput()" class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-bold text-[10px]">🔄 Ребинд</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="copyImeDebugLog()" class="px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold text-[10px]">📋 Копировать</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="clearImeDebugLog()" class="px-2 py-1 rounded-lg bg-white/10 text-slate-300 text-[10px]">🧹</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="toggleImeDebugPanel()" class="px-2 py-1 rounded-lg bg-rose-500/20 text-rose-300 font-bold text-[10px]">✕</button>
+      </div>
+    </div>
+    <div id="nbImeDebugStateLine" class="font-mono text-[10px] text-amber-300 truncate">active: — | docFocus: — | vvH: —</div>
+    <div id="nbImeDebugLogBox" class="font-mono text-[10px] leading-relaxed max-h-36 overflow-y-auto space-y-0.5 bg-black/60 rounded-xl p-2 select-all"></div>
+  </div>
+
   <!-- МОДАЛЬНОЕ ОКНО ПЕРВОГО ВХОДА (ОНБОРДИНГ) -->
   <div id="onboardingModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 flex items-center justify-center p-4 overflow-y-auto">
     <div class="liquid-glass rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 my-auto animate-card">
@@ -287,6 +321,10 @@
           <svg class="w-3.5 h-3.5 svg-glow-amber text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2l3 6 6 .9-4.5 4.3 1.1 6.3L12 16.5 6.4 19.5l1.1-6.3L3 8.9 9 8l3-6z"/></svg>
           <span class="hidden md:inline">Админ</span>
           <span id="adminPendingBadge" class="hidden px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-extrabold">0</span>
+        </button>
+        <button type="button" onclick="toggleImeDebugPanel()" class="btn-spring liquid-pill px-2 py-1.5 rounded-xl text-[11px] font-semibold text-emerald-300 border border-emerald-400/30 flex items-center gap-1 whitespace-nowrap" title="Открыть логгер клавиатуры (IME Debug)">
+          <span>🐞</span>
+          <span class="hidden sm:inline">Лог</span>
         </button>
         <button onclick="openBackupModal()" class="btn-spring liquid-pill px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-200 flex items-center gap-1 whitespace-nowrap" title="Бэкап данных">
           <svg class="w-4 h-4 svg-glow-cyan text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -488,7 +526,7 @@
           <!-- Поиск продукта + кнопка сканера штрихкодов -->
           <div class="flex gap-1.5">
             <div class="relative flex-1">
-              <input type="text" enterkeyhint="search" id="diaryFoodSearch" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Начни вводить: творог, банан, борщ..." class="liquid-input w-full rounded-2xl pl-3.5 pr-8 py-2.5 text-xs sm:text-sm text-white" />
+              <input type="text" enterkeyhint="search" id="diaryFoodSearch" placeholder="Начни вводить: творог, банан, борщ..." class="liquid-input w-full rounded-2xl pl-3.5 pr-8 py-2.5 text-xs sm:text-sm text-white" />
               <button type="button" id="clearSearchBtn" onclick="clearFoodSearch()" class="hidden absolute right-3 top-2.5 text-slate-300 hover:text-white text-xs">✕</button>
             </div>
             <button type="button" onclick="scanBarcode()" title="Сканировать штрихкод" class="btn-spring liquid-pill px-3 rounded-2xl text-emerald-300 flex items-center justify-center">
@@ -1349,13 +1387,17 @@
     }
 
     // =====================================================================
-    // 1. КОНТРОЛЬ VIEWPORT И ФОНА ПЛАЗМЫ (БЕЗ МУТАЦИЙ DOM/СКРОЛЛА ПРИ ФОКУСЕ)
+    // 1. ДИАГНОСТИЧЕСКИЙ ЛОГГЕР IME И АВТО-ПЕРЕПРИВЯЗКА КЛАВИАТУРЫ В TELEGRAM ANDROID
     // =====================================================================
     let isTextInputFocused = false;
+    let isImeHandshaking = false;
     let maxObservedViewportHeight = window.innerHeight || 780;
+    let lastKeyboardOpenState = false;
+    const imeLogEntries = [];
+    const imeStartTs = performance.now();
 
     function isTextEditableElement(el) {
-      if (!el || !el.tagName) return false;
+      if (!el || !el.tagName || el.id === 'nbImeBridgeInput') return false;
       const tag = el.tagName.toUpperCase();
       if (tag === 'TEXTAREA') return !el.disabled && !el.readOnly;
       if (tag === 'INPUT') {
@@ -1363,6 +1405,112 @@
         return ['text', 'search', 'number', 'tel', 'url', 'password', 'email'].includes(t) && !el.disabled && !el.readOnly;
       }
       return false;
+    }
+
+    function describeEl(el) {
+      if (!el || !el.tagName) return 'null';
+      return `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}`;
+    }
+
+    function logImeEvent(type, detail = '') {
+      const relMs = Math.round(performance.now() - imeStartTs);
+      const line = `+${relMs}ms [${type}] ${detail}`;
+      imeLogEntries.push(line);
+      if (imeLogEntries.length > 120) imeLogEntries.shift();
+
+      const panel = document.getElementById('nbImeDebugPanel');
+      if (!panel || panel.classList.contains('hidden')) return;
+      renderImeDebugPanel();
+    }
+
+    function renderImeDebugPanel() {
+      const box = document.getElementById('nbImeDebugLogBox');
+      const countEl = document.getElementById('nbImeDebugCount');
+      const stateEl = document.getElementById('nbImeDebugStateLine');
+      if (countEl) countEl.textContent = String(imeLogEntries.length);
+      if (stateEl) {
+        const vvH = window.visualViewport ? Math.round(window.visualViewport.height) : window.innerHeight;
+        stateEl.textContent = `active: ${describeEl(document.activeElement)} | docFocus: ${document.hasFocus()} | vvH: ${vvH}px`;
+      }
+      if (box) {
+        box.innerHTML = imeLogEntries.map(l => `<div>${escapeHtml(l)}</div>`).join('');
+        box.scrollTop = box.scrollHeight;
+      }
+    }
+
+    function toggleImeDebugPanel() {
+      const panel = document.getElementById('nbImeDebugPanel');
+      if (!panel) return;
+      panel.classList.toggle('hidden');
+      if (!panel.classList.contains('hidden')) {
+        logImeEvent('LOGGER_OPEN', `ua=${navigator.userAgent.slice(0, 65)}`);
+        renderImeDebugPanel();
+      }
+    }
+
+    function clearImeDebugLog() {
+      imeLogEntries.length = 0;
+      renderImeDebugPanel();
+    }
+
+    function copyImeDebugLog() {
+      const header = `UA: ${navigator.userAgent}\nactiveElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasFocus()}\n`;
+      copyTextSafe(header + imeLogEntries.join('\n'), 'Лог клавиатуры скопирован в буфер обмена!');
+    }
+
+    // Двухкадровая перепривязка фокуса через служебный input-мост (#nbImeBridgeInput):
+    // имитирует «выход из поля в другой элемент и повторный вход» за 35 мс без закрытия клавиатуры,
+    // заставляя Chromium ImeAdapterAndroid вызвать InputMethodManager.restartInput(webView) для включения русских букв в Gboard.
+    function performAndroidImeHandshake(targetEl, reason = 'auto') {
+      if (!isTextEditableElement(targetEl) || isImeHandshaking) return;
+      const bridge = document.getElementById('nbImeBridgeInput');
+      if (!bridge) return;
+
+      isImeHandshaking = true;
+      const val = targetEl.value || '';
+      let selStart = val.length, selEnd = val.length;
+      try {
+        if (typeof targetEl.selectionStart === 'number') selStart = targetEl.selectionStart;
+        if (typeof targetEl.selectionEnd === 'number') selEnd = targetEl.selectionEnd;
+      } catch (e) {}
+
+      logImeEvent('IME_HANDSHAKE_START', `target=${describeEl(targetEl)} reason=${reason}`);
+
+      try {
+        bridge.value = ' ';
+        bridge.focus({ preventScroll: true });
+      } catch (e) {
+        try { targetEl.blur(); } catch (e2) {}
+      }
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          try {
+            targetEl.focus({ preventScroll: true });
+            const canSelect = ['text', 'search', 'tel', 'url', 'password'].includes((targetEl.type || 'text').toLowerCase()) || targetEl.tagName === 'TEXTAREA';
+            if (canSelect && typeof targetEl.setSelectionRange === 'function') {
+              const len = (targetEl.value || '').length;
+              targetEl.setSelectionRange(Math.min(selStart, len), Math.min(selEnd, len));
+            }
+            targetEl._nbImeReady = true;
+            logImeEvent('IME_HANDSHAKE_DONE', `active=${describeEl(document.activeElement)} docFocus=${document.hasFocus()}`);
+          } catch (err) {
+            logImeEvent('IME_HANDSHAKE_ERR', String(err?.message || err));
+          } finally {
+            isImeHandshaking = false;
+          }
+        }, 32);
+      });
+    }
+
+    function manualRebindActiveInput() {
+      const el = document.activeElement;
+      if (isTextEditableElement(el)) {
+        el._nbImeReady = false;
+        performAndroidImeHandshake(el, 'manual_btn');
+      } else {
+        logImeEvent('MANUAL_REBIND_SKIP', 'no active input');
+      }
     }
 
     function syncViewportHeight() {
@@ -1377,6 +1525,25 @@
       if (navEl) {
         navEl.classList.toggle('nav-kb-hidden', kbShrunk);
       }
+
+      // Когда клавиатура Gboard открылась и уменьшила visualViewport — если поле в фокусе и пользователь ещё не ввёл ни одной буквы,
+      // выполняем контрольную перепривязку InputConnection уже при открытой клавиатуре
+      if (kbShrunk && !lastKeyboardOpenState) {
+        lastKeyboardOpenState = true;
+        logImeEvent('KB_OPENED', `vvH=${h} maxH=${maxObservedViewportHeight}`);
+        const active = document.activeElement;
+        if (isTextEditableElement(active) && !active._nbUserTyped && !active._nbKbRebound) {
+          active._nbKbRebound = true;
+          setTimeout(() => {
+            if (document.activeElement === active && !active._nbUserTyped) {
+              performAndroidImeHandshake(active, 'kb_opened_vv');
+            }
+          }, 90);
+        }
+      } else if (!kbShrunk && lastKeyboardOpenState) {
+        lastKeyboardOpenState = false;
+        logImeEvent('KB_CLOSED', `vvH=${h}`);
+      }
     }
 
     (function initViewportAndInputGuards() {
@@ -1386,16 +1553,44 @@
         window.visualViewport.addEventListener('resize', syncViewportHeight);
       }
 
-      // При фокусе в поле ввода НЕ меняем классы на body, НЕ трогаем padding и НЕ дергаем scrollTop —
-      // только ставим на паузу анимацию холста плазмы, чтобы Android WebView (Gboard IME) мгновенно привязывал ввод букв с первого касания.
+      // При первом касании любого поля ввода активируем системный фокус окна WebView
+      document.addEventListener('touchstart', (e) => {
+        const el = e.target && e.target.closest ? e.target.closest('input, textarea, select') : null;
+        if (!el || el.id === 'nbImeBridgeInput') return;
+        try { window.focus(); } catch (err) {}
+        logImeEvent('TOUCHSTART', `target=${describeEl(el)} docFocus=${document.hasFocus()}`);
+      }, { passive: true, capture: true });
+
       let blurTimer = null;
+      let handshakeTimer = null;
+
       document.addEventListener('focusin', (e) => {
+        if (e.target && e.target.id === 'nbImeBridgeInput') return;
         if (!isTextEditableElement(e.target)) return;
         clearTimeout(blurTimer);
+        const el = e.target;
         isTextInputFocused = true;
+        logImeEvent('FOCUSIN', `target=${describeEl(el)} ready=${Boolean(el._nbImeReady)} handshaking=${isImeHandshaking}`);
+
+        if (!isImeHandshaking && !el._nbImeReady) {
+          clearTimeout(handshakeTimer);
+          handshakeTimer = setTimeout(() => {
+            if (document.activeElement === el && !el._nbImeReady && !el._nbUserTyped) {
+              performAndroidImeHandshake(el, 'focusin_45ms');
+            }
+          }, 45);
+        }
       });
 
-      document.addEventListener('focusout', () => {
+      document.addEventListener('focusout', (e) => {
+        if (isImeHandshaking || (e.target && e.target.id === 'nbImeBridgeInput')) return;
+        const leftEl = e.target;
+        if (isTextEditableElement(leftEl)) {
+          leftEl._nbImeReady = false;
+          leftEl._nbUserTyped = false;
+          leftEl._nbKbRebound = false;
+          logImeEvent('FOCUSOUT', `target=${describeEl(leftEl)}`);
+        }
         clearTimeout(blurTimer);
         blurTimer = setTimeout(() => {
           if (isTextEditableElement(document.activeElement)) return;
@@ -1403,6 +1598,50 @@
           syncViewportHeight();
         }, 120);
       });
+
+      // Логирование всех событий клавиатуры и авто-восстановление, если Gboard прислал keyCode=229 без букв
+      let deadKey229Timer = null;
+      document.addEventListener('keydown', (e) => {
+        if (!isTextEditableElement(e.target)) return;
+        const el = e.target;
+        logImeEvent('KEYDOWN', `key="${e.key}" code="${e.code}" keyCode=${e.keyCode} comp=${e.isComposing}`);
+        if (e.keyCode === 229) {
+          const valBefore = el.value;
+          clearTimeout(deadKey229Timer);
+          deadKey229Timer = setTimeout(() => {
+            if (document.activeElement === el && el.value === valBefore && !el._nbUserTyped) {
+              logImeEvent('DEAD_229_DETECTED', 'keyCode=229 produced no text -> triggering handshake');
+              el._nbImeReady = false;
+              performAndroidImeHandshake(el, 'dead_key_229');
+            }
+          }, 60);
+        }
+      }, true);
+
+      document.addEventListener('compositionstart', (e) => {
+        logImeEvent('COMP_START', `data="${e.data || ''}"`);
+      }, true);
+
+      document.addEventListener('compositionupdate', (e) => {
+        if (isTextEditableElement(e.target)) e.target._nbUserTyped = true;
+        logImeEvent('COMP_UPDATE', `data="${e.data || ''}"`);
+      }, true);
+
+      document.addEventListener('compositionend', (e) => {
+        logImeEvent('COMP_END', `data="${e.data || ''}"`);
+      }, true);
+
+      document.addEventListener('beforeinput', (e) => {
+        if (!isTextEditableElement(e.target)) return;
+        logImeEvent('BEFOREINPUT', `type="${e.inputType || ''}" data="${e.data ?? ''}"`);
+      }, true);
+
+      document.addEventListener('input', (e) => {
+        if (!isTextEditableElement(e.target)) return;
+        e.target._nbUserTyped = true;
+        clearTimeout(deadKey229Timer);
+        logImeEvent('INPUT', `type="${e.inputType || ''}" data="${e.data ?? ''}" len=${(e.target.value || '').length}`);
+      }, true);
     })();
 
     (function initPlasmaBackground() {
@@ -1933,8 +2172,10 @@
       if (afterJson !== beforeJson) {
         persistLocal();
         document.getElementById('onboardingModal').classList.toggle('hidden', Boolean(state.isConfigured));
-        renderAll();
-        renderFoodSearchResults();
+        if (!isTextInputFocused && !isTextEditableElement(document.activeElement)) {
+          renderAll();
+          renderFoodSearchResults();
+        }
         // Если локально были более свежие данные — дозаписываем объединённый результат обратно в облако
         saveToTelegramCloud(state);
         return true;
@@ -3364,6 +3605,9 @@
       }
     });
     window.addEventListener('focus', () => {
+      logImeEvent('WINDOW_FOCUS', `active=${describeEl(document.activeElement)}`);
+      // Не запускаем сетевую синхронизацию и перерисовку DOM в момент, когда пользователь нажал на поле ввода!
+      if (isTextInputFocused || isImeHandshaking || isTextEditableElement(document.activeElement)) return;
       syncFromTelegramCloudAndMerge();
       syncUserAccessFromServer(false);
     });
@@ -4503,8 +4747,10 @@
             persistLocal();
             if (isTelegramMiniApp) saveToTelegramCloud(state);
             document.getElementById('onboardingModal').classList.toggle('hidden', Boolean(state.isConfigured));
-            renderAll();
-            renderFoodSearchResults();
+            if (!isTextInputFocused && !isTextEditableElement(document.activeElement)) {
+              renderAll();
+              renderFoodSearchResults();
+            }
           }
         }
         if (data?.config && typeof data.config === 'object') {
