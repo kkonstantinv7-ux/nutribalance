@@ -13,17 +13,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
-    /* === 1. БАЗОВЫЕ НАСТРОЙКИ ЭКРАНА (ФИКСИРОВАННАЯ ОБОЛОЧКА БЕЗ СМЕЩЕНИЯ ПАНЕЛЕЙ) === */
-    :root {
-      --app-height: 100dvh;
-    }
+    /* === 1. БАЗОВЫЕ НАСТРОЙКИ ЭКРАНА (НАТИВНЫЙ ДОКУМЕНТНЫЙ СКРОЛЛ ДЛЯ ИДЕАЛЬНОЙ РАБОТЫ IME КЛАВИАТУРЫ В ANDROID WEBVIEW) === */
     html, body {
       width: 100%;
       max-width: 100%;
-      height: var(--app-height, 100dvh);
-      max-height: var(--app-height, 100dvh);
-      overflow: hidden;
-      overscroll-behavior: none;
+      min-height: 100%;
+      overflow-x: hidden;
       margin: 0;
       padding: 0;
     }
@@ -33,21 +28,14 @@
       color: #f8fafc;
       -webkit-tap-highlight-color: transparent;
     }
-    #appScrollContainer {
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
-    }
     #mobileBottomNav {
       bottom: max(0.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.35rem));
       transition: opacity 0.18s ease, transform 0.18s ease;
     }
-    body.kb-open #mobileBottomNav {
+    #mobileBottomNav.nav-kb-hidden {
       opacity: 0;
       pointer-events: none;
       transform: translateY(120%);
-    }
-    body.kb-open #appMainContent {
-      padding-bottom: max(55vh, 380px) !important;
     }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
@@ -60,53 +48,29 @@
       touch-action: manipulation;
     }
 
-    /* === 2. ПРОЗРАЧНОЕ ЖИДКОЕ СТЕКЛО (ГЛЯЦЕВЫЙ IOS СТИЛЬ С ПОВЫШЕННОЙ ПРОЗРАЧНОСТЬЮ) === */
+    /* === 2. ПРОЗРАЧНОЕ ЖИДКОЕ СТЕКЛО (БЕЗ BACKDROP-FILTER НА КАРТОЧКАХ С ПОЛЯМИ ВВОДА, ЧТОБЫ ANDROID WEBVIEW IME НЕ СБИВАЛСЯ) === */
     .liquid-glass {
       position: relative;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.065) 0%, rgba(255, 255, 255, 0.015) 100%);
-      backdrop-filter: blur(16px) saturate(190%);
-      -webkit-backdrop-filter: blur(16px) saturate(190%);
-      border: 1px solid rgba(255, 255, 255, 0.13);
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.56) 0%, rgba(15, 23, 42, 0.40) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       box-shadow:
         0 12px 32px -4px rgba(0, 0, 0, 0.35),
-        inset 0 1px 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.28),
         inset 0 -1px 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     .liquid-pill {
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-      backdrop-filter: blur(10px) saturate(180%);
-      -webkit-backdrop-filter: blur(10px) saturate(180%);
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.50) 0%, rgba(15, 23, 42, 0.34) 100%);
       border: 1px solid rgba(255, 255, 255, 0.12);
       box-shadow:
         0 4px 12px rgba(0, 0, 0, 0.15),
-        inset 0 1px 0.5px rgba(255, 255, 255, 0.25);
+        inset 0 1px 0.5px rgba(255, 255, 255, 0.22);
     }
 
     .liquid-input {
-      position: relative;
-      z-index: 2;
-      background: rgba(15, 23, 42, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    /* Во время набора текста отключаем тяжелый backdrop-filter на карточках, чтобы в Android Telegram WebView не сбивалась связь с клавиатурой (IME) */
-    body.kb-open .liquid-glass,
-    body.kb-open .liquid-pill {
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-    }
-    .tab-offscreen {
-      position: fixed !important;
-      top: 0 !important;
-      left: -200vw !important;
-      width: 100% !important;
-      height: 0 !important;
-      overflow: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-      z-index: -10 !important;
+      background: rgba(15, 23, 42, 0.58);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     .liquid-input:focus {
       border-color: rgba(52, 211, 153, 0.75);
@@ -195,7 +159,7 @@
     }
   </style>
 </head>
-<body class="flex flex-col selection:bg-emerald-500 selection:text-white relative overflow-hidden">
+<body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white pb-28 sm:pb-10 relative">
 
   <!-- ЖИВОЙ АНИМИРОВАННЫЙ ФОН «ЖИДКАЯ ПЛАЗМА» -->
   <canvas id="plasmaCanvas" class="fixed inset-0 pointer-events-none z-0 w-full h-full"></canvas>
@@ -204,7 +168,7 @@
   <canvas id="celebrationCanvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
 
   <!-- МОДАЛЬНОЕ ОКНО ПЕРВОГО ВХОДА (ОНБОРДИНГ) -->
-  <div id="onboardingModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto">
+  <div id="onboardingModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 flex items-center justify-center p-4 overflow-y-auto">
     <div class="liquid-glass rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 my-auto animate-card">
       <div class="flex items-center gap-3.5">
         <div class="w-12 h-12 rounded-2xl liquid-btn-primary flex items-center justify-center font-extrabold text-xl">
@@ -272,7 +236,7 @@
   </div>
 
   <!-- ШАПКА ПРИЛОЖЕНИЯ -->
-  <header class="flex-shrink-0 z-30 liquid-glass border-t-0 border-x-0 w-full overflow-hidden">
+  <header class="sticky top-0 z-30 liquid-glass border-t-0 border-x-0 w-full overflow-hidden">
     <div class="max-w-4xl mx-auto px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-2">
       <div class="flex items-center gap-2 min-w-0 flex-1">
         <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl liquid-btn-primary flex-shrink-0 flex items-center justify-center font-extrabold text-slate-950 text-sm">
@@ -332,8 +296,8 @@
     </div>
   </header>
 
-  <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ ДЛЯ ТЕЛЕФОНА (ПРИВЯЗАНА К ВИДИМОЙ ОБОЛОЧКЕ ЭКРАНА) -->
-  <nav id="mobileBottomNav" class="sm:hidden absolute left-3 right-3 z-40 liquid-glass rounded-3xl px-2 py-1.5 grid grid-cols-4 gap-1">
+  <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ ДЛЯ ТЕЛЕФОНА -->
+  <nav id="mobileBottomNav" class="sm:hidden fixed left-3 right-3 z-40 liquid-glass rounded-3xl px-2 py-1.5 grid grid-cols-4 gap-1">
     <button onclick="switchTab('diary')" id="tabBtnMobile-diary" class="btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium gap-0.5">
       <svg class="w-5 h-5 svg-glow-emerald text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       <span>Дневник</span>
@@ -352,9 +316,9 @@
     </button>
   </nav>
 
-  <!-- ОБЛАСТЬ ПРОКРУТКИ ОСНОВНОГО КОНТЕНТА -->
-  <div id="appScrollContainer" class="flex-1 overflow-y-auto overflow-x-hidden relative z-10 w-full">
-  <main id="appMainContent" class="max-w-4xl w-full mx-auto px-3 sm:px-4 py-4 pb-28 sm:pb-10 space-y-4 relative z-10">
+  <!-- ОСНОВНОЙ КОНТЕНТ -->
+  <div id="appScrollContainer" class="flex-1 w-full relative z-10">
+  <main id="appMainContent" class="max-w-4xl w-full mx-auto px-3 sm:px-4 py-4 space-y-4 relative z-10">
 
     <!-- ВЕРХНЯЯ СТЕКЛЯННАЯ СВОДКА ДНЯ -->
     <section class="liquid-glass rounded-3xl p-4 sm:p-5 space-y-3.5">
@@ -635,7 +599,7 @@
     <!-- ========================================== -->
     <!-- ВКЛАДКА 2: ИИ-СКАНЕР -->
     <!-- ========================================== -->
-    <section id="tab-ai" class="tab-offscreen space-y-4 animate-card">
+    <section id="tab-ai" class="hidden space-y-4 animate-card">
       <!-- Баннер статуса триала / PRO для ИИ-функций -->
       <div id="aiAccessBanner" class="liquid-glass rounded-3xl p-3.5 sm:p-4 max-w-xl mx-auto flex flex-wrap items-center justify-between gap-3 border border-emerald-400/30">
         <div class="flex items-center gap-3">
@@ -705,7 +669,7 @@
         </div>
       </div>
 
-      <div id="aiSubTab-photo" class="tab-offscreen grid grid-cols-1 lg:grid-cols-2 gap-4 animate-card">
+      <div id="aiSubTab-photo" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4 animate-card">
         <div class="liquid-glass rounded-3xl p-4 space-y-3">
           <div class="flex items-center justify-between">
             <div>
@@ -782,7 +746,7 @@
     <!-- ========================================== -->
     <!-- ВКЛАДКА 3: ПРОГРЕСС -->
     <!-- ========================================== -->
-    <section id="tab-progress" class="tab-offscreen grid grid-cols-1 lg:grid-cols-2 gap-4 animate-card">
+    <section id="tab-progress" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4 animate-card">
       <div class="liquid-glass rounded-3xl p-4 space-y-4 h-fit">
         <div class="flex items-center justify-between">
           <div>
@@ -889,7 +853,7 @@
     <!-- ========================================== -->
     <!-- ВКЛАДКА 4: ПРОФИЛЬ -->
     <!-- ========================================== -->
-    <section id="tab-profile" class="tab-offscreen space-y-4 animate-card">
+    <section id="tab-profile" class="hidden space-y-4 animate-card">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div class="liquid-glass rounded-3xl p-4 space-y-3.5 h-fit">
           <h2 class="font-bold text-sm sm:text-base text-white">Мои параметры и расчёт нормы</h2>
@@ -1009,7 +973,7 @@
   </div>
 
   <!-- МОДАЛЬНОЕ ОКНО: БЭКАП -->
-  <div id="backupModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+  <div id="backupModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 flex items-center justify-center p-4">
     <div class="liquid-glass rounded-3xl max-w-md w-full p-5 space-y-4 animate-card">
       <div class="flex items-center justify-between">
         <h3 class="font-bold text-base text-white">Бэкап и восстановление</h3>
@@ -1032,7 +996,7 @@
   <!-- ================================================================= -->
   <!-- МОДАЛЬНОЕ ОКНО: ОПЛАТА ПО СБП (NUTRIBALANCE PRO — 299 ₽ НАВСЕГДА) -->
   <!-- ================================================================= -->
-  <div id="paywallModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  <div id="paywallModal" class="hidden fixed inset-0 z-50 bg-slate-950/92 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="liquid-glass rounded-3xl max-w-md w-full p-4 sm:p-5 space-y-4 my-auto animate-card border border-emerald-400/35">
       <div class="flex items-start justify-between gap-2">
         <div class="flex items-center gap-3">
@@ -1160,7 +1124,7 @@
   <!-- ================================================================= -->
   <!-- МОДАЛЬНОЕ ОКНО: АДМИН-ПАНЕЛЬ (ДЛЯ TELEGRAM ID 939208462)          -->
   <!-- ================================================================= -->
-  <div id="adminModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto">
+  <div id="adminModal" class="hidden fixed inset-0 z-50 bg-slate-950/95 flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto">
     <div class="liquid-glass rounded-3xl max-w-2xl w-full p-4 sm:p-5 space-y-4 my-auto animate-card border border-amber-400/40">
       <div class="flex items-center justify-between gap-2 border-b border-white/10 pb-3">
         <div class="flex items-center gap-2.5">
@@ -1385,7 +1349,7 @@
     }
 
     // =====================================================================
-    // 1. КОНТРОЛЬ ВЫСОТЫ VIEWPORT, ПРОКРУТКИ НАД КЛАВИАТУРОЙ И ФОНА ПЛАЗМЫ
+    // 1. КОНТРОЛЬ VIEWPORT И ФОНА ПЛАЗМЫ (БЕЗ МУТАЦИЙ DOM/СКРОЛЛА ПРИ ФОКУСЕ)
     // =====================================================================
     let isTextInputFocused = false;
     let maxObservedViewportHeight = window.innerHeight || 780;
@@ -1401,57 +1365,17 @@
       return false;
     }
 
-    function getVisibleViewportHeight() {
-      const candidates = [window.innerHeight];
-      if (window.visualViewport && window.visualViewport.height > 150) {
-        candidates.push(window.visualViewport.height);
-      }
-      const tgApp = window.Telegram?.WebApp;
-      if (!isTextInputFocused && tgApp && tgApp.isExpanded && tgApp.viewportStableHeight && tgApp.viewportStableHeight > 200) {
-        candidates.push(tgApp.viewportStableHeight);
-      }
-      const valid = candidates.filter(v => Number.isFinite(v) && v > 150);
-      return valid.length > 0 ? Math.round(Math.min(...valid)) : window.innerHeight;
-    }
-
-    function scrollActiveInputIntoView(el) {
-      const target = el || document.activeElement;
-      if (!isTextEditableElement(target)) return;
-      const modalScroller = target.closest('#onboardingModal, #paywallModal, #adminModal, #backupModal, #barcodeScannerModal');
-      const scroller = modalScroller || document.getElementById('appScrollContainer');
-      if (!scroller) return;
-
-      const rect = target.getBoundingClientRect();
-      const visH = getVisibleViewportHeight();
-      const effectiveBottom = (visH > maxObservedViewportHeight * 0.82)
-        ? Math.round(visH * 0.46)
-        : (visH - 20);
-      const topSafe = 66;
-
-      if (rect.bottom > effectiveBottom || rect.top < topSafe) {
-        const desiredTop = Math.max(topSafe + 12, Math.round((effectiveBottom - Math.min(rect.height, 110)) * 0.45));
-        const delta = rect.top - desiredTop;
-        if (Math.abs(delta) > 8) {
-          scroller.scrollTop = Math.max(0, scroller.scrollTop + delta);
-        }
-      }
-    }
-
     function syncViewportHeight() {
-      const h = getVisibleViewportHeight();
+      const h = (window.visualViewport && window.visualViewport.height > 150)
+        ? Math.round(window.visualViewport.height)
+        : (window.innerHeight || 780);
       if (h > maxObservedViewportHeight) {
         maxObservedViewportHeight = h;
       }
-      const kbShrunk = h < maxObservedViewportHeight - 100;
-      // ВАЖНО: Никогда не меняем --app-height (высоту html/body), пока открыта клавиатура или фокус в поле ввода!
-      // Изменение высоты корневого контейнера во время открытия клавиатуры в Android WebView обрывает связь с клавиатурой (InputConnection).
-      if (!isTextInputFocused && !kbShrunk && h > 200) {
-        document.documentElement.style.setProperty('--app-height', `${h}px`);
-      }
-      if (kbShrunk || isTextInputFocused) {
-        document.body.classList.add('kb-open');
-      } else {
-        document.body.classList.remove('kb-open');
+      const kbShrunk = h < maxObservedViewportHeight - 120;
+      const navEl = document.getElementById('mobileBottomNav');
+      if (navEl) {
+        navEl.classList.toggle('nav-kb-hidden', kbShrunk);
       }
     }
 
@@ -1459,25 +1383,16 @@
       syncViewportHeight();
       window.addEventListener('resize', syncViewportHeight);
       if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', () => {
-          syncViewportHeight();
-          if (isTextInputFocused && isTextEditableElement(document.activeElement)) {
-            scrollActiveInputIntoView(document.activeElement);
-          }
-        });
+        window.visualViewport.addEventListener('resize', syncViewportHeight);
       }
 
+      // При фокусе в поле ввода НЕ меняем классы на body, НЕ трогаем padding и НЕ дергаем scrollTop —
+      // только ставим на паузу анимацию холста плазмы, чтобы Android WebView (Gboard IME) мгновенно привязывал ввод букв с первого касания.
       let blurTimer = null;
       document.addEventListener('focusin', (e) => {
         if (!isTextEditableElement(e.target)) return;
         clearTimeout(blurTimer);
-        const el = e.target;
         isTextInputFocused = true;
-        document.body.classList.add('kb-open');
-        // Даём Android WebView спокойно завершить привязку IME (InputConnection) и только затем плавно докручиваем контейнер
-        setTimeout(() => {
-          if (document.activeElement === el) scrollActiveInputIntoView(el);
-        }, 280);
       });
 
       document.addEventListener('focusout', () => {
@@ -1485,7 +1400,6 @@
         blurTimer = setTimeout(() => {
           if (isTextEditableElement(document.activeElement)) return;
           isTextInputFocused = false;
-          document.body.classList.remove('kb-open');
           syncViewportHeight();
         }, 120);
       });
@@ -1670,7 +1584,7 @@
       if (!modal) {
         modal = document.createElement('div');
         modal.id = 'nbPromptModal';
-        modal.className = 'fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4';
+        modal.className = 'fixed inset-0 z-50 bg-slate-950/90 flex items-center justify-center p-4';
         modal.innerHTML = `
           <div class="liquid-glass rounded-3xl max-w-xs w-full p-5 space-y-3.5 animate-card">
             <div id="nbPromptTitle" class="font-bold text-sm text-white"></div>
@@ -2328,10 +2242,8 @@
       if (tabId !== 'ai') stopLiveCamera();
       ['diary', 'ai', 'progress', 'profile'].forEach(t => {
         const sectionEl = document.getElementById('tab-' + t);
-        if (t === tabId) {
-          sectionEl.classList.remove('hidden', 'tab-offscreen');
-        } else {
-          sectionEl.classList.add('tab-offscreen');
+        if (sectionEl) {
+          sectionEl.classList.toggle('hidden', t !== tabId);
         }
 
         const deskBtn = document.getElementById('tabBtnDesktop-' + t);
@@ -2340,14 +2252,13 @@
         const mobBtn = document.getElementById('tabBtnMobile-' + t);
         if (mobBtn) mobBtn.className = t === tabId ? 'btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-bold bg-white/15 text-white border border-white/20 gap-0.5' : 'btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium text-slate-300 gap-0.5';
       });
-      const scroller = document.getElementById('appScrollContainer');
-      if (scroller) scroller.scrollTop = 0;
+      window.scrollTo(0, 0);
     }
 
     function switchAiMode(mode) {
       triggerHaptic('light');
-      document.getElementById('aiSubTab-text').classList.toggle('tab-offscreen', mode !== 'text');
-      document.getElementById('aiSubTab-photo').classList.toggle('tab-offscreen', mode !== 'photo');
+      document.getElementById('aiSubTab-text').classList.toggle('hidden', mode !== 'text');
+      document.getElementById('aiSubTab-photo').classList.toggle('hidden', mode !== 'photo');
       document.getElementById('aiModeBtn-text').className = mode === 'text' ? 'btn-spring flex-1 py-2 rounded-xl text-xs font-bold liquid-btn-primary' : 'btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-200';
       document.getElementById('aiModeBtn-photo').className = mode === 'photo' ? 'btn-spring flex-1 py-2 rounded-xl text-xs font-bold liquid-btn-primary' : 'btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-200';
       if (mode === 'photo') startLiveCamera(); else stopLiveCamera();
@@ -3479,7 +3390,7 @@
 
       modal = document.createElement('div');
       modal.id = 'barcodeScannerModal';
-      modal.className = 'hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto';
+      modal.className = 'hidden fixed inset-0 z-50 bg-slate-950/92 flex items-center justify-center p-3 sm:p-4 overflow-y-auto';
       modal.innerHTML = `
         <div class="liquid-glass rounded-3xl max-w-md w-full p-4 sm:p-5 space-y-3.5 animate-card my-auto">
           <div class="flex items-center justify-between">
@@ -5110,7 +5021,7 @@
       }
     }
 
-    // Все вкладки рендерятся с полноценным LayoutTree через .tab-offscreen (без display:none), чтобы Android WebView IME мгновенно печатал с первого касания
+    // Инициализация состояния, подписки и стартовой вкладки
     loadState(); loadSubscriptionAndConfig(); switchTab('diary');
   </script>
 </body>
