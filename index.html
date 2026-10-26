@@ -687,14 +687,20 @@
             </div>
           </div>
 
-          <div class="flex gap-2">
-            <select id="aiTextMealSelect" class="liquid-input rounded-xl px-3 py-2 text-xs text-white">
-              <option value="breakfast" class="bg-slate-900">Завтрак</option>
-              <option value="lunch" selected class="bg-slate-900">Обед</option>
-              <option value="dinner" class="bg-slate-900">Ужин</option>
-              <option value="snack" class="bg-slate-900">Перекус</option>
-            </select>
-            <button onclick="addAiTextFoodDirectlyToDiary()" class="btn-spring liquid-btn-primary flex-1 py-2.5 rounded-xl font-bold text-xs">Записать в дневник</button>
+          <div class="space-y-2">
+            <div class="flex gap-2">
+              <select id="aiTextMealSelect" class="liquid-input rounded-xl px-3 py-2 text-xs text-white">
+                <option value="breakfast" class="bg-slate-900">Завтрак</option>
+                <option value="lunch" selected class="bg-slate-900">Обед</option>
+                <option value="dinner" class="bg-slate-900">Ужин</option>
+                <option value="snack" class="bg-slate-900">Перекус</option>
+              </select>
+              <button type="button" onclick="addAiTextFoodDirectlyToDiary(false)" class="btn-spring liquid-btn-primary flex-1 py-2.5 rounded-xl font-bold text-xs">Записать в дневник</button>
+            </div>
+            <button type="button" onclick="addAiTextFoodDirectlyToDiary(true)" class="btn-spring liquid-pill w-full py-2.5 px-3 rounded-xl font-bold text-xs text-emerald-300 border border-emerald-400/40 flex items-center justify-center gap-1.5">
+              <svg class="w-4 h-4 text-emerald-300 svg-glow-emerald flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><line x1="12" y1="7" x2="12" y2="13"/><line x1="9" y1="10" x2="15" y2="10"/></svg>
+              <span>Записать + добавить в свой список</span>
+            </button>
           </div>
         </div>
       </div>
@@ -2561,7 +2567,7 @@
           ...per
         };
         document.getElementById('aiTextResName').textContent = lastAiTextFood.name;
-        document.getElementById('aiTextResPer100').textContent = `На 100 г: ${lastAiTextFood.kcal100} ккал`;
+        document.getElementById('aiTextResPer100').textContent = `На 100 г: ${lastAiTextFood.kcal100} ккал • Б: ${lastAiTextFood.p100}г • Ж: ${lastAiTextFood.f100}г • У: ${lastAiTextFood.c100}г`;
         document.getElementById('aiTextPortionGrams').value = lastAiTextFood.portionGrams;
         updateAiTextPortionPreview();
         document.getElementById('aiTextResultBox').classList.remove('hidden');
@@ -2577,13 +2583,44 @@
       document.getElementById('aiTextPortionMacros').textContent = `Б: ${((lastAiTextFood.p100 * g) / 100).toFixed(1)} • Ж: ${((lastAiTextFood.f100 * g) / 100).toFixed(1)} • У: ${((lastAiTextFood.c100 * g) / 100).toFixed(1)}`;
     }
 
-    function addAiTextFoodDirectlyToDiary() {
+    function addAiTextFoodDirectlyToDiary(alsoSaveToCustom = false) {
       if (!lastAiTextFood) return;
       const grams = num(document.getElementById('aiTextPortionGrams').value, 1, 3000, 100);
       const meal = document.getElementById('aiTextMealSelect').value;
       const day = ensureDay(currentDate);
       day.items.push(makeDiaryItem(meal, lastAiTextFood.name, grams, lastAiTextFood.kcal100, lastAiTextFood.p100, lastAiTextFood.f100, lastAiTextFood.c100));
-      triggerHaptic('success'); checkAndCelebrateGoals(day); saveState(); switchTab('diary');
+
+      if (alsoSaveToCustom) {
+        if (!Array.isArray(state.customFoods)) state.customFoods = [];
+        const cleanName = String(lastAiTextFood.name || 'Моё блюдо').trim().slice(0, 160);
+        const existingIdx = state.customFoods.findIndex(
+          f => f && String(f.name || '').trim().toLowerCase() === cleanName.toLowerCase()
+        );
+        const customObj = {
+          id: existingIdx >= 0 ? state.customFoods[existingIdx].id : uid('custom'),
+          name: cleanName,
+          kcal: Math.round(num(lastAiTextFood.kcal100, 0, 900, 0)),
+          p: round1(num(lastAiTextFood.p100, 0, 100, 0)),
+          f: round1(num(lastAiTextFood.f100, 0, 100, 0)),
+          c: round1(num(lastAiTextFood.c100, 0, 100, 0))
+        };
+        if (existingIdx >= 0) {
+          state.customFoods[existingIdx] = customObj;
+        } else {
+          state.customFoods.unshift(customObj);
+        }
+        selectedFoodObj = customObj;
+      }
+
+      triggerHaptic('success');
+      checkAndCelebrateGoals(day);
+      saveState();
+      renderFoodSearchResults();
+      renderProfileForm();
+      switchTab('diary');
+      if (alsoSaveToCustom) {
+        showNotice(`«${lastAiTextFood.name}» записано в дневник и добавлено в твой список продуктов!`);
+      }
     }
 
     // =====================================================================
