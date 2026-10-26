@@ -322,10 +322,7 @@
           <span class="hidden md:inline">Админ</span>
           <span id="adminPendingBadge" class="hidden px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-extrabold">0</span>
         </button>
-        <button type="button" onclick="toggleImeDebugPanel()" class="btn-spring liquid-pill px-2 py-1.5 rounded-xl text-[11px] font-semibold text-emerald-300 border border-emerald-400/30 flex items-center gap-1 whitespace-nowrap" title="Открыть логгер клавиатуры (IME Debug)">
-          <span>🐞</span>
-          <span class="hidden sm:inline">Лог</span>
-        </button>
+
         <button onclick="openBackupModal()" class="btn-spring liquid-pill px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-200 flex items-center gap-1 whitespace-nowrap" title="Бэкап данных">
           <svg class="w-4 h-4 svg-glow-cyan text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           <span class="hidden sm:inline">Бэкап</span>
@@ -1209,11 +1206,12 @@
       </div>
 
       <!-- Вкладки админки -->
-      <div class="grid grid-cols-4 gap-1 liquid-pill p-1 rounded-2xl text-xs">
+      <div class="grid grid-cols-5 gap-1 liquid-pill p-1 rounded-2xl text-[11px] sm:text-xs">
         <button type="button" id="admTabBtn-requests" onclick="switchAdminTab('requests')" class="btn-spring py-1.5 rounded-xl font-bold liquid-btn-primary">Заявки СБП</button>
         <button type="button" id="admTabBtn-users" onclick="switchAdminTab('users')" class="btn-spring py-1.5 rounded-xl font-medium text-slate-200">Юзеры</button>
         <button type="button" id="admTabBtn-codes" onclick="switchAdminTab('codes')" class="btn-spring py-1.5 rounded-xl font-medium text-slate-200">PRO-Коды</button>
         <button type="button" id="admTabBtn-settings" onclick="switchAdminTab('settings')" class="btn-spring py-1.5 rounded-xl font-medium text-slate-200">Реквизиты</button>
+        <button type="button" id="admTabBtn-logs" onclick="switchAdminTab('logs')" class="btn-spring py-1.5 rounded-xl font-medium text-emerald-300">🐞 Логи</button>
       </div>
 
       <!-- 1. ВКЛАДКА АДМИНКИ: ЗАЯВКИ НА ОПЛАТУ СБП -->
@@ -1339,6 +1337,36 @@
           </div>
         </div>
       </div>
+
+      <!-- 5. ВКЛАДКА АДМИНКИ: ДИАГНОСТИЧЕСКОЕ ЛОГИРОВАНИЕ (IME КЛАВИАТУРА И СИСТЕМА) -->
+      <div id="admTab-logs" class="hidden space-y-3">
+        <div class="liquid-pill rounded-2xl p-3.5 space-y-2.5 border border-emerald-400/35">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-xs font-bold text-white">Журнал событий клавиатуры и WebView (IME Debugger)</span>
+              <span id="admImeDebugCount" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold">0</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button type="button" onmousedown="event.preventDefault()" onclick="manualRebindActiveInput()" class="btn-spring px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-bold text-[11px]">🔄 Ребинд фокуса</button>
+              <button type="button" onmousedown="event.preventDefault()" onclick="copyImeDebugLog()" class="btn-spring px-2.5 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold text-[11px]">📋 Копировать лог</button>
+              <button type="button" onmousedown="event.preventDefault()" onclick="clearImeDebugLog()" class="btn-spring px-2.5 py-1 rounded-xl bg-white/10 text-slate-200 font-semibold text-[11px]">🧹 Очистить</button>
+              <button type="button" onmousedown="event.preventDefault()" onclick="toggleImeDebugPanel()" class="btn-spring px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-400/40 font-bold text-[11px]" title="Показать/скрыть компактный оверлей поверх экрана для теста ввода в полях">📌 Оверлей на экран</button>
+            </div>
+          </div>
+
+          <div id="admImeDebugStateLine" class="font-mono text-[11px] text-amber-300 bg-slate-950/60 rounded-xl px-3 py-1.5 border border-white/10 truncate">
+            active: — | docFocus: — | vvH: —
+          </div>
+
+          <div id="admImeDebugLogBox" class="font-mono text-[10px] sm:text-[11px] leading-relaxed h-52 overflow-y-auto space-y-0.5 bg-slate-950/80 border border-white/10 rounded-xl p-2.5 select-all text-slate-200"></div>
+
+          <div class="pt-1">
+            <label class="block text-[11px] text-slate-300 mb-1">Тестовое поле ввода прямо в админке (для проверки русской раскладки Gboard):</label>
+            <input type="text" id="admImeTestInput" placeholder="Нажми сюда и введи русский текст для проверки лога..." class="liquid-input w-full rounded-xl px-3 py-2 text-xs text-white" />
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1416,35 +1444,56 @@
       const relMs = Math.round(performance.now() - imeStartTs);
       const line = `+${relMs}ms [${type}] ${detail}`;
       imeLogEntries.push(line);
-      if (imeLogEntries.length > 120) imeLogEntries.shift();
+      if (imeLogEntries.length > 150) imeLogEntries.shift();
 
-      const panel = document.getElementById('nbImeDebugPanel');
-      if (!panel || panel.classList.contains('hidden')) return;
-      renderImeDebugPanel();
+      const floatPanel = document.getElementById('nbImeDebugPanel');
+      const admModal = document.getElementById('adminModal');
+      const floatVisible = floatPanel && !floatPanel.classList.contains('hidden');
+      const admVisible = admModal && !admModal.classList.contains('hidden');
+      if (floatVisible || admVisible) {
+        renderImeDebugPanel();
+      }
     }
 
     function renderImeDebugPanel() {
+      const vvH = window.visualViewport ? Math.round(window.visualViewport.height) : window.innerHeight;
+      const stateStr = `active: ${describeEl(document.activeElement)} | docFocus: ${document.hasFocus()} | vvH: ${vvH}px`;
+      const htmlLines = imeLogEntries.length
+        ? imeLogEntries.map(l => `<div>${escapeHtml(l)}</div>`).join('')
+        : `<div class="text-slate-500">Событий пока нет. Коснись любого поля ввода...</div>`;
+
+      // Обновляем оверлей (если включён из админки)
       const box = document.getElementById('nbImeDebugLogBox');
       const countEl = document.getElementById('nbImeDebugCount');
       const stateEl = document.getElementById('nbImeDebugStateLine');
       if (countEl) countEl.textContent = String(imeLogEntries.length);
-      if (stateEl) {
-        const vvH = window.visualViewport ? Math.round(window.visualViewport.height) : window.innerHeight;
-        stateEl.textContent = `active: ${describeEl(document.activeElement)} | docFocus: ${document.hasFocus()} | vvH: ${vvH}px`;
-      }
+      if (stateEl) stateEl.textContent = stateStr;
       if (box) {
-        box.innerHTML = imeLogEntries.map(l => `<div>${escapeHtml(l)}</div>`).join('');
+        box.innerHTML = htmlLines;
         box.scrollTop = box.scrollHeight;
+      }
+
+      // Обновляем вкладку «Логи» внутри Админ-панели
+      const admBox = document.getElementById('admImeDebugLogBox');
+      const admCountEl = document.getElementById('admImeDebugCount');
+      const admStateEl = document.getElementById('admImeDebugStateLine');
+      if (admCountEl) admCountEl.textContent = String(imeLogEntries.length);
+      if (admStateEl) admStateEl.textContent = stateStr;
+      if (admBox) {
+        admBox.innerHTML = htmlLines;
+        admBox.scrollTop = admBox.scrollHeight;
       }
     }
 
     function toggleImeDebugPanel() {
+      if (isTelegramMiniApp && !isUserAdmin()) return;
       const panel = document.getElementById('nbImeDebugPanel');
       if (!panel) return;
       panel.classList.toggle('hidden');
       if (!panel.classList.contains('hidden')) {
-        logImeEvent('LOGGER_OPEN', `ua=${navigator.userAgent.slice(0, 65)}`);
+        logImeEvent('OVERLAY_OPEN', `ua=${navigator.userAgent.slice(0, 65)}`);
         renderImeDebugPanel();
+        closeAdminModal();
       }
     }
 
@@ -4842,15 +4891,21 @@
 
     function switchAdminTab(tabKey) {
       triggerHaptic('light');
-      ['requests', 'users', 'codes', 'settings'].forEach(k => {
+      ['requests', 'users', 'codes', 'settings', 'logs'].forEach(k => {
         document.getElementById('admTab-' + k)?.classList.toggle('hidden', k !== tabKey);
         const btn = document.getElementById('admTabBtn-' + k);
         if (btn) {
           btn.className = k === tabKey
             ? 'btn-spring py-1.5 rounded-xl font-bold liquid-btn-primary'
-            : 'btn-spring py-1.5 rounded-xl font-medium text-slate-200 hover:text-white';
+            : (k === 'logs'
+                ? 'btn-spring py-1.5 rounded-xl font-medium text-emerald-300 hover:text-white'
+                : 'btn-spring py-1.5 rounded-xl font-medium text-slate-200 hover:text-white');
         }
       });
+      if (tabKey === 'logs') {
+        logImeEvent('ADMIN_LOGS_VIEW', `entries=${imeLogEntries.length}`);
+        renderImeDebugPanel();
+      }
     }
 
     function populateAdminSettingsInputs() {
@@ -4979,6 +5034,7 @@
 
       renderAdminRequestsList();
       renderAdminUsersList();
+      renderImeDebugPanel();
       renderProAndAdminUI();
     }
 
