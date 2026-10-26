@@ -1731,10 +1731,13 @@
     function defaultState() {
       return {
         isConfigured: false,
-        profile: { gender: 'male', age: 28, height: 175, weight: 80, targetWeight: 72, activity: 1.375, goal: -20, addBurnedToTarget: false },
+        updatedAt: 0,
+        profile: { gender: 'male', age: 28, height: 175, weight: 80, targetWeight: 72, activity: 1.375, goal: -20, addBurnedToTarget: false, updatedAt: 0 },
         customFoods: [],
+        deletedCustomFoodIds: [],
         days: {},
         weightHistory: [],
+        deletedWeightIds: [],
         aiProvider: 'gemini',
         apiKey: '',
         firebaseUrl: ''
@@ -1748,14 +1751,110 @@
       const base = defaultState();
       const src = (obj && typeof obj === 'object') ? obj : {};
       const out = { ...base, ...src };
+      out.updatedAt = Number(src.updatedAt) || 0;
       out.profile = { ...base.profile, ...((src.profile && typeof src.profile === 'object') ? src.profile : {}) };
+      out.profile.updatedAt = Number(out.profile.updatedAt) || 0;
       out.customFoods = Array.isArray(src.customFoods) ? src.customFoods.filter(f => f && f.name) : [];
+      out.deletedCustomFoodIds = Array.isArray(src.deletedCustomFoodIds) ? src.deletedCustomFoodIds.slice(-100) : [];
       out.days = (src.days && typeof src.days === 'object' && !Array.isArray(src.days)) ? src.days : {};
       out.weightHistory = Array.isArray(src.weightHistory) ? src.weightHistory.filter(w => w && isFinite(Number(w.weight))) : [];
+      out.deletedWeightIds = Array.isArray(src.deletedWeightIds) ? src.deletedWeightIds.slice(-100) : [];
       out.aiProvider = out.aiProvider === 'openrouter' ? 'openrouter' : 'gemini';
       out.apiKey = typeof out.apiKey === 'string' ? out.apiKey : '';
       out.firebaseUrl = typeof out.firebaseUrl === 'string' ? out.firebaseUrl : '';
       return out;
+    }
+
+    // Оценка заполненности дня (для умного слияния старых записей без updatedAt)
+    function scoreDayCompleteness(day) {
+      if (!day || typeof day !== 'object') return 0;
+      const itemsCount = Array.isArray(day.items) ? day.items.length : 0;
+      const waterScore = Number(day.water) > 0 ? 10 + Number(day.water) * 0.01 : 0;
+      const actScore = (Number(day.activity?.steps) || 0) * 0.001 + (Number(day.activity?.burnedKcal) || 0) * 0.1;
+      const reviewScore = day.aiReview ? 50 : 0;
+      return itemsCount * 1000 + waterScore + actScore + reviewScore;
+    }
+
+    // Умное объединение локального и облачного состояния между телефоном и ПК без потери данных
+    function mergeDiaryStates(localRaw, remoteRaw) {
+      const loc = normalizeState(localRaw);
+      const rem = normalizeState(remoteRaw);
+
+      if (!rem.isConfigured && !Object.keys(rem.days).length && !rem.customFoods.length) return loc;
+      if (!loc.isConfigured && rem.isConfigured) return rem;
+
+      const merged = normalizeState(loc);
+      merged.isConfigured = Boolean(loc.isConfigured || rem.isConfigured);
+      merged.updatedAt = Math.max(loc.updatedAt || 0, rem.updatedAt || 0);
+
+      // 1) Объединяем удалённые ID
+      const delFoodsSet = new Set([...(loc.deletedCustomFoodIds || []), ...(rem.deletedCustomFoodIds || [])]);
+      const delWeightsSet = new Set([...(loc.deletedWeightIds || []), ...(rem.deletedWeightIds || [])]);
+      merged.deletedCustomFoodIds = Array.from(delFoodsSet).slice(-100);
+      merged.deletedWeightIds = Array.from(delWeightsSet).slice(-100);
+
+      // 2) Объединяем историю взвешиваний
+      const weightMap = new Map();
+      [...(loc.weightHistory || []), ...(rem.weightHistory || [])].forEach(w => {
+        if (!w || !isFinite(Number(w.weight))) return;
+        if (w.id && delWeightsSet.has(w.id)) return;
+        const key = w.id || `${w.date}_${w.weight}`;
+        weightMap.set(key, w);
+      });
+      merged.weightHistory = Array.from(weightMap.values()).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+
+      // 3) Выбираем самый свежий профиль и актуальный вес
+      const locProfTs = Number(loc.profile?.updatedAt) || 0;
+      const remProfTs = Number(rem.profile?.updatedAt) || 0;
+      if (remProfTs > locProfTs) {
+        merged.profile = { ...loc.profile, ...rem.profile };
+      } else if (locProfTs > remProfTs) {
+        merged.profile = { ...rem.profile, ...loc.profile };
+      } else {
+        // Если оба профиля без метки времени — берём тот, где больше прогресса за сегодня или свежий замер веса
+        const locScore = Object.values(loc.days || {}).reduce((s, d) => s + scoreDayCompleteness(d), 0);
+        const remScore = Object.values(rem.days || {}).reduce((s, d) => s + scoreDayCompleteness(d), 0);
+        merged.profile = remScore > locScore ? { ...loc.profile, ...rem.profile } : { ...rem.profile, ...loc.profile };
+      }
+      if (merged.weightHistory.length > 0) {
+        const latestW = merged.weightHistory[merged.weightHistory.length - 1];
+        if (latestW && isFinite(Number(latestW.weight)) && remProfTs === locProfTs) {
+          merged.profile.weight = Number(latestW.weight);
+        }
+      }
+
+      // 4) Объединяем свои продукты (customFoods)
+      const foodsMap = new Map();
+      [...(rem.customFoods || []), ...(loc.customFoods || [])].forEach(f => {
+        if (!f || !f.name) return;
+        if (f.id && delFoodsSet.has(f.id)) return;
+        const nameKey = String(f.name).trim().toLowerCase();
+        foodsMap.set(nameKey, f);
+      });
+      merged.customFoods = Array.from(foodsMap.values());
+
+      // 5) Объединяем дни дневника по каждой дате
+      const allDates = new Set([...Object.keys(loc.days || {}), ...Object.keys(rem.days || {})]);
+      const mergedDays = {};
+      allDates.forEach(d => {
+        const dLoc = loc.days?.[d];
+        const dRem = rem.days?.[d];
+        if (!dLoc) { mergedDays[d] = dRem; return; }
+        if (!dRem) { mergedDays[d] = dLoc; return; }
+
+        const tsLoc = Number(dLoc.updatedAt) || 0;
+        const tsRem = Number(dRem.updatedAt) || 0;
+        if (tsRem > tsLoc) {
+          mergedDays[d] = dRem;
+        } else if (tsLoc > tsRem) {
+          mergedDays[d] = dLoc;
+        } else {
+          // Если у старых записей ещё нет updatedAt — берём тот день, где записана еда/вода/шаги!
+          mergedDays[d] = scoreDayCompleteness(dRem) >= scoreDayCompleteness(dLoc) ? dRem : dLoc;
+        }
+      });
+      merged.days = mergedDays;
+      return merged;
     }
 
     let currentDate = getLocalDateString();
@@ -1799,20 +1898,36 @@
     let cloudKnownFoodChunks = 0;
     let cloudSaveTimer = null;
     let cloudSaving = false;
+    let cloudSaveQueued = false;
 
     async function saveToTelegramCloud(s) {
-      if (!tg?.CloudStorage || !isTelegramMiniApp || cloudSaving) return false;
+      if (!tg?.CloudStorage || !isTelegramMiniApp) return false;
+      if (cloudSaving) {
+        cloudSaveQueued = true;
+        return false;
+      }
       cloudSaving = true;
       try {
-        // 1) мета: профиль + история веса (укорачиваем, пока не влезет в лимит)
+        // 1) мета: профиль + история веса + списки удалений (укорачиваем, пока не влезет в лимит)
         let history = (s.weightHistory || []).slice(-30);
         let metaStr = '';
         while (true) {
-          metaStr = JSON.stringify({ isConfigured: s.isConfigured, profile: s.profile, weightHistory: history, aiProvider: s.aiProvider, apiKey: s.apiKey, firebaseUrl: s.firebaseUrl });
+          metaStr = JSON.stringify({
+            isConfigured: s.isConfigured,
+            updatedAt: s.updatedAt || Date.now(),
+            profile: s.profile,
+            weightHistory: history,
+            deletedCustomFoodIds: (s.deletedCustomFoodIds || []).slice(-50),
+            deletedWeightIds: (s.deletedWeightIds || []).slice(-50),
+            aiProvider: s.aiProvider,
+            apiKey: s.apiKey,
+            firebaseUrl: s.firebaseUrl
+          });
           if (metaStr.length <= CLOUD_LIMIT || history.length <= 2) break;
           history = history.slice(1);
         }
-        if (metaStr.length <= CLOUD_LIMIT) await cloudSet('nb_meta_v3', metaStr);
+        const writePromises = [];
+        if (metaStr.length <= CLOUD_LIMIT) writePromises.push(cloudSet('nb_meta_v3', metaStr));
 
         // 2) дни: каждый день — отдельный ключ, храним последние N
         const dates = Object.keys(s.days || {}).sort().slice(-CLOUD_DAYS_KEEP);
@@ -1821,36 +1936,48 @@
           const day = s.days[d];
           let str = JSON.stringify(day);
           if (str.length > CLOUD_LIMIT) { const { aiReview, ...rest } = day; str = JSON.stringify(rest); }
-          if (str.length > CLOUD_LIMIT) continue; // слишком большой день остаётся только локально
+          if (str.length > CLOUD_LIMIT) continue;
           const key = 'nb_d_' + d;
-          await cloudSet(key, str);
+          writePromises.push(cloudSet(key, str));
           newDayKeys.push(key);
         }
-        await cloudSet('nb_didx', JSON.stringify(newDayKeys));
-        const staleDays = cloudKnownDayKeys.filter(k => !newDayKeys.includes(k));
-        await cloudRemove(staleDays);
-        cloudKnownDayKeys = newDayKeys;
+        writePromises.push(cloudSet('nb_didx', JSON.stringify(newDayKeys)));
 
         // 3) свои продукты: режем JSON на куски
         const foodsStr = JSON.stringify(s.customFoods || []);
         const chunks = [];
         for (let i = 0; i < foodsStr.length; i += FOOD_CHUNK) chunks.push(foodsStr.slice(i, i + FOOD_CHUNK));
-        for (let i = 0; i < chunks.length; i++) await cloudSet('nb_f_' + i, chunks[i]);
-        await cloudSet('nb_fcount', String(chunks.length));
+        for (let i = 0; i < chunks.length; i++) writePromises.push(cloudSet('nb_f_' + i, chunks[i]));
+        writePromises.push(cloudSet('nb_fcount', String(chunks.length)));
+
+        await Promise.all(writePromises);
+
+        const staleDays = cloudKnownDayKeys.filter(k => !newDayKeys.includes(k));
         const staleFoods = [];
         for (let i = chunks.length; i < cloudKnownFoodChunks; i++) staleFoods.push('nb_f_' + i);
-        await cloudRemove(staleFoods);
+        await Promise.all([cloudRemove(staleDays), cloudRemove(staleFoods)]);
+
+        cloudKnownDayKeys = newDayKeys;
         cloudKnownFoodChunks = chunks.length;
+        updateBadge('Синхронизировано', true);
         return true;
       } catch (e) {
         return false;
-      } finally { cloudSaving = false; }
+      } finally {
+        cloudSaving = false;
+        if (cloudSaveQueued) {
+          cloudSaveQueued = false;
+          saveToTelegramCloud(state);
+        }
+      }
     }
 
-    function scheduleCloudSave(delay = 2000) {
-      if (!isTelegramMiniApp) return;
+    function scheduleCloudSave(delay = 250) {
       clearTimeout(cloudSaveTimer);
-      cloudSaveTimer = setTimeout(() => saveToTelegramCloud(state), delay);
+      cloudSaveTimer = setTimeout(() => {
+        if (isTelegramMiniApp) saveToTelegramCloud(state);
+        pushDiaryToServer();
+      }, delay);
     }
 
     async function loadFromTelegramCloud() {
@@ -1875,8 +2002,30 @@
         } catch (e) {}
         cloudKnownDayKeys = dayKeys;
         cloudKnownFoodChunks = foodChunks;
-        return { meta, days, customFoods };
+        return { ...meta, days, customFoods };
       } catch (e) { return null; }
+    }
+
+    // Синхронизация состояния из Telegram CloudStorage (вызывается при старте и при возврате в окно на ПК/телефоне)
+    async function syncFromTelegramCloudAndMerge() {
+      if (!isTelegramMiniApp) return false;
+      const tgCloud = await loadFromTelegramCloud();
+      if (!tgCloud || (!tgCloud.isConfigured && !Object.keys(tgCloud.days || {}).length)) return false;
+
+      const beforeJson = JSON.stringify(state);
+      state = mergeDiaryStates(state, tgCloud);
+      const afterJson = JSON.stringify(state);
+
+      if (afterJson !== beforeJson) {
+        persistLocal();
+        document.getElementById('onboardingModal').classList.toggle('hidden', Boolean(state.isConfigured));
+        renderAll();
+        renderFoodSearchResults();
+        // Если локально были более свежие данные — дозаписываем объединённый результат обратно в облако
+        saveToTelegramCloud(state);
+        return true;
+      }
+      return false;
     }
 
     async function loadState() {
@@ -1889,17 +2038,13 @@
         }
       } catch (e) {}
 
-      if (!loaded && isTelegramMiniApp) {
-        const tgCloud = await loadFromTelegramCloud();
-        if (tgCloud && tgCloud.meta && tgCloud.meta.isConfigured) {
-          state = normalizeState({ ...tgCloud.meta, days: tgCloud.days, customFoods: tgCloud.customFoods });
-          loaded = true;
-          persistLocal();
-        }
-      }
-
       // Фото больше не храним в localStorage — чистим старое значение, чтобы освободить квоту
       try { localStorage.removeItem(LEGACY_PHOTO_KEY); } catch (e) {}
+
+      if (isTelegramMiniApp) {
+        await syncFromTelegramCloudAndMerge();
+        loaded = Boolean(state.isConfigured);
+      }
 
       if (!loaded) document.getElementById('onboardingModal').classList.remove('hidden');
       else document.getElementById('onboardingModal').classList.add('hidden');
@@ -1919,8 +2064,10 @@
 
       if (!weight || weight < 30 || weight > 280) { showNotice('Пожалуйста, укажи свой текущий вес в килограммах'); return; }
 
+      const nowTs = Date.now();
       state.isConfigured = true;
-      state.profile = { gender, age, height, weight, targetWeight: targetWeightRaw && targetWeightRaw > 30 ? targetWeightRaw : Math.max(45, weight - 5), activity, goal, addBurnedToTarget: false };
+      state.updatedAt = nowTs;
+      state.profile = { gender, age, height, weight, targetWeight: targetWeightRaw && targetWeightRaw > 30 ? targetWeightRaw : Math.max(45, weight - 5), activity, goal, addBurnedToTarget: false, updatedAt: nowTs };
       state.weightHistory = [{ id: uid('w'), date: currentDate, weight, note: 'Стартовый вес' }];
 
       document.getElementById('onboardingModal').classList.add('hidden');
@@ -1933,25 +2080,35 @@
     function persistLocal() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        updateBadge(isTelegramMiniApp ? 'В памяти TG' : 'Сохранено', true);
+        updateBadge(isTelegramMiniApp ? 'Синхронизировано' : 'Сохранено', true);
       } catch (e) { updateBadge('Ошибка памяти', false); }
     }
 
     function flushPending() {
       if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; persistLocal(); }
-      if (isTelegramMiniApp && cloudSaveTimer) { clearTimeout(cloudSaveTimer); cloudSaveTimer = null; saveToTelegramCloud(state); }
+      if (cloudSaveTimer) {
+        clearTimeout(cloudSaveTimer);
+        cloudSaveTimer = null;
+        if (isTelegramMiniApp) saveToTelegramCloud(state);
+        pushDiaryToServer();
+      }
     }
 
     // debounced=true — для полей, где сохранение идёт на каждое нажатие клавиши
     function saveState(skipFullRender = false, debounced = false) {
+      const nowTs = Date.now();
+      state.updatedAt = nowTs;
+      if (state.days && state.days[currentDate]) {
+        state.days[currentDate].updatedAt = nowTs;
+      }
       if (debounced) {
         clearTimeout(persistTimer);
-        persistTimer = setTimeout(() => { persistTimer = null; persistLocal(); }, 400);
+        persistTimer = setTimeout(() => { persistTimer = null; persistLocal(); }, 300);
       } else {
         clearTimeout(persistTimer); persistTimer = null;
         persistLocal();
       }
-      scheduleCloudSave();
+      scheduleCloudSave(debounced ? 500 : 200);
       if (!skipFullRender) renderAll();
     }
 
@@ -2873,20 +3030,28 @@
       state.weightHistory.sort((a, b) => a.date.localeCompare(b.date));
       // Текущий вес — самый свежий замер по дате, а не последний добавленный
       state.profile.weight = state.weightHistory[state.weightHistory.length - 1].weight;
+      state.profile.updatedAt = Date.now();
       document.getElementById('weightValueInput').value = '';
       triggerHaptic('success'); saveState();
     }
 
     function updateTargetWeightOnly() {
       const targetVal = parseFloat(document.getElementById('weightTargetInput').value);
-      if (targetVal && targetVal > 30) { state.profile.targetWeight = targetVal; saveState(); }
+      if (targetVal && targetVal > 30) {
+        state.profile.targetWeight = targetVal;
+        state.profile.updatedAt = Date.now();
+        saveState();
+      }
     }
 
     function removeWeightEntry(id) {
       if (state.weightHistory.length <= 1) return;
+      if (!Array.isArray(state.deletedWeightIds)) state.deletedWeightIds = [];
+      state.deletedWeightIds.push(id);
       state.weightHistory = state.weightHistory.filter(w => w.id !== id);
       const latest = state.weightHistory[state.weightHistory.length - 1];
       if (latest) state.profile.weight = latest.weight;
+      state.profile.updatedAt = Date.now();
       saveState();
     }
 
@@ -3171,6 +3336,8 @@
       const list = state.customFoods || [];
       const item = list.find(f => f.id === foodId);
       const name = item ? item.name : 'Продукт';
+      if (!Array.isArray(state.deletedCustomFoodIds)) state.deletedCustomFoodIds = [];
+      state.deletedCustomFoodIds.push(foodId);
       state.customFoods = list.filter(f => f.id !== foodId);
       if (selectedFoodObj && selectedFoodObj.id === foodId) {
         selectedFoodObj = VERIFIED_FOODS_DB[0];
@@ -3196,7 +3363,8 @@
         height: num(document.getElementById('profHeight').value, 120, 230, 175),
         weight: num(parseFloat(document.getElementById('profWeight').value), 30, 300, 80),
         activity: Number(document.getElementById('profActivity').value) || 1.375,
-        goal: Number(document.getElementById('profGoal').value)
+        goal: Number(document.getElementById('profGoal').value),
+        updatedAt: Date.now()
       };
       saveState(true, true); renderSummary(); renderDailyInsights(); renderProfileForm(); renderProgressTab();
     }
@@ -3275,8 +3443,18 @@
     }
 
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) { flushPending(); stopLiveCamera(); }
-      else checkDateRollover();
+      if (document.hidden) {
+        flushPending();
+        stopLiveCamera();
+      } else {
+        checkDateRollover();
+        syncFromTelegramCloudAndMerge();
+        syncUserAccessFromServer(false);
+      }
+    });
+    window.addEventListener('focus', () => {
+      syncFromTelegramCloudAndMerge();
+      syncUserAccessFromServer(false);
     });
     window.addEventListener('pagehide', flushPending);
     setInterval(checkDateRollover, 60000);
@@ -4343,6 +4521,47 @@
       }
     }
 
+    function buildCompactDiarySyncPayload() {
+      const recentDays = {};
+      Object.keys(state.days || {}).sort().slice(-14).forEach(d => {
+        recentDays[d] = state.days[d];
+      });
+      return {
+        isConfigured: Boolean(state.isConfigured),
+        updatedAt: Number(state.updatedAt) || 0,
+        profile: state.profile,
+        customFoods: (state.customFoods || []).slice(0, 100),
+        deletedCustomFoodIds: (state.deletedCustomFoodIds || []).slice(-50),
+        weightHistory: (state.weightHistory || []).slice(-40),
+        deletedWeightIds: (state.deletedWeightIds || []).slice(-50),
+        days: recentDays
+      };
+    }
+
+    async function pushDiaryToServer() {
+      const proxyUrl = (AI_PROXY_URL || '').trim();
+      if (!proxyUrl || tgUserId === 'local_browser_user') return;
+      try {
+        await fetchWithTimeout(proxyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Telegram-Init-Data': tg?.initData || ''
+          },
+          body: JSON.stringify({
+            action: 'sync_user',
+            userId: String(tgUserId),
+            name: tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : 'Пользователь',
+            username: tgUser?.username ? `@${tgUser.username}` : '',
+            trialStartTs: subState.trialStartTs,
+            isPro: Boolean(subState.isPro),
+            proMethod: subState.proMethod || '',
+            diarySync: buildCompactDiarySyncPayload()
+          })
+        }, 8000);
+      } catch (e) {}
+    }
+
     async function syncUserAccessFromServer(manualClick = false) {
       const proxyUrl = (AI_PROXY_URL || '').trim();
       if (!proxyUrl) return;
@@ -4360,11 +4579,23 @@
             username: tgUser?.username ? `@${tgUser.username}` : '',
             trialStartTs: subState.trialStartTs,
             isPro: Boolean(subState.isPro),
-            proMethod: subState.proMethod || ''
+            proMethod: subState.proMethod || '',
+            diarySync: buildCompactDiarySyncPayload()
           })
         }, 8000);
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
+        if (data?.diarySync && typeof data.diarySync === 'object') {
+          const beforeStr = JSON.stringify(state);
+          state = mergeDiaryStates(state, data.diarySync);
+          if (JSON.stringify(state) !== beforeStr) {
+            persistLocal();
+            if (isTelegramMiniApp) saveToTelegramCloud(state);
+            document.getElementById('onboardingModal').classList.toggle('hidden', Boolean(state.isConfigured));
+            renderAll();
+            renderFoodSearchResults();
+          }
+        }
         if (data?.config && typeof data.config === 'object') {
           const srvTime = Number(data.config.updatedAt) || 0;
           const locTime = Number(paymentConfig.updatedAt) || 0;
