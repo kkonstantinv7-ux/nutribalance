@@ -3698,7 +3698,7 @@
       } catch (e) {}
 
       if (isTelegramMiniApp && tg?.CloudStorage) {
-        cloudGet(['nb_adm_cfg_v1']).then(vals => {
+        cloudGet(['nb_adm_cfg_v1', 'nb_sub_v1']).then(vals => {
           if (vals?.nb_adm_cfg_v1) {
             try {
               const cloudCfg = JSON.parse(vals.nb_adm_cfg_v1);
@@ -3707,6 +3707,27 @@
                 try { localStorage.setItem(ADMIN_CFG_KEY, JSON.stringify(paymentConfig)); } catch (e) {}
                 renderProAndAdminUI();
                 populateAdminSettingsInputs();
+              }
+            } catch (e) {}
+          }
+          if (vals?.nb_sub_v1) {
+            try {
+              const cloudSub = JSON.parse(vals.nb_sub_v1);
+              if (cloudSub && typeof cloudSub === 'object') {
+                // Если в облаке Telegram сохранен пожизненный PRO или более ранний старт триала — восстанавливаем его!
+                if (cloudSub.isPro && !subState.isPro) {
+                  subState.isPro = true;
+                  subState.proActivatedAt = cloudSub.proActivatedAt || new Date().toISOString();
+                  subState.proMethod = cloudSub.proMethod || 'cloud_restored';
+                  subState.pendingSbpRequest = false;
+                  saveSubscriptionLocal();
+                  renderProAndAdminUI();
+                  syncUserAccessFromServer(false);
+                } else if (cloudSub.trialStartTs && Number(cloudSub.trialStartTs) < Number(subState.trialStartTs)) {
+                  subState.trialStartTs = Number(cloudSub.trialStartTs);
+                  saveSubscriptionLocal();
+                  renderProAndAdminUI();
+                }
               }
             } catch (e) {}
           }
@@ -4035,6 +4056,7 @@
         subState.testModeOverride = null;
         saveSubscriptionLocal();
         renderProAndAdminUI();
+        syncUserAccessFromServer(false);
         launchGoalConfetti();
         closePaywallModal();
         showNotice('🎉 Пожизненный доступ NutriBalance PRO успешно активирован!');
@@ -4299,7 +4321,9 @@
             userId: String(tgUserId),
             name: tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : 'Пользователь',
             username: tgUser?.username ? `@${tgUser.username}` : '',
-            trialStartTs: subState.trialStartTs
+            trialStartTs: subState.trialStartTs,
+            isPro: Boolean(subState.isPro),
+            proMethod: subState.proMethod || ''
           })
         }, 8000);
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
@@ -4329,9 +4353,18 @@
           }
         }
         if (data?.user && typeof data.user === 'object') {
-          const wasPro = subState.isPro;
-          if (typeof data.user.isPro === 'boolean') subState.isPro = data.user.isPro;
-          if (data.user.trialStartTs) subState.trialStartTs = Number(data.user.trialStartTs);
+          const wasPro = Boolean(subState.isPro);
+          // Пожизненный PRO никогда не сбрасывается из-за несинхронизированного ответа сервера (кроме явного отзыва админом: proMethod === 'revoked')
+          if (data.user.isPro === true) {
+            subState.isPro = true;
+            subState.proMethod = data.user.proMethod || subState.proMethod || 'server_pro';
+          } else if (data.user.proMethod === 'revoked') {
+            subState.isPro = false;
+            subState.proMethod = 'revoked';
+          }
+          if (data.user.trialStartTs && !subState.isPro) {
+            subState.trialStartTs = Math.min(Number(subState.trialStartTs) || Date.now(), Number(data.user.trialStartTs));
+          }
           if (subState.isPro) subState.pendingSbpRequest = false;
           saveSubscriptionLocal();
           renderProAndAdminUI();
@@ -4653,11 +4686,16 @@
       if (mode === 'pro') {
         existing.isPro = true;
         existing.proMethod = 'admin_manual';
+        existing.proGrantedAt = Date.now();
+        delete existing.revokedAt;
       } else if (mode === 'trial') {
         existing.isPro = false;
+        existing.proMethod = 'trial_reset';
         existing.trialStartTs = Date.now();
       } else if (mode === 'revoke') {
         existing.isPro = false;
+        existing.proMethod = 'revoked';
+        existing.revokedAt = Date.now();
         existing.trialStartTs = Date.now() - 30 * 86400000;
       }
       adminDataCache.users[cleanId] = existing;
@@ -4734,15 +4772,30 @@
       const proxyUrl = (AI_PROXY_URL || '').trim();
       if (!proxyUrl) return;
       try {
+        const knownProUsers = {};
+        Object.values(adminDataCache.users || {}).forEach(u => {
+          if (u && u.id && u.isPro && u.proMethod !== 'revoked') {
+            knownProUsers[u.id] = u;
+          }
+        });
         const resp = await fetchWithTimeout(proxyUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Telegram-Init-Data': tg?.initData || '' },
-          body: JSON.stringify({ action: 'admin_get_data', adminId: ADMIN_TG_ID })
+          body: JSON.stringify({ action: 'admin_get_data', adminId: ADMIN_TG_ID, knownProUsers })
         }, 8000);
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
         if (data?.users && typeof data.users === 'object') {
-          adminDataCache.users = { ...adminDataCache.users, ...data.users };
+          const mergedUsers = { ...adminDataCache.users };
+          for (const [uidKey, srvUser] of Object.entries(data.users)) {
+            const locUser = mergedUsers[uidKey];
+            if (locUser && locUser.isPro && locUser.proMethod !== 'revoked' && !srvUser.isPro && srvUser.proMethod !== 'revoked') {
+              mergedUsers[uidKey] = { ...srvUser, isPro: true, proMethod: locUser.proMethod || 'admin_manual' };
+            } else {
+              mergedUsers[uidKey] = { ...(locUser || {}), ...srvUser };
+            }
+          }
+          adminDataCache.users = mergedUsers;
         }
         const kvBanner = document.getElementById('adminKvStatusBanner');
         const kvText = document.getElementById('adminKvStatusText');
