@@ -364,6 +364,10 @@
           <input type="date" id="currentDateInput" onchange="onDateChange(this.value)" class="liquid-input rounded-xl px-2.5 py-1 text-xs font-semibold text-white" />
           <button onclick="changeDate(1)" class="btn-spring liquid-pill w-7 h-7 rounded-xl text-slate-200 text-xs flex items-center justify-center">▶</button>
           <button onclick="setToday()" class="btn-spring text-[11px] text-emerald-300 font-semibold px-1.5">Сегодня</button>
+          <div id="streakBadgePill" class="liquid-pill px-2 py-0.5 rounded-xl text-[11px] font-extrabold text-amber-300 border border-amber-400/35 flex items-center gap-1" title="Дней подряд без пропусков">
+            <span>🔥</span>
+            <span id="streakCountVal">0 дн.</span>
+          </div>
         </div>
 
         <!-- Быстрые стеклянные пилюли -->
@@ -520,6 +524,23 @@
             <button type="button" onclick="selectMealType('snack')" id="mealBtn-snack" class="btn-spring py-1.5 rounded-xl font-medium text-slate-200 flex items-center justify-center gap-1"><span>Перек.</span></button>
           </div>
 
+          <!-- Лента «Недавние продукты» и «Мои сеты» для записи в 1 нажатие -->
+          <div id="quickChipsWrapper" class="space-y-1.5">
+            <div id="recentFoodsRow" class="hidden">
+              <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1 px-0.5">
+                <span>⚡ Быстрый повтор (в 1 клик):</span>
+                <span id="recentMealHint" class="text-emerald-300 font-semibold"></span>
+              </div>
+              <div id="recentFoodsChips" class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar"></div>
+            </div>
+            <div id="mealSetsRow" class="hidden">
+              <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1 px-0.5">
+                <span>🍱 Мои готовые сеты:</span>
+              </div>
+              <div id="mealSetsChips" class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar"></div>
+            </div>
+          </div>
+
           <!-- Поиск продукта + кнопка сканера штрихкодов -->
           <div class="flex gap-1.5">
             <div class="relative flex-1">
@@ -532,7 +553,7 @@
           </div>
 
           <div class="flex items-center justify-between text-[11px] text-slate-300 px-0.5">
-            <span id="searchStatusText">База 20+ продуктов + Онлайн</span>
+            <span id="searchStatusText">База 85+ продуктов + Онлайн</span>
             <span id="onlineSearchSpinner" class="hidden text-emerald-300 animate-pulse">поиск онлайн...</span>
           </div>
 
@@ -578,10 +599,18 @@
             </div>
           </div>
 
-          <button onclick="generateDailyAIReview()" id="btnGenerateReview" class="btn-spring liquid-btn-primary px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5">
-            <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/></svg>
-            <span>Разбор дня от ИИ</span>
-          </button>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button type="button" onclick="generateSmartMealForRemaining()" id="btnSmartRemainderMeal" class="btn-spring liquid-pill px-3 py-2 rounded-xl font-bold text-xs text-emerald-300 border border-emerald-400/40 flex items-center gap-1.5" title="Подобрать 3 варианта рациона точно под остаток КБЖУ">
+              <span>🍽️ Подбор под остаток</span>
+            </button>
+            <button type="button" onclick="openShareDayCardModal()" class="btn-spring liquid-pill px-3 py-2 rounded-xl font-bold text-xs text-cyan-300 border border-cyan-400/35 flex items-center gap-1.5" title="Сгенерировать красивую карточку дня для отправки или сторис">
+              <span>📸 Карточка дня</span>
+            </button>
+            <button onclick="generateDailyAIReview()" id="btnGenerateReview" class="btn-spring liquid-btn-primary px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/></svg>
+              <span>Разбор дня от ИИ</span>
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -628,6 +657,18 @@
             </div>
           </div>
         </div>
+
+        <!-- Блок ИИ-подбора блюд под остаток КБЖУ -->
+        <div id="smartRemainderBox" class="hidden liquid-pill rounded-2xl p-3.5 space-y-2.5 border border-emerald-400/40">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <span class="font-bold text-xs text-emerald-300">🍽️ 3 варианта приёма пищи точно под твой остаток КБЖУ</span>
+              <p id="smartRemainderSubtitle" class="text-[10px] text-slate-300"></p>
+            </div>
+            <button type="button" onclick="document.getElementById('smartRemainderBox').classList.add('hidden')" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+          </div>
+          <div id="smartRemainderOptionsList" class="grid grid-cols-1 sm:grid-cols-3 gap-2"></div>
+        </div>
       </div>
     </section>
 
@@ -662,7 +703,16 @@
           <span class="text-[10px] px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 font-semibold">AI Ready</span>
         </div>
 
-        <textarea id="aiTextFoodPrompt" rows="3" placeholder="Например: бутерброд с тунцом и яйцом&#10;Или: тарелка борща со сметаной и 2 куска хлеба" class="liquid-input w-full rounded-2xl p-3 text-xs sm:text-sm text-white"></textarea>
+        <div class="relative">
+          <textarea id="aiTextFoodPrompt" rows="3" placeholder="Например: бутерброд с тунцом и яйцом&#10;Или: тарелка борща со сметаной и 2 куска хлеба" class="liquid-input w-full rounded-2xl p-3 pr-11 text-xs sm:text-sm text-white"></textarea>
+          <button type="button" id="btnVoiceDictate" onclick="toggleVoiceDictation()" title="Надиктовать блюдо голосом" class="btn-spring liquid-pill absolute right-2.5 bottom-2.5 w-8 h-8 rounded-xl flex items-center justify-center text-emerald-300 border border-emerald-400/35">
+            <svg class="w-4 h-4 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        </div>
+        <div id="voiceDictationStatus" class="hidden text-[11px] text-amber-300 font-semibold flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+          <span>Слушаю... Говорите название блюда и граммовку</span>
+        </div>
 
         <button onclick="analyzeTextDishWithAI()" id="btnAnalyzeTextAI" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-2xl font-bold text-xs sm:text-sm">Рассчитать КБЖУ через ИИ</button>
 
@@ -805,14 +855,21 @@
           </div>
         </div>
 
-        <div class="liquid-pill rounded-2xl p-3">
-          <div class="flex justify-between text-[11px] text-slate-300 mb-1.5">
-            <span>График замеров</span>
+        <div class="liquid-pill rounded-2xl p-3 space-y-1.5">
+          <div class="flex flex-wrap items-center justify-between gap-1 text-[11px] text-slate-300">
+            <span class="flex items-center gap-2">
+              <span>График замеров</span>
+              <span class="text-[10px] text-cyan-300 flex items-center gap-1"><span class="inline-block w-2.5 h-0.5 bg-sky-400"></span>тренд 7 дн.</span>
+            </span>
             <span id="weightProgressPct" class="text-emerald-300 font-bold">0% к цели</span>
           </div>
           <div id="weightSvgChartBox" class="w-full h-28 flex items-center justify-center"></div>
-          <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mt-2">
+          <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
             <div id="weightProgressBar" class="h-full bg-gradient-to-r from-emerald-400 to-cyan-300 transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <div id="weightTrendEtaBox" class="text-[11px] text-slate-300 pt-1 flex flex-wrap items-center justify-between gap-1 border-t border-white/10">
+            <span id="weightMovingAvgLabel">Средний вес (7 дн.): —</span>
+            <span id="weightGoalEtaLabel" class="text-emerald-300 font-semibold"></span>
           </div>
         </div>
 
@@ -882,6 +939,35 @@
           <input type="checkbox" id="addBurnedToTargetCheckbox" onchange="toggleBurnedToTarget(this.checked)" class="mt-0.5 rounded accent-emerald-500" />
           <span class="text-[11px] text-slate-200">Прибавлять 50% сожжённых ккал к дневной норме еды (дневной множитель активности уже заложен в норму, поэтому берётся только половина)</span>
         </label>
+      </div>
+
+      <!-- Трекер объёмов тела (Талия / Грудь / Бёдра) -->
+      <div class="lg:col-span-2 liquid-glass rounded-3xl p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="font-bold text-sm text-white flex items-center gap-2">
+              <span>📏 Замеры объёмов тела (см)</span>
+              <span id="bodyMeasDiffBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 font-bold">Талия: —</span>
+            </h3>
+            <p class="text-[11px] text-slate-300">При тренировках мышцы растут, а жир уходит — отслеживай талию, грудь и бёдра</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 items-end">
+          <div>
+            <label class="block text-[10px] text-slate-300 mb-0.5">Талия (см)</label>
+            <input type="number" step="0.5" id="measWaistInput" placeholder="78" class="liquid-input w-full rounded-xl px-2.5 py-1.5 text-xs font-bold text-emerald-300" />
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-300 mb-0.5">Грудь (см)</label>
+            <input type="number" step="0.5" id="measChestInput" placeholder="98" class="liquid-input w-full rounded-xl px-2.5 py-1.5 text-xs font-bold text-white" />
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-300 mb-0.5">Бёдра (см)</label>
+            <input type="number" step="0.5" id="measHipsInput" placeholder="96" class="liquid-input w-full rounded-xl px-2.5 py-1.5 text-xs font-bold text-white" />
+          </div>
+          <button type="button" onclick="addBodyMeasurementEntry()" class="col-span-3 sm:col-span-1 btn-spring liquid-btn-primary py-2 px-3 rounded-xl font-bold text-xs">Сохранить замер</button>
+        </div>
+        <div id="bodyMeasurementsHistoryList" class="divide-y divide-white/10 max-h-36 overflow-y-auto pr-1 text-xs"></div>
       </div>
     </section>
 
@@ -1005,6 +1091,27 @@
     </section>
 
   </main>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: КАРТОЧКА ИТОГОВ ДНЯ (SHARE IMAGE) -->
+  <div id="shareDayModal" class="hidden fixed inset-0 z-50 bg-slate-950/92 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="liquid-glass rounded-3xl max-w-md w-full p-4 sm:p-5 space-y-3.5 my-auto animate-card border border-cyan-400/35">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-sm sm:text-base text-white">📸 Карточка итогов дня</h3>
+          <p class="text-[11px] text-slate-300">Сохрани картинку или отправь друзьям / тренеру</p>
+        </div>
+        <button type="button" onclick="closeShareDayCardModal()" class="text-slate-300 hover:text-white px-2 py-1">✕</button>
+      </div>
+      <div class="rounded-2xl overflow-hidden border border-white/15 bg-slate-950 flex items-center justify-center">
+        <canvas id="shareDayCanvas" width="720" height="900" class="w-full h-auto max-h-[60vh] object-contain"></canvas>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" onclick="shareOrDownloadDayCard()" class="btn-spring liquid-btn-primary flex-1 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5">
+          <span>📤 Поделиться / Скачать PNG</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- МОДАЛЬНОЕ ОКНО: БЭКАП -->
@@ -1905,26 +2012,100 @@
     // 3. БАЗА ПРОДУКТОВ
     // =====================================================================
     const VERIFIED_FOODS_DB = [
+      // Птица и мясо
       { id: 'v1', name: 'Куриная грудка (филе отварное/гриль)', kcal: 165, p: 31, f: 3.6, c: 0 },
       { id: 'v2', name: 'Куриное филе (сырое)', kcal: 113, p: 23.6, f: 1.9, c: 0.4 },
       { id: 'v3', name: 'Куриное бедро (без кожи, запеченное)', kcal: 185, p: 24, f: 9.5, c: 0 },
       { id: 'v4', name: 'Индейка (филе грудки приготовленное)', kcal: 155, p: 29.5, f: 3.2, c: 0 },
       { id: 'v5', name: 'Говядина постная (тушеная/отварная)', kcal: 187, p: 26, f: 9, c: 0 },
+      { id: 'v6', name: 'Стейк из говядины (рибай / стриплойн)', kcal: 250, p: 25, f: 16.5, c: 0 },
+      { id: 'v7', name: 'Свинина нежирная (корейка / вырезка запеченная)', kcal: 198, p: 25.5, f: 10.5, c: 0 },
+      { id: 'v8', name: 'Шашлык из свинины', kcal: 259, p: 21, f: 19, c: 0.5 },
+      { id: 'v9', name: 'Котлеты куриные / из индейки (на пару или в духовке)', kcal: 158, p: 21, f: 6.5, c: 4 },
+      { id: 'v10', name: 'Котлета домашняя (говядина + свинина)', kcal: 225, p: 17, f: 14, c: 7.5 },
+      { id: 'v11', name: 'Ветчина из индейки (нежирная)', kcal: 105, p: 17, f: 3.5, c: 1.5 },
+      { id: 'v12', name: 'Печень куриная тушеная', kcal: 155, p: 21, f: 7, c: 1.8 },
+      // Рыба и морепродукты
+      { id: 'v13', name: 'Лосось / Сёмга слабосоленая или запеченная', kcal: 202, p: 21.5, f: 12.8, c: 0 },
+      { id: 'v14', name: 'Форель запеченная', kcal: 178, p: 20.5, f: 10.2, c: 0 },
+      { id: 'v15', name: 'Тунец консервированный в собственном соку', kcal: 105, p: 23.5, f: 1, c: 0 },
+      { id: 'v16', name: 'Треска / Минтай (белая рыба на пару / запеченная)', kcal: 86, p: 19, f: 1, c: 0 },
+      { id: 'v17', name: 'Креветки отварные / королевские', kcal: 95, p: 20.5, f: 1.2, c: 0 },
+      { id: 'v18', name: 'Кальмар отварной (тушка)', kcal: 100, p: 18, f: 2.2, c: 2 },
+      { id: 'v19', name: 'Сельдь слабосоленая (филе)', kcal: 215, p: 18, f: 15.5, c: 0 },
+      { id: 'v20', name: 'Крабовые палочки (сурими)', kcal: 92, p: 6.5, f: 1, c: 14 },
+      // Яйца и молочные продукты
       { id: 'v21', name: 'Яйцо куриное вареное (1 шт ≈ 55г)', kcal: 155, p: 12.7, f: 11.5, c: 0.7 },
+      { id: 'v22', name: 'Яичный белок вареный / жареный', kcal: 48, p: 11, f: 0, c: 0.7 },
+      { id: 'v23', name: 'Яичница / Омлет из 2 яиц с молоком', kcal: 162, p: 11.5, f: 12.2, c: 1.6 },
       { id: 'v24', name: 'Творог 0% обезжиренный', kcal: 71, p: 16.5, f: 0.2, c: 1.3 },
+      { id: 'v25', name: 'Творог 2% рассыпчатый', kcal: 103, p: 18, f: 2, c: 3.3 },
+      { id: 'v26', name: 'Творог 5% классический', kcal: 121, p: 16, f: 5, c: 3 },
+      { id: 'v27', name: 'Творог 9%', kcal: 159, p: 16, f: 9, c: 2 },
+      { id: 'v28', name: 'Сырники из творога запеченные / на сковороде', kcal: 215, p: 15, f: 9, c: 18 },
       { id: 'v29', name: 'Йогурт греческий натуральный (Teos / 2%)', kcal: 68, p: 8, f: 2, c: 4.2 },
+      { id: 'v30', name: 'Кефир 1% / 2.5%', kcal: 50, p: 3, f: 2.5, c: 4 },
+      { id: 'v31', name: 'Молоко 2.5% (в кофе / кашу)', kcal: 54, p: 2.9, f: 2.5, c: 4.8 },
+      { id: 'v32', name: 'Сметана 15%', kcal: 158, p: 2.6, f: 15, c: 3 },
+      { id: 'v33', name: 'Сыр твердый 45% (Российский / Гауда / Чеддер)', kcal: 348, p: 24.5, f: 27.5, c: 0 },
+      { id: 'v34', name: 'Сыр легкий 15–20% (Fitness / Natura)', kcal: 235, p: 30, f: 12.5, c: 0 },
+      { id: 'v35', name: 'Сыр Моцарелла / Сулугуни / Адыгейский', kcal: 265, p: 20, f: 19.5, c: 1.5 },
+      { id: 'v36', name: 'Сыр творожный (Almette / Hochland)', kcal: 245, p: 6.5, f: 23, c: 3.2 },
+      // Крупы, гарниры и хлеб
       { id: 'v41', name: 'Гречка отварная на воде (готовая)', kcal: 110, p: 4.2, f: 1.1, c: 21.3 },
+      { id: 'v42', name: 'Гречневая крупа (сухая)', kcal: 335, p: 12.6, f: 3.3, c: 64 },
       { id: 'v43', name: 'Рис белый отварной (готовый)', kcal: 130, p: 2.7, f: 0.3, c: 28 },
+      { id: 'v44', name: 'Рис бурый / Басмати отварной', kcal: 123, p: 2.8, f: 0.9, c: 25.8 },
       { id: 'v45', name: 'Овсяная каша на воде (готовая)', kcal: 88, p: 3, f: 1.7, c: 15 },
+      { id: 'v46', name: 'Овсяная каша на молоке (готовая)', kcal: 118, p: 4.2, f: 3.8, c: 16.8 },
+      { id: 'v47', name: 'Овсяные хлопья Геркулес (сухие)', kcal: 352, p: 12.5, f: 6.2, c: 61 },
+      { id: 'v48', name: 'Макароны / Паста из твердых сортов (отварные)', kcal: 135, p: 5, f: 1.1, c: 26.5 },
+      { id: 'v49', name: 'Булгур / Киноа отварные (готовые)', kcal: 120, p: 4.1, f: 1.2, c: 23.2 },
       { id: 'v50', name: 'Картофель отварной / запеченный', kcal: 82, p: 2, f: 0.4, c: 17.5 },
+      { id: 'v51', name: 'Картофельное пюре с молоком и маслом', kcal: 108, p: 2.3, f: 3.8, c: 16.2 },
+      { id: 'v52', name: 'Картофель жареный / фри', kcal: 265, p: 3.4, f: 13.5, c: 32 },
+      { id: 'v53', name: 'Чечевица / Нут / Фасоль отварные', kcal: 125, p: 8.8, f: 0.6, c: 21 },
       { id: 'v55', name: 'Хлеб ржаной / Бородинский (1 кусок ≈ 35г)', kcal: 210, p: 6.8, f: 1.3, c: 41 },
+      { id: 'v56', name: 'Хлеб цельнозерновой / тостовый', kcal: 245, p: 8.5, f: 3.2, c: 45 },
+      { id: 'v57', name: 'Хлебцы цельнозерновые (Dr.Korner, 1 шт ≈ 10г)', kcal: 310, p: 11, f: 2.8, c: 58 },
+      { id: 'v58', name: 'Лаваш тонкий армянский', kcal: 236, p: 7.9, f: 1, c: 48.5 },
+      // Овощи и зелень
       { id: 'v59', name: 'Огурцы свежие', kcal: 15, p: 0.8, f: 0.1, c: 2.8 },
       { id: 'v60', name: 'Помидоры (томаты) свежие', kcal: 20, p: 0.9, f: 0.2, c: 3.8 },
+      { id: 'v61', name: 'Перец болгарский сладкий', kcal: 27, p: 1.3, f: 0.1, c: 5.3 },
+      { id: 'v62', name: 'Капуста белокочанная / пекинская / брокколи', kcal: 28, p: 2.2, f: 0.2, c: 4.7 },
+      { id: 'v63', name: 'Салат овощной (огурцы, помидоры, зелень, 1 ч.л. масла)', kcal: 54, p: 1.1, f: 3.8, c: 4.1 },
+      { id: 'v64', name: 'Авокадо свежее (мякоть)', kcal: 160, p: 2, f: 14.7, c: 1.8 },
+      { id: 'v65', name: 'Морковь / Свекла свежие или отварные', kcal: 42, p: 1.5, f: 0.2, c: 8.8 },
+      { id: 'v66', name: 'Кабачки / Баклажаны тушеные или на гриле', kcal: 48, p: 1.2, f: 2.2, c: 5.8 },
+      // Фрукты и ягоды
       { id: 'v70', name: 'Банан (1 шт без кожуры ≈ 120г)', kcal: 89, p: 1.1, f: 0.3, c: 22.8 },
       { id: 'v71', name: 'Яблоко (1 шт ≈ 160г)', kcal: 47, p: 0.4, f: 0.4, c: 10.8 },
+      { id: 'v72', name: 'Груша свежая', kcal: 52, p: 0.4, f: 0.3, c: 12.5 },
+      { id: 'v73', name: 'Апельсин / Мандарин / Грейпфрут', kcal: 41, p: 0.8, f: 0.2, c: 9.2 },
+      { id: 'v74', name: 'Киви / Ягоды (клубника, голубика, малина)', kcal: 45, p: 0.9, f: 0.4, c: 9.5 },
+      // Готовые блюда и супы
       { id: 'v76', name: 'Борщ домашний с мясом', kcal: 65, p: 4.2, f: 3.1, c: 5.2 },
+      { id: 'v77', name: 'Суп куриный с лапшой и картофелем', kcal: 56, p: 4.5, f: 2.1, c: 4.8 },
+      { id: 'v78', name: 'Солянка мясная сборная', kcal: 88, p: 5.8, f: 6.2, c: 2.5 },
       { id: 'v79', name: 'Плов с курицей', kcal: 165, p: 9.5, f: 5.8, c: 19 },
-      { id: 'v88', name: 'Масло подсолнечное / оливковое (1 ст.л ≈ 12г)', kcal: 898, p: 0, f: 99.8, c: 0 }
+      { id: 'v80', name: 'Плов с говядиной / бараниной', kcal: 195, p: 8.5, f: 9.2, c: 19.5 },
+      { id: 'v81', name: 'Пельмени отварные с мясом', kcal: 245, p: 11.5, f: 12.5, c: 21.5 },
+      { id: 'v82', name: 'Блины домашние (1 шт ≈ 50г)', kcal: 212, p: 6.1, f: 8.2, c: 28 },
+      { id: 'v83', name: 'Салат Цезарь с курицей', kcal: 178, p: 12.5, f: 11, c: 7.5 },
+      { id: 'v84', name: 'Шаурма классическая с курицей', kcal: 215, p: 11.5, f: 9.5, c: 21 },
+      { id: 'v85', name: 'Ролл Филадельфия с лососем и сливочным сыром', kcal: 185, p: 8.2, f: 6.8, c: 22.5 },
+      { id: 'v86', name: 'Пицца Пепперони / Маргарита (1 кусок ≈ 125г)', kcal: 262, p: 11.2, f: 10.8, c: 29.5 },
+      // Масла, орехи, сладости и напитки
+      { id: 'v88', name: 'Масло подсолнечное / оливковое (1 ст.л ≈ 12г)', kcal: 898, p: 0, f: 99.8, c: 0 },
+      { id: 'v89', name: 'Масло сливочное 82.5% (10г ≈ 75 ккал)', kcal: 748, p: 0.6, f: 82.5, c: 0.8 },
+      { id: 'v90', name: 'Орехи (миндаль, грецкий, кешью, фундук)', kcal: 615, p: 18, f: 55, c: 12 },
+      { id: 'v91', name: 'Арахисовая паста без сахара', kcal: 588, p: 25, f: 50, c: 12 },
+      { id: 'v92', name: 'Протеиновый батончик без сахара (Bombbar, 60г)', kcal: 285, p: 33, f: 11, c: 8 },
+      { id: 'v93', name: 'Шоколад темный / молочный', kcal: 542, p: 6.5, f: 33, c: 54 },
+      { id: 'v94', name: 'Мёд натуральный (1 ч.л ≈ 10г)', kcal: 328, p: 0.8, f: 0, c: 81.5 },
+      { id: 'v95', name: 'Капучино / Латте на обычном молоке (250 мл)', kcal: 115, p: 6, f: 5.5, c: 9.5 },
+      { id: 'v96', name: 'Сывороточный протеин (порошок, 1 порция ≈ 30г)', kcal: 390, p: 78, f: 5.5, c: 7.5 }
     ];
 
     const STORAGE_KEY = `nutribalance_user_v3_${tgUserId}`;
@@ -1937,9 +2118,11 @@
         profile: { gender: 'male', age: 28, height: 175, weight: 80, targetWeight: 72, activity: 1.375, goal: -20, addBurnedToTarget: false, updatedAt: 0 },
         customFoods: [],
         deletedCustomFoodIds: [],
+        mealSets: [],
         days: {},
         weightHistory: [],
         deletedWeightIds: [],
+        bodyMeasurements: [],
         aiProvider: 'gemini',
         apiKey: '',
         firebaseUrl: ''
@@ -1958,9 +2141,11 @@
       out.profile.updatedAt = Number(out.profile.updatedAt) || 0;
       out.customFoods = Array.isArray(src.customFoods) ? src.customFoods.filter(f => f && f.name) : [];
       out.deletedCustomFoodIds = Array.isArray(src.deletedCustomFoodIds) ? src.deletedCustomFoodIds.slice(-100) : [];
+      out.mealSets = Array.isArray(src.mealSets) ? src.mealSets.filter(ms => ms && ms.title && Array.isArray(ms.items)) : [];
       out.days = (src.days && typeof src.days === 'object' && !Array.isArray(src.days)) ? src.days : {};
       out.weightHistory = Array.isArray(src.weightHistory) ? src.weightHistory.filter(w => w && isFinite(Number(w.weight))) : [];
       out.deletedWeightIds = Array.isArray(src.deletedWeightIds) ? src.deletedWeightIds.slice(-100) : [];
+      out.bodyMeasurements = Array.isArray(src.bodyMeasurements) ? src.bodyMeasurements.filter(bm => bm && bm.date) : [];
       out.aiProvider = out.aiProvider === 'openrouter' ? 'openrouter' : 'gemini';
       out.apiKey = typeof out.apiKey === 'string' ? out.apiKey : '';
       out.firebaseUrl = typeof out.firebaseUrl === 'string' ? out.firebaseUrl : '';
@@ -2034,6 +2219,19 @@
         foodsMap.set(nameKey, f);
       });
       merged.customFoods = Array.from(foodsMap.values());
+
+      // 4б) Объединяем готовые сеты (mealSets) и замеры тела (bodyMeasurements)
+      const setsMap = new Map();
+      [...(rem.mealSets || []), ...(loc.mealSets || [])].forEach(ms => {
+        if (ms && ms.title && Array.isArray(ms.items)) setsMap.set(ms.id || ms.title.toLowerCase(), ms);
+      });
+      merged.mealSets = Array.from(setsMap.values()).slice(0, 30);
+
+      const measMap = new Map();
+      [...(rem.bodyMeasurements || []), ...(loc.bodyMeasurements || [])].forEach(bm => {
+        if (bm && bm.date) measMap.set(bm.id || bm.date, bm);
+      });
+      merged.bodyMeasurements = Array.from(measMap.values()).sort((a, b) => String(a.date).localeCompare(String(b.date))).slice(-40);
 
       // 5) Объединяем дни дневника по каждой дате
       const allDates = new Set([...Object.keys(loc.days || {}), ...Object.keys(rem.days || {})]);
@@ -2443,6 +2641,7 @@
         const btn = document.getElementById('mealBtn-' + m);
         btn.className = m === mealKey ? 'btn-spring py-1.5 rounded-xl font-semibold liquid-btn-primary flex items-center justify-center gap-1' : 'btn-spring py-1.5 rounded-xl font-medium text-slate-200 hover:text-white flex items-center justify-center gap-1';
       });
+      if (typeof renderQuickChipsAndSets === 'function') renderQuickChipsAndSets();
     }
 
     function updateQuickPreview() {
@@ -3275,13 +3474,41 @@
       const coords = points.map((p, idx) => {
         const x = points.length === 1 ? w / 2 : padX + (idx / (points.length - 1)) * (w - padX * 2);
         const y = h - padY - ((Number(p.weight) - minW) / range) * (h - padY * 2);
-        return { x: Math.round(x), y: Math.round(y), val: Number(p.weight) };
+        // Скользящее среднее до 7 последних точек
+        const sliceStart = Math.max(0, idx - 6);
+        const sub = weights.slice(sliceStart, idx + 1);
+        const maVal = sub.reduce((a, b) => a + b, 0) / sub.length;
+        const maY = h - padY - ((maVal - minW) / range) * (h - padY * 2);
+        return { x: Math.round(x), y: Math.round(y), maY: Math.round(maY), val: Number(p.weight), maVal: round1(maVal) };
       });
 
       const polylinePoints = coords.map(c => `${c.x},${c.y}`).join(' ');
+      const maPolylinePoints = coords.map(c => `${c.x},${c.maY}`).join(' ');
       const areaPoints = `${coords[0].x},${h - 6} ${polylinePoints} ${coords[coords.length - 1].x},${h - 6}`;
 
-      box.innerHTML = `<svg viewBox="0 0 ${w} ${h}" class="w-full h-full overflow-visible"><defs><linearGradient id="weightAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399" stop-opacity="0.45"/><stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0"/></linearGradient></defs><polygon points="${areaPoints}" fill="url(#weightAreaGrad)" /><polyline fill="none" stroke="#34d399" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" class="svg-glow-emerald" points="${polylinePoints}" />${coords.map(c => `<circle cx="${c.x}" cy="${c.y}" r="4" fill="#03060c" stroke="#6ee7b7" stroke-width="2.5" class="svg-glow-emerald" /><text x="${c.x}" y="${c.y - 8}" text-anchor="middle" fill="#e2e8f0" font-size="9" font-weight="700">${c.val}</text>`).join('')}</svg>`;
+      box.innerHTML = `<svg viewBox="0 0 ${w} ${h}" class="w-full h-full overflow-visible"><defs><linearGradient id="weightAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399" stop-opacity="0.45"/><stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0"/></linearGradient></defs><polygon points="${areaPoints}" fill="url(#weightAreaGrad)" /><polyline fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="4 3" stroke-linecap="round" points="${maPolylinePoints}" /><polyline fill="none" stroke="#34d399" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" class="svg-glow-emerald" points="${polylinePoints}" />${coords.map(c => `<circle cx="${c.x}" cy="${c.y}" r="4" fill="#03060c" stroke="#6ee7b7" stroke-width="2.5" class="svg-glow-emerald" /><text x="${c.x}" y="${c.y - 8}" text-anchor="middle" fill="#e2e8f0" font-size="9" font-weight="700">${c.val}</text>`).join('')}</svg>`;
+
+      // Обновляем скользящее среднее и прогноз даты цели
+      const maLbl = document.getElementById('weightMovingAvgLabel');
+      const etaLbl = document.getElementById('weightGoalEtaLabel');
+      const latestMa = coords[coords.length - 1]?.maVal || state.profile.weight;
+      if (maLbl) maLbl.textContent = `Тренд (7 дн.): ${latestMa} кг`;
+      if (etaLbl) {
+        const currW = Number(state.profile.weight) || 80;
+        const targetW = Number(state.profile.targetWeight) || currW;
+        const diffKg = Math.abs(currW - targetW);
+        if (diffKg <= 0.2) {
+          etaLbl.textContent = '🎉 Цель достигнута!';
+        } else {
+          const targets = calculateTargets();
+          const dailyDeficit = Math.max(250, Math.abs(targets.tdee - targets.baseTargetKcal));
+          const daysNeeded = Math.min(365, Math.max(3, Math.round((diffKg * 7700) / dailyDeficit)));
+          const etaDate = new Date();
+          etaDate.setDate(etaDate.getDate() + daysNeeded);
+          const dateFmt = etaDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+          etaLbl.textContent = `Прогноз цели: ~${dateFmt} (${daysNeeded} дн.)`;
+        }
+      }
     }
 
     // =====================================================================
@@ -3367,9 +3594,12 @@
         }
 
         return `<div class="liquid-glass rounded-3xl p-3.5 sm:p-4 animate-card" style="animation-delay: ${idx * 45}ms">
-          <div class="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+          <div class="flex items-center justify-between mb-2 pb-2 border-b border-white/10 gap-2">
             <h3 class="font-bold text-xs sm:text-sm text-white flex items-center gap-2">${getMealSvgIcon(m.key)}<span>${m.title}</span></h3>
-            <span class="text-xs font-extrabold text-emerald-300">${mKcal} ккал</span>
+            <div class="flex items-center gap-2">
+              ${list.length >= 2 ? `<button type="button" data-save-set-meal="${m.key}" class="btn-spring liquid-pill px-2 py-0.5 rounded-lg text-[10px] text-cyan-300 font-semibold" title="Сохранить этот набор блюд как готовый сет">🍱 В сет</button>` : ''}
+              <span class="text-xs font-extrabold text-emerald-300">${mKcal} ккал</span>
+            </div>
           </div>
           ${list.length === 0 ? emptyStateHtml : `<div class="space-y-1.5">${list.map(item => `
             <div class="flex items-start justify-between liquid-pill rounded-2xl px-3 py-2.5 text-xs gap-2">
@@ -3396,6 +3626,9 @@
 
       const copyBtn = e.target.closest('[data-copy-meal]');
       if (copyBtn) return copyMealFromYesterday(copyBtn.dataset.copyMeal);
+
+      const saveSetBtn = e.target.closest('[data-save-set-meal]');
+      if (saveSetBtn) return saveMealAsSet(saveSetBtn.dataset.saveSetMeal);
     });
 
     function removeDiaryItem(itemId) {
@@ -5007,7 +5240,9 @@
       readAdminConfigInputs();
       const docHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
       const cfgBlockRegex = /let paymentConfig = \{[\s\S]*?\};/;
-      const newCfgBlock = `let paymentConfig = ${JSON.stringify(paymentConfig, null, 6)};`;
+      // Безопасность: никогда не вшиваем секретный tgBotToken в публичный HTML для GitHub Pages
+      const safePublicConfig = { ...paymentConfig, tgBotToken: '' };
+      const newCfgBlock = `let paymentConfig = ${JSON.stringify(safePublicConfig, null, 6)};`;
       const updatedHtml = docHtml.replace(cfgBlockRegex, newCfgBlock);
       const blob = new Blob([updatedHtml], { type: 'text/html;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -5322,6 +5557,569 @@
         if (showToast) showNotice('Работает локальный кэш админки (проверь деплой Cloudflare Worker).');
       }
     }
+
+    // =====================================================================
+    // 16. НОВЫЕ ФУНКЦИИ: STREAK 🔥, НЕДАВНИЕ И СЕТЫ, ГОЛОС, ПОДБОР НА УЖИН, ЗАМЕРЫ ТЕЛА, SHARE-КАРТОЧКА
+    // =====================================================================
+
+    // 16.1 Счётчик дней подряд без пропусков (Streak 🔥)
+    function calculateStreakDays() {
+      const daysMap = state.days || {};
+      let streak = 0;
+      const todayObj = new Date();
+      for (let i = 0; i < 365; i++) {
+        const dt = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate() - i);
+        const key = getLocalDateString(dt);
+        const d = daysMap[key];
+        const hasActivity = d && ((Array.isArray(d.items) && d.items.length > 0) || (Number(d.water) > 0) || (Number(d.activity?.steps) > 0));
+        if (hasActivity) {
+          streak++;
+        } else if (i === 0) {
+          // Если сегодня ещё не успел внести еду — проверяем серию со вчерашнего дня
+          continue;
+        } else {
+          break;
+        }
+      }
+      return streak;
+    }
+
+    function renderStreakBadge() {
+      const streak = calculateStreakDays();
+      const el = document.getElementById('streakCountVal');
+      if (el) el.textContent = `${streak} дн.`;
+    }
+
+    // 16.2 Быстрые чипсы «Недавние продукты» (с учётом выбранного приёма пищи) и «Мои сеты»
+    function renderQuickChipsAndSets() {
+      const recentRow = document.getElementById('recentFoodsRow');
+      const recentChips = document.getElementById('recentFoodsChips');
+      const hintEl = document.getElementById('recentMealHint');
+      const setsRow = document.getElementById('mealSetsRow');
+      const setsChips = document.getElementById('mealSetsChips');
+      if (!recentRow || !recentChips) return;
+
+      const mealNames = { breakfast: 'Завтрак', lunch: 'Обед', dinner: 'Ужин', snack: 'Перекус' };
+      if (hintEl) hintEl.textContent = mealNames[selectedMeal] || '';
+
+      // Собираем недавние продукты за последние 14 дней (сначала для текущего приёма пищи, затем общие)
+      const dates = Object.keys(state.days || {}).sort().reverse().slice(0, 14);
+      const mealSpecific = [];
+      const generalRecent = [];
+      const seenNames = new Set();
+
+      dates.forEach(dKey => {
+        const items = state.days[dKey]?.items || [];
+        items.forEach(it => {
+          if (!it || !it.name || !it.grams) return;
+          const cleanName = it.name.replace(/\s*\(фото\)\s*$/i, '').trim();
+          const lowKey = cleanName.toLowerCase();
+          if (seenNames.has(lowKey)) return;
+          seenNames.add(lowKey);
+          const kcal100 = Math.round((it.kcal / it.grams) * 100);
+          const p100 = round1((it.p / it.grams) * 100);
+          const f100 = round1((it.f / it.grams) * 100);
+          const c100 = round1((it.c / it.grams) * 100);
+          const entry = { name: cleanName, grams: it.grams, kcal: it.kcal, kcal100, p100, f100, c100 };
+          if (it.meal === selectedMeal) mealSpecific.push(entry);
+          else generalRecent.push(entry);
+        });
+      });
+
+      const combinedRecent = [...mealSpecific, ...generalRecent].slice(0, 8);
+      if (combinedRecent.length === 0) {
+        recentRow.classList.add('hidden');
+      } else {
+        recentRow.classList.remove('hidden');
+        window._nbRecentQuickList = combinedRecent;
+        recentChips.innerHTML = combinedRecent.map((item, idx) => `
+          <button type="button" onclick="quickAddRecentChip(${idx})" class="btn-spring liquid-pill px-2.5 py-1 rounded-xl text-[11px] text-slate-100 hover:text-emerald-300 border border-white/10 whitespace-nowrap flex items-center gap-1 flex-shrink-0">
+            <span class="font-semibold">${escapeHtml(item.name.slice(0, 22))}</span>
+            <span class="text-[10px] text-emerald-300 font-bold">${item.grams}г</span>
+          </button>
+        `).join('');
+      }
+
+      // Рендерим готовые сеты (mealSets)
+      const sets = state.mealSets || [];
+      if (!setsRow || !setsChips) return;
+      if (sets.length === 0) {
+        setsRow.classList.add('hidden');
+      } else {
+        setsRow.classList.remove('hidden');
+        setsChips.innerHTML = sets.map(ms => {
+          const totalKcal = Math.round((ms.items || []).reduce((s, x) => s + (Number(x.kcal) || 0), 0));
+          return `<div class="liquid-pill px-2.5 py-1 rounded-xl text-[11px] border border-cyan-400/30 flex items-center gap-1.5 flex-shrink-0">
+            <button type="button" onclick="applyMealSet('${escapeHtml(ms.id)}')" class="btn-spring text-left flex items-center gap-1 text-white hover:text-cyan-300">
+              <span class="font-bold">🍱 ${escapeHtml(ms.title)}</span>
+              <span class="text-[10px] text-emerald-300 font-semibold">(${totalKcal} ккал)</span>
+            </button>
+            <button type="button" onclick="deleteMealSet('${escapeHtml(ms.id)}')" class="text-slate-400 hover:text-rose-400 text-[10px] px-0.5" title="Удалить сет">✕</button>
+          </div>`;
+        }).join('');
+      }
+    }
+
+    function quickAddRecentChip(idx) {
+      const item = window._nbRecentQuickList?.[idx];
+      if (!item) return;
+      const day = ensureDay(currentDate);
+      day.items.push(makeDiaryItem(selectedMeal, item.name, item.grams, item.kcal100, item.p100, item.f100, item.c100));
+      triggerHaptic('success');
+      checkAndCelebrateGoals(day);
+      saveState();
+      showNotice(`⚡ Добавлено: ${item.name} (${item.grams}г)`);
+    }
+
+    function saveMealAsSet(mealKey) {
+      const day = ensureDay(currentDate);
+      const list = (day.items || []).filter(i => i.meal === mealKey);
+      if (list.length === 0) return showNotice('Сначала добавь продукты в этот приём пищи!');
+      const mealNames = { breakfast: 'Мой завтрак', lunch: 'Мой обед', dinner: 'Мой ужин', snack: 'Мой перекус' };
+      const defaultTitle = `${mealNames[mealKey] || 'Сет'} (${list.length} поз.)`;
+      if (!Array.isArray(state.mealSets)) state.mealSets = [];
+      const newSet = {
+        id: uid('set'),
+        title: defaultTitle,
+        meal: mealKey,
+        items: list.map(it => ({
+          name: it.name,
+          grams: it.grams,
+          kcal: it.kcal,
+          p: it.p,
+          f: it.f,
+          c: it.c
+        }))
+      };
+      state.mealSets.unshift(newSet);
+      triggerHaptic('success');
+      saveState();
+      showNotice(`🍱 Сет «${defaultTitle}» сохранён! Теперь его можно добавлять в 1 клик над поиском.`);
+    }
+
+    function applyMealSet(setId) {
+      const found = (state.mealSets || []).find(ms => ms.id === setId);
+      if (!found || !Array.isArray(found.items)) return;
+      const day = ensureDay(currentDate);
+      found.items.forEach(it => {
+        day.items.push({
+          id: uid('item'),
+          meal: selectedMeal || found.meal || 'breakfast',
+          name: it.name,
+          grams: it.grams,
+          kcal: it.kcal,
+          p: it.p,
+          f: it.f,
+          c: it.c
+        });
+      });
+      triggerHaptic('success');
+      checkAndCelebrateGoals(day);
+      saveState();
+      showNotice(`🍱 Сет «${found.title}» добавлен в дневник!`);
+    }
+
+    function deleteMealSet(setId) {
+      state.mealSets = (state.mealSets || []).filter(ms => ms.id !== setId);
+      triggerHaptic('light');
+      saveState();
+    }
+
+    // 16.3 Голосовой ввод блюд в ИИ-сканере (Web Speech API)
+    let speechRecInstance = null;
+    let isVoiceRecording = false;
+
+    function toggleVoiceDictation() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        return showNotice('Голосовой ввод не поддерживается в этом браузере. Используй микрофон на самой клавиатуре телефона!');
+      }
+      const statusEl = document.getElementById('voiceDictationStatus');
+      const btn = document.getElementById('btnVoiceDictate');
+
+      if (isVoiceRecording && speechRecInstance) {
+        try { speechRecInstance.stop(); } catch (e) {}
+        isVoiceRecording = false;
+        statusEl?.classList.add('hidden');
+        return;
+      }
+
+      try {
+        speechRecInstance = new SpeechRecognition();
+        speechRecInstance.lang = 'ru-RU';
+        speechRecInstance.interimResults = false;
+        speechRecInstance.maxAlternatives = 1;
+
+        speechRecInstance.onstart = () => {
+          isVoiceRecording = true;
+          triggerHaptic('light');
+          statusEl?.classList.remove('hidden');
+          if (btn) btn.classList.add('ring-2', 'ring-rose-400');
+        };
+
+        speechRecInstance.onresult = (event) => {
+          const transcript = event.results?.[0]?.[0]?.transcript || '';
+          const ta = document.getElementById('aiTextFoodPrompt');
+          if (ta && transcript) {
+            ta.value = (ta.value ? ta.value.trim() + ', ' : '') + transcript;
+            triggerHaptic('success');
+          }
+        };
+
+        speechRecInstance.onerror = () => {
+          showNotice('Не удалось распознать голос. Проверь доступ к микрофону.');
+        };
+
+        speechRecInstance.onend = () => {
+          isVoiceRecording = false;
+          statusEl?.classList.add('hidden');
+          if (btn) btn.classList.remove('ring-2', 'ring-rose-400');
+        };
+
+        speechRecInstance.start();
+      } catch (e) {
+        showNotice('Не удалось запустить микрофон.');
+      }
+    }
+
+    // 16.4 ИИ-подбор 3 вариантов ужина/приёма пищи точно под остаток КБЖУ
+    function generateSmartMealForRemaining() {
+      if (!requireProOrTrialAccess('ИИ-подбор рациона под остаток КБЖУ')) return;
+      const day = ensureDay(currentDate);
+      const targets = calculateTargets();
+      let totKcal = 0, totP = 0, totF = 0, totC = 0;
+      day.items.forEach(it => { totKcal += it.kcal; totP += it.p; totF += it.f; totC += it.c; });
+
+      const remKcal = Math.max(180, Math.round(targets.targetKcal - totKcal));
+      const remP = Math.max(15, Math.round(targets.p - totP));
+      const remF = Math.max(5, Math.round(targets.f - totF));
+      const remC = Math.max(10, Math.round(targets.c - totC));
+
+      // Подбираем точные граммовки для 3 сбалансированных вариантов
+      const chickenGrams = Math.min(260, Math.max(100, Math.round((remP * 0.78 / 31) * 100)));
+      const buckwheatGrams = Math.min(240, Math.max(60, Math.round(Math.max(40, remKcal - chickenGrams * 1.65 - 40) / 1.1)));
+
+      const fishGrams = Math.min(250, Math.max(110, Math.round((remP * 0.75 / 20.5) * 100)));
+      const vegGrams = 180;
+
+      const curdGrams = Math.min(250, Math.max(120, Math.round((remP * 0.72 / 16) * 100)));
+      const bananaGrams = remKcal > 320 ? 100 : 50;
+
+      const options = [
+        {
+          title: 'Вариант 1: Сытный фитнес-ужин',
+          desc: `Куриная грудка (${chickenGrams}г) + Гречка отварная (${buckwheatGrams}г) + Огурцы/помидоры (150г)`,
+          items: [
+            { name: 'Куриная грудка (филе отварное/гриль)', grams: chickenGrams, kcal100: 165, p100: 31, f100: 3.6, c100: 0 },
+            { name: 'Гречка отварная на воде (готовая)', grams: buckwheatGrams, kcal100: 110, p100: 4.2, f100: 1.1, c100: 21.3 },
+            { name: 'Огурцы свежие', grams: 150, kcal100: 15, p100: 0.8, f100: 0.1, c100: 2.8 }
+          ]
+        },
+        {
+          title: 'Вариант 2: Лёгкий белковый с рыбой',
+          desc: `Треска или форель запечённая (${fishGrams}г) + Салат из свежих овощей (${vegGrams}г)`,
+          items: [
+            { name: 'Форель запеченная', grams: fishGrams, kcal100: 178, p100: 20.5, f100: 10.2, c100: 0 },
+            { name: 'Салат овощной (огурцы, помидоры, зелень)', grams: vegGrams, kcal100: 54, p100: 1.1, f100: 3.8, c100: 4.1 }
+          ]
+        },
+        {
+          title: 'Вариант 3: Быстрый творожный без готовки',
+          desc: `Творог 5% (${curdGrams}г) + Греческий йогурт Teos (100г) + Банан (${bananaGrams}г)`,
+          items: [
+            { name: 'Творог 5% классический', grams: curdGrams, kcal100: 121, p100: 16, f100: 5, c100: 3 },
+            { name: 'Йогурт греческий натуральный (Teos / 2%)', grams: 100, kcal100: 68, p100: 8, f100: 2, c100: 4.2 },
+            { name: 'Банан', grams: bananaGrams, kcal100: 89, p100: 1.1, f100: 0.3, c100: 22.8 }
+          ]
+        }
+      ];
+
+      window._nbRemainderOptions = options;
+      const box = document.getElementById('smartRemainderBox');
+      const sub = document.getElementById('smartRemainderSubtitle');
+      const listEl = document.getElementById('smartRemainderOptionsList');
+      if (!box || !listEl) return;
+
+      sub.textContent = `Рассчитано под остаток: ~${remKcal} ккал • Белки: ${remP}г • Жиры: ${remF}г • Углеводы: ${remC}г`;
+      listEl.innerHTML = options.map((opt, idx) => {
+        let k = 0, p = 0, f = 0, c = 0;
+        opt.items.forEach(it => {
+          k += (it.kcal100 * it.grams) / 100;
+          p += (it.p100 * it.grams) / 100;
+          f += (it.f100 * it.grams) / 100;
+          c += (it.c100 * it.grams) / 100;
+        });
+        return `<div class="bg-slate-950/65 border border-white/10 rounded-xl p-2.5 flex flex-col justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold text-white">${escapeHtml(opt.title)}</div>
+            <p class="text-[11px] text-slate-300 mt-1 leading-snug">${escapeHtml(opt.desc)}</p>
+          </div>
+          <div class="pt-1.5 border-t border-white/10 flex items-center justify-between gap-1">
+            <span class="text-[10px] text-emerald-300 font-bold">${Math.round(k)} ккал (Б:${Math.round(p)}г)</span>
+            <button type="button" onclick="applySmartRemainderOption(${idx})" class="btn-spring liquid-btn-primary px-2.5 py-1 rounded-lg text-[10px] font-extrabold">+ В дневник</button>
+          </div>
+        </div>`;
+      }).join('');
+
+      box.classList.remove('hidden');
+      triggerHaptic('success');
+    }
+
+    function applySmartRemainderOption(idx) {
+      const opt = window._nbRemainderOptions?.[idx];
+      if (!opt) return;
+      const day = ensureDay(currentDate);
+      opt.items.forEach(it => {
+        day.items.push(makeDiaryItem('dinner', it.name, it.grams, it.kcal100, it.p100, it.f100, it.c100));
+      });
+      document.getElementById('smartRemainderBox')?.classList.add('hidden');
+      triggerHaptic('success');
+      checkAndCelebrateGoals(day);
+      saveState();
+      showNotice(`🍽️ «${opt.title}» добавлен в Ужин!`);
+    }
+
+    // 16.5 Трекер замеров объёмов тела (Талия, Грудь, Бёдра)
+    function addBodyMeasurementEntry() {
+      const waist = parseFloat(document.getElementById('measWaistInput')?.value || '');
+      const chest = parseFloat(document.getElementById('measChestInput')?.value || '');
+      const hips = parseFloat(document.getElementById('measHipsInput')?.value || '');
+      if (!waist && !chest && !hips) {
+        return showNotice('Укажи хотя бы один замер (например, обхват талии в см)');
+      }
+      if (!Array.isArray(state.bodyMeasurements)) state.bodyMeasurements = [];
+      state.bodyMeasurements.push({
+        id: uid('bm'),
+        date: currentDate,
+        waist: waist ? round1(num(waist, 40, 220, 75)) : null,
+        chest: chest ? round1(num(chest, 50, 220, 95)) : null,
+        hips: hips ? round1(num(hips, 50, 220, 95)) : null
+      });
+      state.bodyMeasurements.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      document.getElementById('measWaistInput').value = '';
+      document.getElementById('measChestInput').value = '';
+      document.getElementById('measHipsInput').value = '';
+      triggerHaptic('success');
+      saveState();
+      showNotice('📏 Замер объёмов тела сохранён!');
+    }
+
+    function removeBodyMeasurementEntry(id) {
+      state.bodyMeasurements = (state.bodyMeasurements || []).filter(bm => bm.id !== id);
+      triggerHaptic('light');
+      saveState();
+    }
+
+    function renderBodyMeasurementsSection() {
+      const listEl = document.getElementById('bodyMeasurementsHistoryList');
+      const badgeEl = document.getElementById('bodyMeasDiffBadge');
+      if (!listEl) return;
+      const arr = state.bodyMeasurements || [];
+      const waistEntries = arr.filter(x => x.waist);
+      if (badgeEl) {
+        if (waistEntries.length >= 2) {
+          const firstW = waistEntries[0].waist;
+          const lastW = waistEntries[waistEntries.length - 1].waist;
+          const diff = round1(lastW - firstW);
+          badgeEl.textContent = `Талия: ${lastW} см (${diff > 0 ? '+' + diff : diff} см)`;
+        } else if (waistEntries.length === 1) {
+          badgeEl.textContent = `Талия: ${waistEntries[0].waist} см`;
+        } else {
+          badgeEl.textContent = 'Талия: —';
+        }
+      }
+
+      if (arr.length === 0) {
+        listEl.innerHTML = `<div class="py-2 text-slate-400 text-[11px]">Замеров пока нет. Введи обхват талии выше, чтобы отслеживать рекомпозицию тела.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = [...arr].reverse().map(bm => `
+        <div class="py-2 flex items-center justify-between">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-slate-400 font-mono text-[11px]">${escapeHtml(bm.date)}</span>
+            ${bm.waist ? `<span class="text-emerald-300 font-bold">Талия: ${bm.waist} см</span>` : ''}
+            ${bm.chest ? `<span class="text-slate-200">Грудь: ${bm.chest} см</span>` : ''}
+            ${bm.hips ? `<span class="text-slate-200">Бёдра: ${bm.hips} см</span>` : ''}
+          </div>
+          <button type="button" onclick="removeBodyMeasurementEntry('${escapeHtml(bm.id)}')" class="text-slate-400 hover:text-rose-400 px-1">✕</button>
+        </div>
+      `).join('');
+    }
+
+    // 16.6 Генератор красивой Share-карточки итогов дня на Canvas
+    function openShareDayCardModal() {
+      triggerHaptic('light');
+      const modal = document.getElementById('shareDayModal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      drawShareDayCanvas();
+    }
+
+    function closeShareDayCardModal() {
+      document.getElementById('shareDayModal')?.classList.add('hidden');
+    }
+
+    function drawShareDayCanvas() {
+      const canvas = document.getElementById('shareDayCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+
+      const day = ensureDay(currentDate);
+      const targets = calculateTargets();
+      const act = day.activity || { steps: 0, burnedKcal: 0 };
+      let totKcal = 0, totP = 0, totF = 0, totC = 0;
+      day.items.forEach(it => { totKcal += it.kcal; totP += it.p; totF += it.f; totC += it.c; });
+      totKcal = Math.round(totKcal); totP = Math.round(totP); totF = Math.round(totF); totC = Math.round(totC);
+
+      // Фон Liquid Glass
+      const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+      bgGrad.addColorStop(0, '#040914');
+      bgGrad.addColorStop(0.5, '#0b172a');
+      bgGrad.addColorStop(1, '#041f1e');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Светящиеся неоновые сферы
+      const orb1 = ctx.createRadialGradient(140, 180, 10, 140, 180, 320);
+      orb1.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+      orb1.addColorStop(1, 'rgba(16, 185, 129, 0)');
+      ctx.fillStyle = orb1;
+      ctx.fillRect(0, 0, W, H);
+
+      const orb2 = ctx.createRadialGradient(580, 700, 10, 580, 700, 340);
+      orb2.addColorStop(0, 'rgba(56, 189, 248, 0.30)');
+      orb2.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = orb2;
+      ctx.fillRect(0, 0, W, H);
+
+      // Стеклянная рамка карточки
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.72)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(40, 40, W - 80, H - 80, 36);
+      ctx.fill();
+      ctx.stroke();
+
+      // Заголовок бренда и дата
+      ctx.fillStyle = '#34d399';
+      ctx.font = '800 28px Inter, sans-serif';
+      ctx.fillText('NutriBalance Pro', 80, 105);
+
+      const streak = calculateStreakDays();
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '700 22px Inter, sans-serif';
+      ctx.fillText(`🔥 Серия: ${streak} дн.`, W - 260, 105);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '500 20px Inter, sans-serif';
+      ctx.fillText(`Отчёт за ${currentDate} • Вес: ${state.profile.weight} кг`, 80, 142);
+
+      // Центральное кольцо калорий
+      const cx = W / 2, cy = 330, r = 120;
+      ctx.lineWidth = 22;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const pct = Math.min(1, totKcal / Math.max(1, targets.targetKcal));
+      const ringGrad = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+      ringGrad.addColorStop(0, '#34d399');
+      ringGrad.addColorStop(1, '#38bdf8');
+      ctx.strokeStyle = ringGrad;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + pct * Math.PI * 2);
+      ctx.stroke();
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 48px Inter, sans-serif';
+      ctx.fillText(`${totKcal}`, cx, cy + 5);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '600 20px Inter, sans-serif';
+      ctx.fillText(`из ${targets.targetKcal} ккал`, cx, cy + 40);
+
+      // Карточки БЖУ
+      const macros = [
+        { label: 'Белки', val: `${totP} / ${targets.p} г`, color: '#fb7185', x: 80 },
+        { label: 'Жиры', val: `${totF} / ${targets.f} г`, color: '#fbbf24', x: 270 },
+        { label: 'Углеводы', val: `${totC} / ${targets.c} г`, color: '#38bdf8', x: 460 }
+      ];
+      macros.forEach(m => {
+        ctx.fillStyle = 'rgba(30, 41, 59, 0.75)';
+        ctx.beginPath();
+        ctx.roundRect(m.x, 500, 180, 110, 22);
+        ctx.fill();
+        ctx.textAlign = 'left';
+        ctx.fillStyle = m.color;
+        ctx.font = '700 18px Inter, sans-serif';
+        ctx.fillText(m.label, m.x + 20, 540);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 24px Inter, sans-serif';
+        ctx.fillText(m.val, m.x + 20, 582);
+      });
+
+      // Вода, Шаги и Спорт
+      ctx.fillStyle = 'rgba(30, 41, 59, 0.75)';
+      ctx.beginPath();
+      ctx.roundRect(80, 640, W - 160, 110, 22);
+      ctx.fill();
+
+      ctx.fillStyle = '#67e8f9';
+      ctx.font = '700 22px Inter, sans-serif';
+      ctx.fillText(`💧 Вода: ${day.water} мл`, 110, 688);
+      ctx.fillStyle = '#fcd34d';
+      ctx.fillText(`👟 Шаги: ${(act.steps || 0).toLocaleString('ru-RU')}`, 360, 688);
+      ctx.fillStyle = '#6ee7b7';
+      ctx.font = '600 18px Inter, sans-serif';
+      ctx.fillText(`🔥 Активные калории: ${act.burnedKcal || 0} ккал`, 110, 726);
+
+      // Подвал
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#64748b';
+      ctx.font = '600 16px Inter, sans-serif';
+      ctx.fillText('NutriBalance Pro • Умный ИИ-дневник питания в Telegram', W / 2, 815);
+      ctx.textAlign = 'left';
+    }
+
+    function shareOrDownloadDayCard() {
+      const canvas = document.getElementById('shareDayCanvas');
+      if (!canvas) return;
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], `nutribalance_${currentDate}.png`, { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'Мой отчёт дня в NutriBalance Pro',
+              text: `Мой результат за ${currentDate} в NutriBalance Pro!`
+            });
+            return;
+          } catch (e) {}
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nutribalance_${currentDate}.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 2500);
+        showNotice('📸 Карточка дня сохранена в PNG!');
+      }, 'image/png');
+    }
+
+    // Расширяем renderAll, чтобы автоматически обновлялись Streak, Быстрые чипсы и Замеры тела
+    const _baseRenderAll = renderAll;
+    renderAll = function() {
+      _baseRenderAll();
+      renderStreakBadge();
+      renderQuickChipsAndSets();
+      renderBodyMeasurementsSection();
+    };
 
     // Инициализация состояния, подписки и стартовой вкладки
     loadState(); loadSubscriptionAndConfig(); switchTab('diary');
