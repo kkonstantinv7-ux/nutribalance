@@ -661,15 +661,28 @@
           </div>
         </div>
 
-        <!-- Блок ИИ-подбора блюд под остаток КБЖУ -->
+        <!-- Блок ИИ-подбора блюд под остаток КБЖУ на основе привычных продуктов пользователя -->
         <div id="smartRemainderBox" class="hidden liquid-pill rounded-2xl p-3.5 space-y-2.5 border border-emerald-400/40">
-          <div class="flex items-center justify-between gap-2">
-            <div>
-              <span class="font-bold text-xs text-emerald-300">🍽️ 3 варианта приёма пищи точно под твой остаток КБЖУ</span>
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div class="space-y-0.5 flex-1 min-w-[200px]">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="font-bold text-xs text-emerald-300">🍽️ ИИ-подбор рациона под твой остаток КБЖУ</span>
+                <span id="smartRemainderAiBadge" class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-semibold">✨ ИИ + твои продукты</span>
+              </div>
               <p id="smartRemainderSubtitle" class="text-[10px] text-slate-300"></p>
             </div>
-            <button type="button" onclick="document.getElementById('smartRemainderBox').classList.add('hidden')" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            <div class="flex items-center gap-1.5">
+              <select id="smartRemainderTargetMeal" class="liquid-input rounded-xl px-2 py-1 text-[11px] text-white font-semibold" title="В какой приём пищи записать выбранный вариант">
+                <option value="breakfast" class="bg-slate-900">В Завтрак</option>
+                <option value="lunch" class="bg-slate-900">В Обед</option>
+                <option value="dinner" selected class="bg-slate-900">В Ужин</option>
+                <option value="snack" class="bg-slate-900">В Перекус</option>
+              </select>
+              <button type="button" onclick="generateSmartMealForRemaining(true)" id="btnRegenSmartMeal" class="btn-spring liquid-pill px-2.5 py-1 rounded-xl text-[11px] text-cyan-300 font-semibold border border-cyan-400/30" title="Сгенерировать другие варианты через ИИ">↻ Ещё</button>
+              <button type="button" onclick="document.getElementById('smartRemainderBox').classList.add('hidden')" class="text-slate-400 hover:text-white text-xs px-1.5">✕</button>
+            </div>
           </div>
+          <div id="smartRemainderUserFoodsBar" class="text-[10px] text-slate-300 bg-slate-950/50 border border-white/10 rounded-xl px-2.5 py-1.5 leading-snug"></div>
           <div id="smartRemainderOptionsList" class="grid grid-cols-1 sm:grid-cols-3 gap-2"></div>
         </div>
       </div>
@@ -2774,7 +2787,8 @@
     // =====================================================================
     // Вставь сюда URL своего бесплатного Cloudflare Worker (например: 'https://nutri-ai.myname.workers.dev')
     const AI_PROXY_URL = 'https://nutribalance.k-konstantin-v7.workers.dev';
-    const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+    const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+    const FALLBACK_GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
 
     // Расширенный словарь блюд и продуктов для мгновенного автономного расчёта без ключа
     const SMART_DISH_DICT = [
@@ -2823,29 +2837,51 @@
         throw new Error('NO_PROXY_CONFIGURED');
       }
 
-      const resp = await fetchWithTimeout(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Telegram-Init-Data': tg?.initData || ''
-        },
-        body: JSON.stringify({
-          model: DEFAULT_GEMINI_MODEL,
-          prompt: promptText,
-          image: base64ImageOrNull || null,
-          userId: tgUserId
-        })
-      }, 30000);
+      const modelsToTry = cachedGeminiModel
+        ? [cachedGeminiModel, ...FALLBACK_GEMINI_MODELS.filter(m => m !== cachedGeminiModel)]
+        : FALLBACK_GEMINI_MODELS;
 
-      const data = await resp.json().catch(() => null);
-      if (!resp.ok) {
-        throw new Error(data?.error || `Ошибка прокси ИИ (HTTP ${resp.status})`);
+      let lastErr = null;
+      for (const modelName of modelsToTry) {
+        try {
+          const resp = await fetchWithTimeout(proxyUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Telegram-Init-Data': tg?.initData || ''
+            },
+            body: JSON.stringify({
+              model: modelName,
+              prompt: promptText,
+              image: base64ImageOrNull || null,
+              userId: tgUserId
+            })
+          }, 30000);
+
+          const data = await resp.json().catch(() => null);
+          if (resp.status === 402) {
+            throw new Error(data?.error || 'Требуется доступ NutriBalance PRO');
+          }
+          if (!resp.ok) {
+            throw new Error(data?.error || `Ошибка прокси ИИ (HTTP ${resp.status})`);
+          }
+          if (data?.parsed && typeof data.parsed === 'object') {
+            cachedGeminiModel = data.model || modelName;
+            return { parsed: data.parsed, model: cachedGeminiModel };
+          }
+          const rawText = data?.text || data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (!rawText) {
+            throw new Error('Пустой ответ от модели ' + modelName);
+          }
+          const parsed = extractJson(rawText);
+          cachedGeminiModel = data?.model || modelName;
+          return { parsed, model: cachedGeminiModel };
+        } catch (err) {
+          lastErr = err;
+          if (String(err?.message || '').includes('PRO')) break;
+        }
       }
-      if (data?.parsed && typeof data.parsed === 'object') {
-        return { parsed: data.parsed, model: data.model || DEFAULT_GEMINI_MODEL };
-      }
-      const rawText = data?.text || data?.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
-      return { parsed: extractJson(rawText), model: data?.model || DEFAULT_GEMINI_MODEL };
+      throw lastErr || new Error('Не удалось получить ответ от ИИ');
     }
 
     // Локальный разбор текстового описания блюда (работает без API-ключа и без прокси)
@@ -5798,66 +5834,383 @@
       }
     }
 
-    // 16.4 ИИ-подбор 3 вариантов ужина/приёма пищи точно под остаток КБЖУ
-    function generateSmartMealForRemaining() {
-      if (!requireProOrTrialAccess('ИИ-подбор рациона под остаток КБЖУ')) return;
+    // 16.4 Реальный ИИ-подбор 3 вариантов приёма пищи под остаток КБЖУ на основе привычных продуктов пользователя
+    let _smartMealGenSeed = 0;
+
+    function collectUserUsualFoods() {
+      const foodStatsMap = new Map();
+
+      function upsertFoodStat(rawName, kcal100, p100, f100, c100, grams = 150, weightScore = 1, mealKey = "", dateStr = "", isCustom = false) {
+        const cleanName = String(rawName || "")
+          .replace(/\s*\(фото\)\s*$/i, "")
+          .trim();
+        if (!cleanName || cleanName.length < 2) return;
+        const k = Math.round(num(kcal100, 0, 900, 0));
+        const p = round1(num(p100, 0, 100, 0));
+        const f = round1(num(f100, 0, 100, 0));
+        const c = round1(num(c100, 0, 100, 0));
+        if (k <= 0 && p + f + c <= 0) return;
+
+        const normKey = cleanName.toLowerCase();
+        const existing = foodStatsMap.get(normKey);
+        if (existing) {
+          existing.count += weightScore;
+          existing.totalGrams += Math.round(num(grams, 10, 1500, 150));
+          existing.samples += 1;
+          existing.avgGrams = Math.round(existing.totalGrams / existing.samples);
+          if (mealKey) existing.meals.add(mealKey);
+          if (dateStr && dateStr > existing.lastDate) existing.lastDate = dateStr;
+          if (isCustom) existing.isCustom = true;
+        } else {
+          const gVal = Math.round(num(grams, 10, 1500, 150));
+          foodStatsMap.set(normKey, {
+            name: cleanName.slice(0, 120),
+            normKey,
+            kcal100: k || Math.round(p * 4 + f * 9 + c * 4),
+            p100: p,
+            f100: f,
+            c100: c,
+            count: weightScore,
+            totalGrams: gVal,
+            samples: 1,
+            avgGrams: gVal,
+            meals: new Set(mealKey ? [mealKey] : []),
+            lastDate: dateStr || "",
+            isCustom: Boolean(isCustom)
+          });
+        }
+      }
+
+      // 1) Собираем все реально съеденные продукты из истории дневника (state.days)
+      const allDates = Object.keys(state.days || {}).sort();
+      allDates.forEach(dKey => {
+        const items = state.days[dKey]?.items || [];
+        items.forEach(it => {
+          if (!it || !it.name || !it.grams) return;
+          const g = Math.max(1, Number(it.grams) || 100);
+          const kcal100 = Math.round(((Number(it.kcal) || 0) / g) * 100);
+          const p100 = round1(((Number(it.p) || 0) / g) * 100);
+          const f100 = round1(((Number(it.f) || 0) / g) * 100);
+          const c100 = round1(((Number(it.c) || 0) / g) * 100);
+          upsertFoodStat(it.name, kcal100, p100, f100, c100, g, 2, it.meal || "", dKey, false);
+        });
+      });
+
+      // 2) Добавляем сохранённые пользователем свои продукты (state.customFoods)
+      (state.customFoods || []).forEach(cf => {
+        if (!cf || !cf.name) return;
+        upsertFoodStat(cf.name, cf.kcal, cf.p, cf.f, cf.c, 150, 2, "", "", true);
+      });
+
+      // 3) Добавляем продукты из сохранённых сетов (state.mealSets)
+      (state.mealSets || []).forEach(ms => {
+        (ms?.items || []).forEach(it => {
+          if (!it || !it.name || !it.grams) return;
+          const g = Math.max(1, Number(it.grams) || 100);
+          upsertFoodStat(
+            it.name,
+            Math.round(((Number(it.kcal) || 0) / g) * 100),
+            round1(((Number(it.p) || 0) / g) * 100),
+            round1(((Number(it.f) || 0) / g) * 100),
+            round1(((Number(it.c) || 0) / g) * 100),
+            g,
+            1.5,
+            ms.meal || "",
+            "",
+            false
+          );
+        });
+      });
+
+      return Array.from(foodStatsMap.values()).sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return String(b.lastDate).localeCompare(String(a.lastDate));
+      });
+    }
+
+    function detectSuggestedMealSlot(day) {
+      const eatenMeals = new Set((day.items || []).map(i => i.meal));
+      if (!eatenMeals.has("breakfast")) return "breakfast";
+      if (!eatenMeals.has("lunch")) return "lunch";
+      if (!eatenMeals.has("dinner")) return "dinner";
+      return "snack";
+    }
+
+    // Умный локальный конструктор из продуктов пользователя (если нет сети или прокси недоступен)
+    function buildSmartRemainderFromUserFoodsLocally(usualFoods, mealTarget, seed = 0) {
+      const pool = usualFoods.length > 0
+        ? [...usualFoods]
+        : [
+            { name: "Яйцо куриное вареное", kcal100: 155, p100: 12.7, f100: 11.5, c100: 0.7, avgGrams: 110, isUserFav: false },
+            { name: "Творог 5% классический", kcal100: 121, p100: 16, f100: 5, c100: 3, avgGrams: 180, isUserFav: false },
+            { name: "Индейка (филе грудки приготовленное)", kcal100: 155, p100: 29.5, f100: 3.2, c100: 0, avgGrams: 160, isUserFav: false },
+            { name: "Гречка отварная на воде (готовая)", kcal100: 110, p100: 4.2, f100: 1.1, c100: 21.3, avgGrams: 180, isUserFav: false },
+            { name: "Рис белый отварной (готовый)", kcal100: 130, p100: 2.7, f100: 0.3, c100: 28, avgGrams: 180, isUserFav: false },
+            { name: "Салат овощной (огурцы, помидоры, зелень, 1 ч.л. масла)", kcal100: 54, p100: 1.1, f100: 3.8, c100: 4.1, avgGrams: 160, isUserFav: false },
+            { name: "Банан", kcal100: 89, p100: 1.1, f100: 0.3, c100: 22.8, avgGrams: 110, isUserFav: false }
+          ];
+
+      // Делим продукты пользователя на белковые/основные и гарниры/дополнения
+      const highProtein = pool.filter(f => f.p100 >= 10);
+      const carbOrSides = pool.filter(f => f.c100 >= 10 && f.p100 < 18);
+      const lightOrExtras = pool.filter(f => f.kcal100 <= 95 || (f.p100 < 10 && f.c100 < 15));
+
+      const baseFallbacks = [
+        { name: "Творог 5% классический", kcal100: 121, p100: 16, f100: 5, c100: 3, isUserFav: false },
+        { name: "Яйца куриные / омлет", kcal100: 155, p100: 12.7, f100: 11.5, c100: 0.7, isUserFav: false },
+        { name: "Индейка (филе грудки приготовленное)", kcal100: 155, p100: 29.5, f100: 3.2, c100: 0, isUserFav: false }
+      ];
+      const sideFallbacks = [
+        { name: "Салат из свежих овощей", kcal100: 45, p100: 1.2, f100: 2.5, c100: 4.5, isUserFav: false },
+        { name: "Гречка отварная на воде (готовая)", kcal100: 110, p100: 4.2, f100: 1.1, c100: 21.3, isUserFav: false },
+        { name: "Банан свежий", kcal100: 89, p100: 1.1, f100: 0.3, c100: 22.8, isUserFav: false }
+      ];
+
+      const options = [];
+      const titles = [
+        "Вариант 1: Из твоих частых блюд",
+        "Вариант 2: Белковый баланс под цель",
+        "Вариант 3: Лёгкая комбинация из рациона"
+      ];
+
+      for (let i = 0; i < 3; i++) {
+        const idxShift = (i + seed) % Math.max(1, pool.length);
+        const mainItem = highProtein.length > 0
+          ? { ...highProtein[(i + seed) % highProtein.length], isUserFav: usualFoods.length > 0 }
+          : (usualFoods[idxShift] ? { ...usualFoods[idxShift], isUserFav: true } : baseFallbacks[i % baseFallbacks.length]);
+
+        let secondItem = null;
+        if (carbOrSides.length > 0) {
+          const cand = carbOrSides[(i + seed) % carbOrSides.length];
+          if (cand.name !== mainItem.name) secondItem = { ...cand, isUserFav: usualFoods.length > 0 };
+        }
+        if (!secondItem && pool.length > 1) {
+          const alt = pool[(idxShift + 1) % pool.length];
+          if (alt.name !== mainItem.name) secondItem = { ...alt, isUserFav: usualFoods.length > 0 };
+        }
+        if (!secondItem) {
+          secondItem = sideFallbacks[(i + seed) % sideFallbacks.length];
+        }
+
+        // Считаем граммовки под mealTarget.kcal и mealTarget.p
+        const targetK = Math.max(220, mealTarget.kcal);
+        const mainShareKcal = targetK * 0.62;
+        const mainGrams = Math.min(320, Math.max(70, Math.round((mainShareKcal / Math.max(40, mainItem.kcal100)) * 100 / 5) * 5));
+        const usedKcal = (mainItem.kcal100 * mainGrams) / 100;
+        const remForSecond = Math.max(60, targetK - usedKcal);
+        const secondGrams = Math.min(280, Math.max(50, Math.round((remForSecond / Math.max(25, secondItem.kcal100)) * 100 / 5) * 5));
+
+        const items = [
+          { ...mainItem, grams: mainGrams },
+          { ...secondItem, grams: secondGrams }
+        ];
+
+        if (lightOrExtras.length > 0 && i === 0) {
+          const extra = lightOrExtras[(i + seed) % lightOrExtras.length];
+          if (extra.name !== mainItem.name && extra.name !== secondItem.name) {
+            items.push({ ...extra, grams: 120, isUserFav: usualFoods.length > 0 });
+          }
+        }
+
+        const desc = items.map(it => `${it.name} (${it.grams}г)`).join(" + ");
+        options.push({
+          title: titles[i],
+          desc: "Подобрано на основе твоих записей и целевого остатка КБЖУ",
+          items
+        });
+      }
+
+      return {
+        summaryNote: usualFoods.length > 0
+          ? `Варианты собраны на основе твоих привычных продуктов (${usualFoods.slice(0, 4).map(f => f.name).join(", ")})`
+          : "Базовый подбор: добавляй еду в дневник, чтобы ИИ опирался на твои любимые блюда",
+        options
+      };
+    }
+
+    async function generateSmartMealForRemaining(isRegen = false) {
+      if (!requireProOrTrialAccess("ИИ-подбор рациона под остаток КБЖУ")) return;
       const day = ensureDay(currentDate);
       const targets = calculateTargets();
       let totKcal = 0, totP = 0, totF = 0, totC = 0;
       day.items.forEach(it => { totKcal += it.kcal; totP += it.p; totF += it.f; totC += it.c; });
 
-      const remKcal = Math.max(180, Math.round(targets.targetKcal - totKcal));
-      const remP = Math.max(15, Math.round(targets.p - totP));
+      const remKcal = Math.max(150, Math.round(targets.targetKcal - totKcal));
+      const remP = Math.max(12, Math.round(targets.p - totP));
       const remF = Math.max(5, Math.round(targets.f - totF));
       const remC = Math.max(10, Math.round(targets.c - totC));
 
-      // Подбираем точные граммовки для 3 сбалансированных вариантов
-      const chickenGrams = Math.min(260, Math.max(100, Math.round((remP * 0.78 / 31) * 100)));
-      const buckwheatGrams = Math.min(240, Math.max(60, Math.round(Math.max(40, remKcal - chickenGrams * 1.65 - 40) / 1.1)));
+      const mealSelectEl = document.getElementById("smartRemainderTargetMeal");
+      if (mealSelectEl && !isRegen) {
+        mealSelectEl.value = detectSuggestedMealSlot(day);
+      }
+      const targetMealKey = mealSelectEl ? mealSelectEl.value : "dinner";
+      const mealLabels = { breakfast: "Завтрак", lunch: "Обед", dinner: "Ужин", snack: "Перекус" };
+      const targetMealLabel = mealLabels[targetMealKey] || "Приём пищи";
 
-      const fishGrams = Math.min(250, Math.max(110, Math.round((remP * 0.75 / 20.5) * 100)));
-      const vegGrams = 180;
+      // Если до конца дня осталось много калорий (> 900 ккал) и впереди несколько приёмов пищи,
+      // рассчитываем порцию на 1 полноценный приём пищи (~40-45% от остатка, в пределах 450..850 ккал),
+      // чтобы ИИ не предлагал съесть 2000 ккал за один присест
+      const eatenMealsCount = new Set((day.items || []).map(i => i.meal)).size;
+      const mealsLeft = Math.max(1, 3 - eatenMealsCount);
+      const isSingleMealClosure = remKcal <= 900 || mealsLeft === 1 || targetMealKey === "dinner";
+      const mealTargetKcal = isSingleMealClosure
+        ? Math.min(950, remKcal)
+        : Math.min(820, Math.max(420, Math.round(remKcal / mealsLeft)));
+      const ratio = Math.min(1, mealTargetKcal / Math.max(1, remKcal));
+      const mealTarget = {
+        kcal: mealTargetKcal,
+        p: Math.max(15, Math.round(remP * ratio)),
+        f: Math.max(5, Math.round(remF * ratio)),
+        c: Math.max(10, Math.round(remC * ratio))
+      };
 
-      const curdGrams = Math.min(250, Math.max(120, Math.round((remP * 0.72 / 16) * 100)));
-      const bananaGrams = remKcal > 320 ? 100 : 50;
+      const usualFoods = collectUserUsualFoods();
+      _smartMealGenSeed += 1;
 
-      const options = [
-        {
-          title: 'Вариант 1: Сытный фитнес-ужин',
-          desc: `Куриная грудка (${chickenGrams}г) + Гречка отварная (${buckwheatGrams}г) + Огурцы/помидоры (150г)`,
-          items: [
-            { name: 'Куриная грудка (филе отварное/гриль)', grams: chickenGrams, kcal100: 165, p100: 31, f100: 3.6, c100: 0 },
-            { name: 'Гречка отварная на воде (готовая)', grams: buckwheatGrams, kcal100: 110, p100: 4.2, f100: 1.1, c100: 21.3 },
-            { name: 'Огурцы свежие', grams: 150, kcal100: 15, p100: 0.8, f100: 0.1, c100: 2.8 }
-          ]
-        },
-        {
-          title: 'Вариант 2: Лёгкий белковый с рыбой',
-          desc: `Треска или форель запечённая (${fishGrams}г) + Салат из свежих овощей (${vegGrams}г)`,
-          items: [
-            { name: 'Форель запеченная', grams: fishGrams, kcal100: 178, p100: 20.5, f100: 10.2, c100: 0 },
-            { name: 'Салат овощной (огурцы, помидоры, зелень)', grams: vegGrams, kcal100: 54, p100: 1.1, f100: 3.8, c100: 4.1 }
-          ]
-        },
-        {
-          title: 'Вариант 3: Быстрый творожный без готовки',
-          desc: `Творог 5% (${curdGrams}г) + Греческий йогурт Teos (100г) + Банан (${bananaGrams}г)`,
-          items: [
-            { name: 'Творог 5% классический', grams: curdGrams, kcal100: 121, p100: 16, f100: 5, c100: 3 },
-            { name: 'Йогурт греческий натуральный (Teos / 2%)', grams: 100, kcal100: 68, p100: 8, f100: 2, c100: 4.2 },
-            { name: 'Банан', grams: bananaGrams, kcal100: 89, p100: 1.1, f100: 0.3, c100: 22.8 }
-          ]
-        }
-      ];
+      const box = document.getElementById("smartRemainderBox");
+      const sub = document.getElementById("smartRemainderSubtitle");
+      const userBar = document.getElementById("smartRemainderUserFoodsBar");
+      const listEl = document.getElementById("smartRemainderOptionsList");
+      const badgeEl = document.getElementById("smartRemainderAiBadge");
+      const btnMain = document.getElementById("btnSmartRemainderMeal");
+      const btnRegen = document.getElementById("btnRegenSmartMeal");
 
-      window._nbRemainderOptions = options;
-      const box = document.getElementById('smartRemainderBox');
-      const sub = document.getElementById('smartRemainderSubtitle');
-      const listEl = document.getElementById('smartRemainderOptionsList');
       if (!box || !listEl) return;
+      box.classList.remove("hidden");
 
-      sub.textContent = `Рассчитано под остаток: ~${remKcal} ккал • Белки: ${remP}г • Жиры: ${remF}г • Углеводы: ${remC}г`;
-      listEl.innerHTML = options.map((opt, idx) => {
+      if (sub) {
+        sub.textContent = isSingleMealClosure
+          ? `Остаток на сегодня: ${remKcal} ккал (Б:${remP}г • Ж:${remF}г • У:${remC}г)`
+          : `Остаток на день: ${remKcal} ккал • Цель на ${targetMealLabel.toLowerCase()}: ~${mealTarget.kcal} ккал (Б:${mealTarget.p}г • Ж:${mealTarget.f}г • У:${mealTarget.c}г)`;
+      }
+
+      if (userBar) {
+        if (usualFoods.length > 0) {
+          const topNames = usualFoods.slice(0, 6).map(f => `<span class="inline-block px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-400/25 font-medium mr-1 mb-0.5">⭐ ${escapeHtml(f.name)}</span>`).join("");
+          userBar.innerHTML = `<div class="text-[10px] text-slate-300 mb-1">Анализируем твои привычные продукты (${usualFoods.length} поз. в твоей истории):</div><div>${topNames}</div>`;
+        } else {
+          userBar.innerHTML = `💡 В твоём дневнике пока нет истории блюд — ИИ подберёт универсальные продукты. Как только ты начнёшь записывать еду, подбор будет строиться из твоих любимых продуктов!`;
+        }
+      }
+
+      listEl.innerHTML = `
+        <div class="sm:col-span-3 p-5 rounded-2xl bg-slate-950/60 border border-emerald-400/25 text-center space-y-2">
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-emerald-300 animate-pulse">
+            <span>✨ ИИ составляет 3 варианта на основе твоих продуктов под ${mealTarget.kcal} ккал...</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Подбираем точные граммовки под остаток белков (${mealTarget.p}г), жиров (${mealTarget.f}г) и углеводов (${mealTarget.c}г)</p>
+        </div>
+      `;
+
+      if (btnMain) btnMain.disabled = true;
+      if (btnRegen) btnRegen.disabled = true;
+
+      const todayEatenStr = (day.items || []).map(i => `${i.name} (${i.grams}г)`).join(", ");
+      const userFoodsPromptLines = usualFoods.length > 0
+        ? usualFoods.slice(0, 25).map((f, idx) => `${idx + 1}. "${f.name}" — на 100г: ${f.kcal100} ккал, Б:${f.p100}г, Ж:${f.f100}г, У:${f.c100}г (обычная порция юзера ~${f.avgGrams}г, ел ${f.count} раз)`).join("\n")
+        : "История дневника пока пуста (подбери простые и вкусные домашние продукты).";
+
+      const prompt = `Ты персональный ИИ-нутрициолог NutriBalance Pro.
+Составь 3 разных реальных варианта приёма пищи ("${targetMealLabel}") под целевые КБЖУ пользователя.
+Попытка генерации #${_smartMealGenSeed} (сделай варианты свежими, разнообразными и реалистичными).
+
+ЦЕЛЕВЫЕ КБЖУ НА ЭТОТ ПРИЁМ ПИЩИ (${targetMealLabel}):
+- Калории: около ${mealTarget.kcal} ккал
+- Белки: около ${mealTarget.p} г
+- Жиры: около ${mealTarget.f} г
+- Углеводы: около ${mealTarget.c} г
+(Общий остаток до конца дня: ${remKcal} ккал, Б:${remP}г, Ж:${remF}г, У:${remC}г. Уже съедено сегодня: ${todayEatenStr || "ничего"}).
+
+ПРИВЫЧНЫЕ И ЛЮБИМЫЕ ПРОДУКТЫ ПОЛЬЗОВАТЕЛЯ (из его истории дневника и сохранённого списка, КБЖУ на 100г):
+${userFoodsPromptLines}
+
+ГЛАВНОЕ ПРАВИЛО:
+1. Опирайся в первую очередь на ПРИВЫЧНЫЕ ПРОДУКТЫ ПОЛЬЗОВАТЕЛЯ из списка выше! Если у пользователя есть хотя бы 2–3 продукта в списке, используй именно их (с их точными названиями и КБЖУ на 100г) как основу каждого из 3 вариантов (поставь им "isUserFav": true).
+2. Если в привычных продуктах пользователя не хватает белка, гарнира или овощей, чтобы закрыть БЖУ (${mealTarget.p}г белка, ${mealTarget.kcal} ккал), аккуратно дополни его любимые продукты сочетающимися простыми продуктами (поставь дополненным продуктам "isUserFav": false).
+3. Подбери точные граммовки ("grams" от 20 до 350 г), чтобы сумма калорий и белка каждого варианта попадала близко к цели (~${mealTarget.kcal} ккал и ~${mealTarget.p}г белка). Не предлагай куриную грудку, если её нет в привычных продуктах пользователя или если её можно заменить на продукты из его списка!
+
+Верни ТОЛЬКО валидный JSON строго в таком формате:
+{
+  "summaryNote": "Коротко (1 предложение): какие привычные продукты пользователя взяты за основу и как сбалансирован приём пищи",
+  "options": [
+    {
+      "title": "Вариант 1: Название",
+      "desc": "Короткий комментарий, почему этот вариант отлично подходит",
+      "items": [
+        { "name": "Точное название продукта", "grams": 180, "kcal100": 150, "p100": 18, "f100": 5, "c100": 10, "isUserFav": true }
+      ]
+    }
+  ]
+}`;
+
+      let resultData = null;
+      let usedModelLabel = "ИИ Gemini";
+
+      try {
+        const res = await callAIJson(prompt, null);
+        if (res?.parsed && Array.isArray(res.parsed.options) && res.parsed.options.length > 0) {
+          resultData = res.parsed;
+          usedModelLabel = `ИИ ${res.model || "Gemini"}`;
+        } else {
+          throw new Error("Некорректный формат вариантов");
+        }
+      } catch (err) {
+        resultData = buildSmartRemainderFromUserFoodsLocally(usualFoods, mealTarget, _smartMealGenSeed);
+        usedModelLabel = "Smart-алгоритм по твоей базе";
+      } finally {
+        if (btnMain) btnMain.disabled = false;
+        if (btnRegen) btnRegen.disabled = false;
+      }
+
+      if (badgeEl) {
+        badgeEl.textContent = `✨ ${usedModelLabel}`;
+      }
+
+      // Нормализуем варианты и сверяем продукты со списком привычных продуктов пользователя
+      const usualByNormName = new Map(usualFoods.map(u => [u.normKey, u]));
+      const cleanOptions = (resultData.options || []).slice(0, 3).map((opt, idx) => {
+        const rawItems = Array.isArray(opt.items) ? opt.items.filter(it => it && it.name) : [];
+        const normItems = rawItems.slice(0, 5).map(it => {
+          const itemName = String(it.name || "").trim();
+          const low = itemName.toLowerCase();
+          // Ищем точное или частичное совпадение с привычными продуктами пользователя
+          let matchedUserFood = usualByNormName.get(low);
+          if (!matchedUserFood) {
+            matchedUserFood = usualFoods.find(u => low.includes(u.normKey) || u.normKey.includes(low));
+          }
+          const per = matchedUserFood
+            ? { kcal100: matchedUserFood.kcal100, p100: matchedUserFood.p100, f100: matchedUserFood.f100, c100: matchedUserFood.c100 }
+            : sanitizePer100(it);
+          return {
+            name: matchedUserFood ? matchedUserFood.name : itemName.slice(0, 90),
+            grams: Math.round(num(it.grams, 10, 600, 150)),
+            ...per,
+            isUserFav: Boolean(matchedUserFood || it.isUserFav)
+          };
+        });
+        return {
+          title: String(opt.title || `Вариант ${idx + 1}`).slice(0, 80),
+          desc: String(opt.desc || "").slice(0, 180),
+          items: normItems
+        };
+      }).filter(o => o.items.length > 0);
+
+      window._nbRemainderOptions = cleanOptions;
+
+      if (userBar) {
+        const noteHtml = resultData.summaryNote
+          ? `<div class="text-[11px] text-emerald-300 font-medium mb-1">🤖 ${escapeHtml(resultData.summaryNote)}</div>`
+          : "";
+        if (usualFoods.length > 0) {
+          const topChips = usualFoods.slice(0, 6).map(f => `<span class="inline-block px-1.5 py-0.5 rounded-md bg-white/10 text-slate-200 text-[10px] mr-1 mb-0.5">⭐ ${escapeHtml(f.name)} (${f.count}×)</span>`).join("");
+          userBar.innerHTML = `${noteHtml}<div class="text-[10px] text-slate-400">Твои частые продукты в дневнике: ${topChips}</div>`;
+        } else {
+          userBar.innerHTML = `${noteHtml}<div class="text-[10px] text-slate-400">Добавляй приёмы пищи в дневник или сохраняй свои блюда во вкладке «Профиль», чтобы ИИ опирался исключительно на твой рацион.</div>`;
+        }
+      }
+
+      listEl.innerHTML = cleanOptions.map((opt, idx) => {
         let k = 0, p = 0, f = 0, c = 0;
         opt.items.forEach(it => {
           k += (it.kcal100 * it.grams) / 100;
@@ -5865,34 +6218,49 @@
           f += (it.f100 * it.grams) / 100;
           c += (it.c100 * it.grams) / 100;
         });
-        return `<div class="bg-slate-950/65 border border-white/10 rounded-xl p-2.5 flex flex-col justify-between gap-2">
-          <div>
-            <div class="text-xs font-bold text-white">${escapeHtml(opt.title)}</div>
-            <p class="text-[11px] text-slate-300 mt-1 leading-snug">${escapeHtml(opt.desc)}</p>
+        const itemsListHtml = opt.items.map(it => `
+          <li class="flex items-start justify-between gap-1.5 text-[11px] leading-snug py-0.5">
+            <span class="text-slate-100 break-words flex-1">
+              ${it.isUserFav ? '<span class="text-amber-300" title="Из твоих привычных продуктов">⭐</span> ' : '• '}${escapeHtml(it.name)}
+            </span>
+            <span class="text-emerald-300 font-bold whitespace-nowrap">${it.grams} г</span>
+          </li>
+        `).join("");
+
+        return `<div class="bg-slate-950/65 border border-white/10 rounded-xl p-3 flex flex-col justify-between gap-2.5">
+          <div class="space-y-1.5">
+            <div class="text-xs font-bold text-white leading-snug">${escapeHtml(opt.title)}</div>
+            <ul class="divide-y divide-white/5 border-t border-b border-white/10 py-1">${itemsListHtml}</ul>
+            ${opt.desc ? `<p class="text-[10px] text-slate-400 leading-snug">${escapeHtml(opt.desc)}</p>` : ""}
           </div>
-          <div class="pt-1.5 border-t border-white/10 flex items-center justify-between gap-1">
-            <span class="text-[10px] text-emerald-300 font-bold">${Math.round(k)} ккал (Б:${Math.round(p)}г)</span>
-            <button type="button" onclick="applySmartRemainderOption(${idx})" class="btn-spring liquid-btn-primary px-2.5 py-1 rounded-lg text-[10px] font-extrabold">+ В дневник</button>
+          <div class="pt-1 flex items-center justify-between gap-1.5">
+            <div>
+              <div class="text-xs text-emerald-300 font-extrabold">${Math.round(k)} ккал</div>
+              <div class="text-[10px] text-slate-300">Б:${Math.round(p)}г • Ж:${Math.round(f)}г • У:${Math.round(c)}г</div>
+            </div>
+            <button type="button" onclick="applySmartRemainderOption(${idx})" class="btn-spring liquid-btn-primary px-3 py-1.5 rounded-xl text-[11px] font-extrabold whitespace-nowrap">+ В дневник</button>
           </div>
         </div>`;
-      }).join('');
+      }).join("");
 
-      box.classList.remove('hidden');
-      triggerHaptic('success');
+      triggerHaptic("success");
     }
 
     function applySmartRemainderOption(idx) {
       const opt = window._nbRemainderOptions?.[idx];
       if (!opt) return;
+      const mealSelectEl = document.getElementById("smartRemainderTargetMeal");
+      const targetMeal = mealSelectEl ? mealSelectEl.value : "dinner";
+      const mealLabels = { breakfast: "Завтрак", lunch: "Обед", dinner: "Ужин", snack: "Перекус" };
       const day = ensureDay(currentDate);
       opt.items.forEach(it => {
-        day.items.push(makeDiaryItem('dinner', it.name, it.grams, it.kcal100, it.p100, it.f100, it.c100));
+        day.items.push(makeDiaryItem(targetMeal, it.name, it.grams, it.kcal100, it.p100, it.f100, it.c100));
       });
-      document.getElementById('smartRemainderBox')?.classList.add('hidden');
-      triggerHaptic('success');
+      document.getElementById("smartRemainderBox")?.classList.add("hidden");
+      triggerHaptic("success");
       checkAndCelebrateGoals(day);
       saveState();
-      showNotice(`🍽️ «${opt.title}» добавлен в Ужин!`);
+      showNotice(`🍽️ «${opt.title}» добавлен в ${mealLabels[targetMeal] || "Дневник"}!`);
     }
 
     // 16.5 Трекер замеров объёмов тела (Талия, Грудь, Бёдра)
