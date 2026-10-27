@@ -559,10 +559,13 @@
 
           <div id="foodSearchResults" class="space-y-1.5 max-h-[210px] overflow-y-auto pr-1"></div>
 
-          <div class="p-3 rounded-2xl liquid-pill space-y-2.5">
+          <div id="selectedFoodCardBox" class="hidden p-3 rounded-2xl liquid-pill space-y-2.5 border border-emerald-400/35">
             <div class="flex items-start justify-between gap-2">
-              <div id="selectedFoodTitle" class="text-xs font-bold text-white break-words leading-snug flex-1 min-w-0">Куриная грудка (филе)</div>
-              <div id="quickPreviewKcal" class="text-xs font-extrabold text-emerald-300 whitespace-nowrap flex-shrink-0">248 ккал</div>
+              <div id="selectedFoodTitle" class="text-xs font-bold text-white break-words leading-snug flex-1 min-w-0">Выберите продукт из списка</div>
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                <div id="quickPreviewKcal" class="text-xs font-extrabold text-emerald-300 whitespace-nowrap">0 ккал</div>
+                <button type="button" onclick="clearSelectedFood()" class="text-slate-400 hover:text-white text-xs px-1" title="Снять выбор">✕</button>
+              </div>
             </div>
 
             <div class="flex items-center gap-1.5">
@@ -572,12 +575,12 @@
               <button type="button" onclick="setQuickGrams(100)" class="btn-spring liquid-pill px-2.5 py-1 text-[11px] rounded-lg text-slate-200">100г</button>
               <button type="button" onclick="setQuickGrams(200)" class="btn-spring liquid-pill px-2.5 py-1 text-[11px] rounded-lg text-slate-200">200г</button>
             </div>
-          </div>
 
-          <button type="button" onclick="addSelectedFoodToDiary()" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5">
-            <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>Записать в дневник</span>
-          </button>
+            <button type="button" onclick="addSelectedFoodToDiary()" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5">
+              <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Записать в дневник</span>
+            </button>
+          </div>
         </div>
 
         <div class="lg:col-span-7 space-y-3" id="mealsContainer"></div>
@@ -2260,7 +2263,7 @@
     let currentDate = getLocalDateString();
     let lastKnownToday = currentDate;
     let selectedMeal = 'breakfast';
-    let selectedFoodObj = VERIFIED_FOODS_DB[0];
+    let selectedFoodObj = null;
     let onlineFoundFoods = [];
     let searchDebounceTimer = null;
     let searchAbortController = null;
@@ -2635,6 +2638,11 @@
       document.getElementById('aiTextFoodPrompt').value = q;
     }
 
+    function clearSelectedFood() {
+      selectedFoodObj = null;
+      renderFoodSearchResults();
+    }
+
     function selectMealType(mealKey) {
       triggerHaptic('light'); selectedMeal = mealKey;
       ['breakfast', 'lunch', 'dinner', 'snack'].forEach(m => {
@@ -2645,7 +2653,12 @@
     }
 
     function updateQuickPreview() {
-      if (!selectedFoodObj) return;
+      const cardBox = document.getElementById('selectedFoodCardBox');
+      if (!selectedFoodObj) {
+        if (cardBox) cardBox.classList.add('hidden');
+        return;
+      }
+      if (cardBox) cardBox.classList.remove('hidden');
       const grams = Number(document.getElementById('diaryFoodGrams').value) || 0;
       const kcal = Math.round((selectedFoodObj.kcal * grams) / 100);
       const p = Math.round((selectedFoodObj.p * grams) / 100);
@@ -2668,10 +2681,13 @@
     }
 
     function addSelectedFoodToDiary() {
-      if (!selectedFoodObj) return;
+      if (!selectedFoodObj) return showNotice('Сначала выбери продукт из списка выше');
       const grams = num(document.getElementById('diaryFoodGrams').value, 1, 3000, 100);
       const day = ensureDay(currentDate);
-      day.items.push(makeDiaryItem(selectedMeal, selectedFoodObj.name, grams, selectedFoodObj.kcal, selectedFoodObj.p, selectedFoodObj.f, selectedFoodObj.c));
+      const addedName = selectedFoodObj.name;
+      day.items.push(makeDiaryItem(selectedMeal, addedName, grams, selectedFoodObj.kcal, selectedFoodObj.p, selectedFoodObj.f, selectedFoodObj.c));
+      selectedFoodObj = null;
+      renderFoodSearchResults();
       triggerHaptic('success'); checkAndCelebrateGoals(day); saveState();
     }
 
@@ -3774,7 +3790,7 @@
       state.deletedCustomFoodIds.push(foodId);
       state.customFoods = list.filter(f => f.id !== foodId);
       if (selectedFoodObj && selectedFoodObj.id === foodId) {
-        selectedFoodObj = VERIFIED_FOODS_DB[0];
+        selectedFoodObj = null;
       }
       triggerHaptic('light');
       saveState();
