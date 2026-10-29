@@ -1530,10 +1530,56 @@
 
     function extractJson(raw) {
       if (!raw) throw new Error('Пустой ответ ИИ');
-      const t = String(raw).replace(/```json|```/gi, '').trim();
-      try { return JSON.parse(t); } catch (e) {}
-      const a = t.indexOf('{'), b = t.lastIndexOf('}');
-      if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e) {} }
+      const str = String(raw).trim();
+      try { return JSON.parse(str); } catch (e) {}
+
+      // 1) Пробуем блоки ```json ... ``` (с конца к началу, так как финальный ответ модели всегда в конце)
+      const fenceRegex = /```(?:json)?\s*([\s\S]*?)```/gi;
+      const fences = [];
+      let m;
+      while ((m = fenceRegex.exec(str)) !== null) {
+        if (m[1] && m[1].trim()) fences.push(m[1].trim());
+      }
+      for (let i = fences.length - 1; i >= 0; i--) {
+        try { return JSON.parse(fences[i]); } catch (e) {}
+      }
+
+      const cleaned = str.replace(/```json|```/gi, '').trim();
+      try { return JSON.parse(cleaned); } catch (e) {}
+
+      // 2) Ищем сбалансированные JSON-объекты { ... } с конца строки (чтобы не захватывать фигурные скобки из мыслей модели в начале)
+      const endPositions = [];
+      for (let i = cleaned.length - 1; i >= 0; i--) {
+        if (cleaned[i] === '}') endPositions.push(i);
+      }
+      for (const endIdx of endPositions) {
+        let depth = 0;
+        let inStr = false;
+        let esc = false;
+        for (let i = endIdx; i >= 0; i--) {
+          const ch = cleaned[i];
+          if (i > 0 && cleaned[i - 1] === '\\') {
+            // Пропускаем экранированные кавычки при обратном проходе приблизительно через JSON.parse проверку
+          }
+          if (ch === '{') {
+            const candidate = cleaned.slice(i, endIdx + 1);
+            try {
+              const parsed = JSON.parse(candidate);
+              if (parsed && typeof parsed === 'object') return parsed;
+            } catch (e) {}
+          }
+        }
+      }
+
+      const a = cleaned.indexOf('{'), b = cleaned.lastIndexOf('}');
+      if (a >= 0 && b > a) { try { return JSON.parse(cleaned.slice(a, b + 1)); } catch (e) {} }
+      const arrA = cleaned.indexOf('['), arrB = cleaned.lastIndexOf(']');
+      if (arrA >= 0 && arrB > arrA) {
+        try {
+          const arr = JSON.parse(cleaned.slice(arrA, arrB + 1));
+          if (Array.isArray(arr)) return { items: arr };
+        } catch (e) {}
+      }
       throw new Error('ИИ вернул ответ в неверном формате. Попробуй ещё раз.');
     }
 
@@ -2787,8 +2833,8 @@
     // =====================================================================
     // Вставь сюда URL своего бесплатного Cloudflare Worker (например: 'https://nutri-ai.myname.workers.dev')
     const AI_PROXY_URL = 'https://nutribalance.k-konstantin-v7.workers.dev';
-    const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
-    const FALLBACK_GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+    const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+    const FALLBACK_GEMINI_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
 
     // Расширенный словарь блюд и продуктов для мгновенного автономного расчёта без ключа
     const SMART_DISH_DICT = [
@@ -2870,10 +2916,31 @@
             return { parsed: data.parsed, model: cachedGeminiModel };
           }
           const partsArr = data?.candidates?.[0]?.content?.parts;
-          const nonThoughtText = Array.isArray(partsArr)
-            ? partsArr.filter(p => p && !p.thought && typeof p.text === 'string' && p.text.trim()).map(p => p.text).join('\n').trim()
-            : '';
-          const rawText = (data?.text && String(data.text).trim()) || nonThoughtText || data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          // В моделях Gemini 3.x массив parts может содержать сначала блок мыслей (thought: true), а JSON-ответ — в последнем элементе parts.
+          // Поэтому сначала проверяем все не-thought части с конца к началу!
+          if (Array.isArray(partsArr) && partsArr.length > 0) {
+            for (let i = partsArr.length - 1; i >= 0; i--) {
+              const p = partsArr[i];
+              if (p && !p.thought && typeof p.text === 'string' && p.text.trim()) {
+                try {
+                  const parsedPart = extractJson(p.text);
+                  cachedGeminiModel = data?.model || modelName;
+                  return { parsed: parsedPart, model: cachedGeminiModel };
+                } catch (e) {}
+              }
+            }
+            for (let i = partsArr.length - 1; i >= 0; i--) {
+              const p = partsArr[i];
+              if (p && typeof p.text === 'string' && p.text.trim()) {
+                try {
+                  const parsedPart = extractJson(p.text);
+                  cachedGeminiModel = data?.model || modelName;
+                  return { parsed: parsedPart, model: cachedGeminiModel };
+                } catch (e) {}
+              }
+            }
+          }
+          const rawText = (data?.text && String(data.text).trim()) || '';
           if (!rawText) {
             throw new Error('Пустой ответ от модели ' + modelName);
           }
@@ -3052,10 +3119,15 @@
 
     // --- Валидация числовых данных от ИИ ---
     function sanitizePer100(o) {
-      const p100 = round1(num(o.p100, 0, 100));
-      const f100 = round1(num(o.f100, 0, 100));
-      const c100 = round1(num(o.c100, 0, 100));
-      let kcal100 = Math.round(num(o.kcal100, 0, 900));
+      if (!o || typeof o !== 'object') return { kcal100: 0, p100: 0, f100: 0, c100: 0 };
+      const pRaw = o.p100 ?? o.p ?? o.protein ?? o.proteins ?? 0;
+      const fRaw = o.f100 ?? o.f ?? o.fat ?? o.fats ?? 0;
+      const cRaw = o.c100 ?? o.c ?? o.carbs ?? o.carbohydrates ?? 0;
+      const kRaw = o.kcal100 ?? o.kcal ?? o.calories ?? 0;
+      const p100 = round1(num(pRaw, 0, 100));
+      const f100 = round1(num(fRaw, 0, 100));
+      const c100 = round1(num(cRaw, 0, 100));
+      let kcal100 = Math.round(num(kRaw, 0, 900));
       if (kcal100 === 0) kcal100 = Math.round(p100 * 4 + f100 * 9 + c100 * 4);
       return { kcal100, p100, f100, c100 };
     }
@@ -3321,7 +3393,7 @@
         const imgObj = new Image();
         imgObj.onload = () => {
           const canvas = document.createElement('canvas');
-          currentPhotoBase64 = downscaleToJpeg(imgObj, imgObj.width, imgObj.height, canvas);
+          currentPhotoBase64 = downscaleToJpeg(imgObj, imgObj.naturalWidth || imgObj.width || 800, imgObj.naturalHeight || imgObj.height || 600, canvas);
           document.getElementById('photoPreviewImg').src = currentPhotoBase64;
           syncCameraButtons();
           document.getElementById('recognizedDishStatus').textContent = 'Фото загружено. Нажми «Распознать»';
@@ -3359,10 +3431,17 @@
             throw new Error(`Сервер ИИ вернул ошибку (${realReason}). Проверь, что обновлённый код залит на GitHub и в Cloudflare Worker, либо напиши краткое название блюда в поле «Уточнение» ниже.`);
           }
         }
-        const items = (Array.isArray(parsed.items) ? parsed.items : [])
-          .filter(it => it && it.name)
+        const rawList = Array.isArray(parsed)
+          ? parsed
+          : (Array.isArray(parsed?.items) ? parsed.items : (Array.isArray(parsed?.ingredients) ? parsed.ingredients : (Array.isArray(parsed?.components) ? parsed.components : [])));
+        const items = rawList
+          .filter(it => it && (it.name || it.title))
           .slice(0, 15)
-          .map(it => ({ name: String(it.name).slice(0, 70), grams: Math.round(num(it.grams, 1, 3000, 100)), ...sanitizePer100(it) }));
+          .map(it => ({
+            name: String(it.name || it.title).slice(0, 70),
+            grams: Math.round(num(it.grams ?? it.weight ?? it.portionGrams, 1, 3000, 100)),
+            ...sanitizePer100(it)
+          }));
         if (items.length === 0) throw new Error('Не удалось определить состав блюда. Добавь короткое уточнение под фото.');
         document.getElementById('recognizedDishTitle').textContent = String(parsed.title || 'Распознано').slice(0, 60);
         document.getElementById('recognizedDishStatus').textContent = `Распознано (${modelLabel})`;
