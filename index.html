@@ -2787,8 +2787,8 @@
     // =====================================================================
     // Вставь сюда URL своего бесплатного Cloudflare Worker (например: 'https://nutri-ai.myname.workers.dev')
     const AI_PROXY_URL = 'https://nutribalance.k-konstantin-v7.workers.dev';
-    const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-    const FALLBACK_GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+    const FALLBACK_GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
 
     // Расширенный словарь блюд и продуктов для мгновенного автономного расчёта без ключа
     const SMART_DISH_DICT = [
@@ -2869,7 +2869,11 @@
             cachedGeminiModel = data.model || modelName;
             return { parsed: data.parsed, model: cachedGeminiModel };
           }
-          const rawText = data?.text || data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const partsArr = data?.candidates?.[0]?.content?.parts;
+          const nonThoughtText = Array.isArray(partsArr)
+            ? partsArr.filter(p => p && !p.thought && typeof p.text === 'string' && p.text.trim()).map(p => p.text).join('\n').trim()
+            : '';
+          const rawText = (data?.text && String(data.text).trim()) || nonThoughtText || data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
           if (!rawText) {
             throw new Error('Пустой ответ от модели ' + modelName);
           }
