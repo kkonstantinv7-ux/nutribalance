@@ -2788,7 +2788,7 @@
     // Вставь сюда URL своего бесплатного Cloudflare Worker (например: 'https://nutri-ai.myname.workers.dev')
     const AI_PROXY_URL = 'https://nutribalance.k-konstantin-v7.workers.dev';
     const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-    const FALLBACK_GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    const FALLBACK_GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
     // Расширенный словарь блюд и продуктов для мгновенного автономного расчёта без ключа
     const SMART_DISH_DICT = [
@@ -3279,7 +3279,7 @@
       startLiveCamera();
     }
 
-    function downscaleToJpeg(source, srcW, srcH, canvas, maxDim = 960, quality = 0.84) {
+    function downscaleToJpeg(source, srcW, srcH, canvas, maxDim = 800, quality = 0.78) {
       let w = srcW, h = srcH;
       if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } else { w = Math.round((w * maxDim) / h); h = maxDim; } }
       canvas.width = w; canvas.height = h;
@@ -3351,7 +3351,8 @@
             parsed = { title: est.name, items: est.components || [{ name: est.name, grams: est.portionGrams, kcal100: est.kcal100, p100: est.p100, f100: est.f100, c100: est.c100 }] };
             modelLabel = 'Smart AI';
           } else {
-            throw new Error('Для распознавания по фото без прокси напиши название блюда в поле «Уточнение» ниже или укажи AI_PROXY_URL в коде');
+            const realReason = proxyErr?.message || 'нет ответа от сервера ИИ';
+            throw new Error(`Сервер ИИ вернул ошибку (${realReason}). Проверь, что обновлённый код залит на GitHub и в Cloudflare Worker, либо напиши краткое название блюда в поле «Уточнение» ниже.`);
           }
         }
         const items = (Array.isArray(parsed.items) ? parsed.items : [])
