@@ -705,9 +705,13 @@
           PRO навсегда • 299 ₽
         </button>
       </div>
-      <div class="flex items-center justify-between liquid-glass p-1.5 rounded-2xl max-w-md mx-auto">
-        <button onclick="switchAiMode('text')" id="aiModeBtn-text" class="btn-spring flex-1 py-2 rounded-xl text-xs font-bold liquid-btn-primary">Описать текстом</button>
-        <button onclick="switchAiMode('photo')" id="aiModeBtn-photo" class="btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-200">Распознать по фото</button>
+      <div class="flex items-center justify-between liquid-glass p-1.5 rounded-2xl max-w-lg mx-auto gap-1">
+        <button type="button" onclick="switchAiMode('text')" id="aiModeBtn-text" class="btn-spring flex-1 py-2 rounded-xl text-xs font-bold liquid-btn-primary">Описать текстом</button>
+        <button type="button" onclick="switchAiMode('photo')" id="aiModeBtn-photo" class="btn-spring flex-1 py-2 rounded-xl text-xs font-medium text-slate-200">Распознать по фото</button>
+        <button type="button" onclick="scanBarcode()" id="aiModeBtn-barcode" class="btn-spring px-3 py-2 rounded-xl text-xs font-semibold text-emerald-300 hover:text-white flex items-center justify-center gap-1" title="Сканировать штрихкод упаковки камерой">
+          <svg class="w-3.5 h-3.5 svg-glow-emerald" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>
+          <span>Штрихкод</span>
+        </button>
       </div>
 
       <div id="aiSubTab-text" class="liquid-glass rounded-3xl p-4 sm:p-5 max-w-xl mx-auto space-y-3.5 animate-card">
@@ -821,24 +825,33 @@
             <div class="flex items-center justify-between border-b border-white/10 pb-2">
               <div>
                 <h3 id="recognizedDishTitle" class="font-bold text-sm text-white">Состав тарелки</h3>
-                <p id="recognizedDishStatus" class="text-[11px] text-slate-300">Вес можно подправить ползунком</p>
+                <p id="recognizedDishStatus" class="text-[11px] text-slate-300">Вес меняется ползунком, лишнее можно удалить ✕</p>
               </div>
               <div class="text-right">
                 <div id="photoTotalKcal" class="text-base font-extrabold text-emerald-300">0 ккал</div>
                 <div id="photoTotalMacros" class="text-[10px] text-slate-300">Б: 0 • Ж: 0 • У: 0</div>
               </div>
             </div>
-            <div id="photoIngredientsList" class="space-y-2 max-h-[250px] overflow-y-auto pr-1"></div>
+            <div id="photoIngredientsList" class="space-y-2 max-h-[240px] overflow-y-auto pr-1"></div>
+            <button type="button" onclick="promptAddPhotoIngredient()" class="btn-spring liquid-pill w-full py-1.5 px-3 rounded-xl text-[11px] text-cyan-300 font-semibold border border-cyan-400/25 flex items-center justify-center gap-1">
+              <span>＋ Добавить ингредиент к тарелке</span>
+            </button>
           </div>
 
-          <div class="pt-2 border-t border-white/10 flex gap-2">
-            <select id="photoTargetMeal" class="liquid-input rounded-xl px-3 py-2 text-xs text-white">
-              <option value="breakfast" class="bg-slate-900">Завтрак</option>
-              <option value="lunch" selected class="bg-slate-900">Обед</option>
-              <option value="dinner" class="bg-slate-900">Ужин</option>
-              <option value="snack" class="bg-slate-900">Перекус</option>
-            </select>
-            <button onclick="savePhotoDishToDiary()" class="btn-spring liquid-btn-primary flex-1 py-2.5 rounded-xl font-bold text-xs">Добавить в дневник</button>
+          <div class="pt-2 border-t border-white/10 space-y-2">
+            <div class="flex gap-2">
+              <select id="photoTargetMeal" class="liquid-input rounded-xl px-3 py-2 text-xs text-white">
+                <option value="breakfast" class="bg-slate-900">Завтрак</option>
+                <option value="lunch" selected class="bg-slate-900">Обед</option>
+                <option value="dinner" class="bg-slate-900">Ужин</option>
+                <option value="snack" class="bg-slate-900">Перекус</option>
+              </select>
+              <button type="button" onclick="savePhotoDishToDiary(false)" class="btn-spring liquid-btn-primary flex-1 py-2.5 rounded-xl font-bold text-xs">Добавить в дневник</button>
+            </div>
+            <button type="button" onclick="savePhotoDishToDiary(true)" class="btn-spring liquid-pill w-full py-2 px-3 rounded-xl font-bold text-xs text-emerald-300 border border-emerald-400/40 flex items-center justify-center gap-1.5">
+              <svg class="w-4 h-4 text-emerald-300 svg-glow-emerald flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><line x1="12" y1="7" x2="12" y2="13"/><line x1="9" y1="10" x2="15" y2="10"/></svg>
+              <span>Записать + сохранить блюдо в свой список</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1032,6 +1045,13 @@
                 <option value="15" class="bg-slate-900">Набор (+15%)</option>
               </select>
             </div>
+            <div class="col-span-2 sm:col-span-3">
+              <label class="block text-slate-300 mb-1">Дневная норма воды (мл, 0 = авто по весу 33 мл/кг + спорт)</label>
+              <div class="flex gap-2 items-center">
+                <input type="number" step="100" min="0" max="6000" id="profWaterGoal" placeholder="0 (авто по весу)" oninput="saveProfileAndRecalc()" class="liquid-input flex-1 rounded-xl px-2.5 py-2 text-white" />
+                <button type="button" onclick="resetWaterGoalToAuto()" class="btn-spring liquid-pill px-3 py-2 rounded-xl text-[11px] text-cyan-300 font-semibold whitespace-nowrap">Авто (по весу)</button>
+              </div>
+            </div>
           </div>
           <div id="calcResultSummary" class="p-3 rounded-2xl liquid-pill text-xs text-slate-200 leading-relaxed"></div>
           <p class="text-[10px] text-slate-400 leading-snug">Расчёты ориентировочные и не являются медицинской рекомендацией. Не опускай калорийность ниже безопасного минимума и при сомнениях обратись к врачу или диетологу.</p>
@@ -1039,7 +1059,7 @@
 
         <div class="liquid-glass rounded-3xl p-4 space-y-3 h-fit">
           <div class="flex items-center justify-between">
-            <h2 class="font-bold text-sm text-white">Добавить свой продукт в базу (на 100 г)</h2>
+            <h2 id="customFoodFormTitle" class="font-bold text-sm text-white">Добавить свой продукт в базу (на 100 г)</h2>
             <span id="foodsCountBadge" class="text-[11px] text-emerald-300 font-semibold"></span>
           </div>
           <input type="text" id="newFoodName" placeholder="Название продукта или блюда" class="liquid-input w-full rounded-xl px-3 py-2 text-xs text-white" />
@@ -1049,15 +1069,27 @@
             <input type="number" step="0.1" id="newFoodC" placeholder="Углев. (г)" class="liquid-input rounded-xl px-2.5 py-2 text-xs text-white" />
           </div>
           <input type="number" id="newFoodKcal" placeholder="Ккал на 100г (если пусто — посчитается само)" class="liquid-input w-full rounded-xl px-3 py-2 text-xs text-white" />
-          <button onclick="addCustomFood()" class="btn-spring liquid-btn-primary w-full py-2.5 rounded-xl font-bold text-xs">Сохранить продукт в базу</button>
+          <div class="flex gap-2">
+            <button type="button" id="btnSaveCustomFood" onclick="addCustomFood()" class="btn-spring liquid-btn-primary flex-1 py-2.5 rounded-xl font-bold text-xs">Сохранить продукт в базу</button>
+            <button type="button" id="btnCancelCustomFoodEdit" onclick="cancelEditCustomFood()" class="hidden btn-spring liquid-pill px-3.5 py-2.5 rounded-xl text-xs text-slate-300 font-semibold">Отмена</button>
+          </div>
 
-          <!-- Список сохранённых продуктов пользователя с возможностью удаления -->
+          <!-- Список сохранённых продуктов пользователя с возможностью редактирования и удаления -->
           <div class="pt-3 border-t border-white/10 space-y-2">
             <div class="flex items-center justify-between">
               <h3 class="text-xs font-bold text-slate-200">Мои сохранённые продукты</h3>
               <span id="customFoodsCountLabel" class="text-[10px] text-emerald-300 font-semibold">0 шт.</span>
             </div>
-            <div id="customFoodsList" class="space-y-1.5 max-h-[220px] overflow-y-auto pr-1"></div>
+            <div id="customFoodsList" class="space-y-1.5 max-h-[200px] overflow-y-auto pr-1"></div>
+          </div>
+
+          <!-- Список сохранённых готовых сетов с возможностью редактирования и удаления -->
+          <div class="pt-3 border-t border-white/10 space-y-2">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold text-slate-200">Мои готовые сеты приёмов пищи</h3>
+              <span id="profileMealSetsCountLabel" class="text-[10px] text-cyan-300 font-semibold">0 шт.</span>
+            </div>
+            <div id="profileMealSetsList" class="space-y-1.5 max-h-[180px] overflow-y-auto pr-1"></div>
           </div>
         </div>
       </div>
@@ -2177,10 +2209,11 @@
       return {
         isConfigured: false,
         updatedAt: 0,
-        profile: { gender: 'male', age: 28, height: 175, weight: 80, targetWeight: 72, activity: 1.375, goal: -20, addBurnedToTarget: false, updatedAt: 0 },
+        profile: { gender: 'male', age: 28, height: 175, weight: 80, targetWeight: 72, activity: 1.375, goal: -20, addBurnedToTarget: false, waterGoalMl: 0, updatedAt: 0 },
         customFoods: [],
         deletedCustomFoodIds: [],
         mealSets: [],
+        deletedMealSetIds: [],
         days: {},
         weightHistory: [],
         deletedWeightIds: [],
@@ -2192,6 +2225,7 @@
     }
 
     let state = defaultState();
+    let editingCustomFoodId = null;
 
     // Приводит любые входные данные к безопасной структуре
     function normalizeState(obj) {
@@ -2201,9 +2235,11 @@
       out.updatedAt = Number(src.updatedAt) || 0;
       out.profile = { ...base.profile, ...((src.profile && typeof src.profile === 'object') ? src.profile : {}) };
       out.profile.updatedAt = Number(out.profile.updatedAt) || 0;
+      out.profile.waterGoalMl = Math.round(num(out.profile.waterGoalMl, 0, 6000, 0));
       out.customFoods = Array.isArray(src.customFoods) ? src.customFoods.filter(f => f && f.name) : [];
       out.deletedCustomFoodIds = Array.isArray(src.deletedCustomFoodIds) ? src.deletedCustomFoodIds.slice(-100) : [];
       out.mealSets = Array.isArray(src.mealSets) ? src.mealSets.filter(ms => ms && ms.title && Array.isArray(ms.items)) : [];
+      out.deletedMealSetIds = Array.isArray(src.deletedMealSetIds) ? src.deletedMealSetIds.slice(-100) : [];
       out.days = (src.days && typeof src.days === 'object' && !Array.isArray(src.days)) ? src.days : {};
       out.weightHistory = Array.isArray(src.weightHistory) ? src.weightHistory.filter(w => w && isFinite(Number(w.weight))) : [];
       out.deletedWeightIds = Array.isArray(src.deletedWeightIds) ? src.deletedWeightIds.slice(-100) : [];
@@ -2224,12 +2260,12 @@
       return itemsCount * 1000 + waterScore + actScore + reviewScore;
     }
 
-    // Умное объединение локального и облачного состояния между телефоном и ПК без потери данных
+    // Умное объединение локального и облачного состояния в Telegram-аккаунте (вес, замеры тела, сеты, свои продукты и дневник)
     function mergeDiaryStates(localRaw, remoteRaw) {
       const loc = normalizeState(localRaw);
       const rem = normalizeState(remoteRaw);
 
-      if (!rem.isConfigured && !Object.keys(rem.days).length && !rem.customFoods.length) return loc;
+      if (!rem.isConfigured && !Object.keys(rem.days).length && !rem.customFoods.length && !rem.weightHistory.length) return loc;
       if (!loc.isConfigured && rem.isConfigured) return rem;
 
       const merged = normalizeState(loc);
@@ -2239,10 +2275,12 @@
       // 1) Объединяем удалённые ID
       const delFoodsSet = new Set([...(loc.deletedCustomFoodIds || []), ...(rem.deletedCustomFoodIds || [])]);
       const delWeightsSet = new Set([...(loc.deletedWeightIds || []), ...(rem.deletedWeightIds || [])]);
+      const delSetsSet = new Set([...(loc.deletedMealSetIds || []), ...(rem.deletedMealSetIds || [])]);
       merged.deletedCustomFoodIds = Array.from(delFoodsSet).slice(-100);
       merged.deletedWeightIds = Array.from(delWeightsSet).slice(-100);
+      merged.deletedMealSetIds = Array.from(delSetsSet).slice(-100);
 
-      // 2) Объединяем историю взвешиваний
+      // 2) Объединяем историю взвешиваний в Telegram-аккаунте
       const weightMap = new Map();
       [...(loc.weightHistory || []), ...(rem.weightHistory || [])].forEach(w => {
         if (!w || !isFinite(Number(w.weight))) return;
@@ -2260,7 +2298,6 @@
       } else if (locProfTs > remProfTs) {
         merged.profile = { ...rem.profile, ...loc.profile };
       } else {
-        // Если оба профиля без метки времени — берём тот, где больше прогресса за сегодня или свежий замер веса
         const locScore = Object.values(loc.days || {}).reduce((s, d) => s + scoreDayCompleteness(d), 0);
         const remScore = Object.values(rem.days || {}).reduce((s, d) => s + scoreDayCompleteness(d), 0);
         merged.profile = remScore > locScore ? { ...loc.profile, ...rem.profile } : { ...rem.profile, ...loc.profile };
@@ -2282,10 +2319,12 @@
       });
       merged.customFoods = Array.from(foodsMap.values());
 
-      // 4б) Объединяем готовые сеты (mealSets) и замеры тела (bodyMeasurements)
+      // 4б) Объединяем готовые сеты (mealSets) и замеры объёмов тела (bodyMeasurements)
       const setsMap = new Map();
       [...(rem.mealSets || []), ...(loc.mealSets || [])].forEach(ms => {
-        if (ms && ms.title && Array.isArray(ms.items)) setsMap.set(ms.id || ms.title.toLowerCase(), ms);
+        if (!ms || !ms.title || !Array.isArray(ms.items)) return;
+        if (ms.id && delSetsSet.has(ms.id)) return;
+        setsMap.set(ms.id || ms.title.toLowerCase(), ms);
       });
       merged.mealSets = Array.from(setsMap.values()).slice(0, 30);
 
@@ -2311,7 +2350,6 @@
         } else if (tsLoc > tsRem) {
           mergedDays[d] = dLoc;
         } else {
-          // Если у старых записей ещё нет updatedAt — берём тот день, где записана еда/вода/шаги!
           mergedDays[d] = scoreDayCompleteness(dRem) >= scoreDayCompleteness(dLoc) ? dRem : dLoc;
         }
       });
@@ -2370,8 +2408,10 @@
       }
       cloudSaving = true;
       try {
-        // 1) мета: профиль + история веса + списки удалений (укорачиваем, пока не влезет в лимит)
+        // 1) мета в Telegram CloudStorage: профиль + история веса + замеры тела + готовые сеты + списки удалений
         let history = (s.weightHistory || []).slice(-30);
+        let measSlice = (s.bodyMeasurements || []).slice(-20);
+        let setsSlice = (s.mealSets || []).slice(0, 15);
         let metaStr = '';
         while (true) {
           metaStr = JSON.stringify({
@@ -2379,14 +2419,20 @@
             updatedAt: s.updatedAt || Date.now(),
             profile: s.profile,
             weightHistory: history,
-            deletedCustomFoodIds: (s.deletedCustomFoodIds || []).slice(-50),
-            deletedWeightIds: (s.deletedWeightIds || []).slice(-50),
+            bodyMeasurements: measSlice,
+            mealSets: setsSlice,
+            deletedMealSetIds: (s.deletedMealSetIds || []).slice(-40),
+            deletedCustomFoodIds: (s.deletedCustomFoodIds || []).slice(-40),
+            deletedWeightIds: (s.deletedWeightIds || []).slice(-40),
             aiProvider: s.aiProvider,
             apiKey: s.apiKey,
             firebaseUrl: s.firebaseUrl
           });
-          if (metaStr.length <= CLOUD_LIMIT || history.length <= 2) break;
-          history = history.slice(1);
+          if (metaStr.length <= CLOUD_LIMIT) break;
+          if (setsSlice.length > 5) { setsSlice = setsSlice.slice(0, -2); continue; }
+          if (measSlice.length > 5) { measSlice = measSlice.slice(2); continue; }
+          if (history.length > 3) { history = history.slice(2); continue; }
+          break;
         }
         const writePromises = [];
         if (metaStr.length <= CLOUD_LIMIT) writePromises.push(cloudSet('nb_meta_v3', metaStr));
@@ -2596,8 +2642,15 @@
       }
     });
 
-    // Делегирование: выбор или удаление своего продукта
+    // Делегирование: выбор, редактирование или удаление своего продукта
     document.getElementById('foodSearchResults').addEventListener('click', (e) => {
+      const editBtn = e.target.closest('[data-edit-custom-id]');
+      if (editBtn) {
+        e.stopPropagation();
+        switchTab('profile');
+        startEditCustomFood(editBtn.dataset.editCustomId);
+        return;
+      }
       const delBtn = e.target.closest('[data-delete-custom-id]');
       if (delBtn) {
         e.stopPropagation();
@@ -2680,7 +2733,7 @@
       container.innerHTML = filtered.map(f => {
         const isSelected = selectedFoodObj && selectedFoodObj.id === f.id;
         const isCustom = (state.customFoods || []).some(c => c.id === f.id);
-        return `<div class="w-full text-left px-3 py-2.5 rounded-2xl border transition flex items-start justify-between gap-2 ${isSelected ? 'bg-emerald-500/25 border-emerald-400/60 text-white' : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-200'}"><button type="button" data-food-id="${escapeHtml(f.id)}" class="min-w-0 flex-1 text-left"><div class="text-xs font-semibold break-words leading-snug">${escapeHtml(f.name)}${isCustom ? '<span class="inline-block text-[9px] ml-1 px-1.5 py-0.5 rounded bg-emerald-500/25 text-emerald-300 border border-emerald-400/30 align-middle">Свой</span>' : ''}${f.isOnline ? '<span class="inline-block text-[9px] ml-1 px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 align-middle">Онлайн</span>' : ''}</div><div class="text-[10px] text-slate-300 mt-0.5">Б: ${Number(f.p)}г • Ж: ${Number(f.f)}г • У: ${Number(f.c)}г (на 100г)</div></button><div class="flex items-center gap-1.5 flex-shrink-0 pt-0.5"><span class="text-xs font-bold text-emerald-300 whitespace-nowrap">${Number(f.kcal)} ккал</span>${isCustom ? `<button type="button" data-delete-custom-id="${escapeHtml(f.id)}" class="text-slate-400 hover:text-rose-400 p-1 text-xs" title="Удалить свой продукт">✕</button>` : ''}</div></div>`;
+        return `<div class="w-full text-left px-3 py-2.5 rounded-2xl border transition flex items-start justify-between gap-2 ${isSelected ? 'bg-emerald-500/25 border-emerald-400/60 text-white' : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-200'}"><button type="button" data-food-id="${escapeHtml(f.id)}" class="min-w-0 flex-1 text-left"><div class="text-xs font-semibold break-words leading-snug">${escapeHtml(f.name)}${isCustom ? '<span class="inline-block text-[9px] ml-1 px-1.5 py-0.5 rounded bg-emerald-500/25 text-emerald-300 border border-emerald-400/30 align-middle">Свой</span>' : ''}${f.isOnline ? '<span class="inline-block text-[9px] ml-1 px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 align-middle">Онлайн</span>' : ''}</div><div class="text-[10px] text-slate-300 mt-0.5">Б: ${Number(f.p)}г • Ж: ${Number(f.f)}г • У: ${Number(f.c)}г (на 100г)</div></button><div class="flex items-center gap-1 flex-shrink-0 pt-0.5"><span class="text-xs font-bold text-emerald-300 whitespace-nowrap">${Number(f.kcal)} ккал</span>${isCustom ? `<button type="button" data-edit-custom-id="${escapeHtml(f.id)}" class="text-slate-400 hover:text-cyan-300 p-1 text-xs" title="Редактировать свой продукт">✎</button><button type="button" data-delete-custom-id="${escapeHtml(f.id)}" class="text-slate-400 hover:text-rose-400 p-1 text-xs" title="Удалить свой продукт">✕</button>` : ''}</div></div>`;
       }).join('');
       updateQuickPreview();
     }
@@ -2770,8 +2823,19 @@
     }
 
     // =====================================================================
-    // 6. РАСЧЁТ НОРМЫ
+    // 6. РАСЧЁТ НОРМЫ (КБЖУ И ПЕРСОНАЛЬНАЯ НОРМА ВОДЫ ПО ВЕСУ)
     // =====================================================================
+    function getWaterTargetMl(dayObj = null) {
+      const day = dayObj || ensureDay(currentDate);
+      const customGoal = Math.round(num(state.profile?.waterGoalMl, 0, 6000, 0));
+      if (customGoal >= 1000) return customGoal;
+      const w = num(state.profile?.weight, 35, 250, 75);
+      // Базовая физиологическая норма: 33 мл на 1 кг веса тела (округление до 100 мл)
+      const baseWater = Math.min(4500, Math.max(1500, Math.round((w * 33) / 100) * 100));
+      const hasWorkout = (Number(day?.activity?.activeMinutes) || 0) >= 20 || (Number(day?.activity?.burnedKcal) || 0) >= 200;
+      return baseWater + (hasWorkout ? 300 : 0);
+    }
+
     function calculateTargets() {
       const { gender, age, height, weight, activity, goal, addBurnedToTarget } = state.profile;
       const bmr = Math.round(10 * weight + 6.25 * height - 5 * age + (gender === 'male' ? 5 : -161));
@@ -2795,7 +2859,8 @@
       p = Math.max(p, Math.round((targetKcal * 0.15) / 4));
       const f = Math.round((targetKcal * 0.28) / 9);
       const c = Math.max(0, Math.round((targetKcal - p * 4 - f * 9) / 4));
-      return { bmr, tdee, baseTargetKcal, targetKcal, burnedBonus, p, f, c, floorApplied, minSafe };
+      const waterTarget = getWaterTargetMl(day);
+      return { bmr, tdee, baseTargetKcal, targetKcal, burnedBonus, p, f, c, floorApplied, minSafe, waterTarget };
     }
 
     function switchTab(tabId) {
@@ -2963,11 +3028,28 @@
 
       for (const seg of parts) {
         let grams = null;
-        const gMatch = seg.match(/(\d+(?:[.,]\d+)?)\s*(?:г|гр|грамм|мл)/i);
+        const gMatch = seg.match(/(\d+(?:[.,]\d+)?)\s*(?:г|гр|грамм|грамма|граммов|мл)(?=$|[\s,.;)+-])/i);
         const pcsMatch = seg.match(/(\d+(?:[.,]\d+)?)\s*(?:шт|кус|кусок|куска|кусков|порц|тарелк|лож|ст\.?\s*л|ч\.?\s*л|стакан)/i);
         const leadNum = seg.match(/^(\d+(?:[.,]\d+)?)\s+/);
 
-        const dictEntry = SMART_DISH_DICT.find(d => d.keys.some(k => seg.includes(k)));
+        let dictEntry = SMART_DISH_DICT.find(d => d.keys.some(k => seg.includes(k)));
+        if (!dictEntry) {
+          const cleanSegWords = seg.replace(/(\d+(?:[.,]\d+)?)\s*(?:г|гр|грамм|грамма|граммов|мл|шт|кус|порц)/gi, '').trim();
+          if (cleanSegWords.length >= 3) {
+            const dbMatch = [...(state.customFoods || []), ...VERIFIED_FOODS_DB].find(f => f && f.name && f.name.toLowerCase().includes(cleanSegWords));
+            if (dbMatch) {
+              dictEntry = {
+                name: dbMatch.name,
+                kcal100: dbMatch.kcal,
+                p100: dbMatch.p,
+                f100: dbMatch.f,
+                c100: dbMatch.c,
+                pieceGrams: 100,
+                defaultGrams: 150
+              };
+            }
+          }
+        }
         if (dictEntry) {
           if (gMatch) grams = parseFloat(gMatch[1].replace(',', '.'));
           else if (pcsMatch) grams = parseFloat(pcsMatch[1].replace(',', '.')) * dictEntry.pieceGrams;
@@ -3080,9 +3162,10 @@
         nextMeal = `Лёгкий овощной салат с зеленью (150 г) или стакан кефира / травяной чай, чтобы сохранить целевой дефицит.`;
       }
 
+      const waterTarget = getWaterTargetMl(day);
       const tips = [];
-      if (day.water < 1800) tips.push(`Выпей ещё ${Math.max(250, 2000 - day.water)} мл чистой воды до вечера для нормального метаболизма.`);
-      else tips.push(`Водный баланс в полном порядке (${day.water} мл за день).`);
+      if (day.water < waterTarget * 0.85) tips.push(`Выпей ещё ${Math.max(250, waterTarget - day.water)} мл чистой воды до вечера (твоя норма: ${waterTarget} мл).`);
+      else tips.push(`Водный баланс в полном порядке (${day.water} из ${waterTarget} мл за день).`);
       if ((act.steps || 0) < 7000) tips.push(`Добавь вечернюю прогулку на 20–25 минут (+2500 шагов), чтобы увеличить расход энергии.`);
       else tips.push(`Отличная бытовая активность (${act.steps} шагов) помогает комфортно держать форму.`);
       if (totF > targets.f * 1.15) tips.push(`Обрати внимание на жиры (${totF} г при норме ${targets.f} г) — выбирай запекание или гриль без лишнего масла.`);
@@ -3096,7 +3179,7 @@
       let minutes = 45;
       const minMatch = lower.match(/(\d+)\s*(?:мин|m|минут)/i);
       const hourMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(?:ч|час)/i);
-      const plainNum = lower.match(/(\d{2,3})/);
+      const plainNum = lower.match(/(?:^|[\s,.;(+-])(\d{2,3})(?=$|[\s,.;)+-])/);
       if (minMatch) minutes = parseInt(minMatch[1], 10);
       else if (hourMatch) minutes = Math.round(parseFloat(hourMatch[1].replace(',', '.')) * 60);
       else if (plainNum) minutes = parseInt(plainNum[1], 10);
@@ -3160,14 +3243,15 @@
       else if (realDeficit >= 0) { defEl.textContent = `-${realDeficit} ккал`; defEl.className = 'text-xs font-bold text-emerald-300 mt-0.5'; }
       else { defEl.textContent = `+${Math.abs(realDeficit)} профицит`; defEl.className = 'text-xs font-bold text-amber-300 mt-0.5'; }
 
-      document.getElementById('summaryHabitsStatus').textContent = `${day.water} мл • ${act.steps} шаг.`;
+      const waterTarget = targets.waterTarget || getWaterTargetMl(day);
+      document.getElementById('summaryHabitsStatus').textContent = `${day.water}/${waterTarget} мл • ${act.steps} шаг.`;
 
       let score = 0;
       if (totKcal > 0) {
         const calRatio = totKcal / targets.targetKcal;
         score += (calRatio >= 0.85 && calRatio <= 1.08) ? 4 : (calRatio >= 0.7 && calRatio <= 1.2) ? 2.5 : 1;
         score += (totP >= targets.p * 0.85) ? 3 : (totP >= targets.p * 0.6) ? 1.5 : 0.5;
-        score += (day.water >= 2000) ? 1.5 : (day.water >= 1000) ? 0.8 : 0;
+        score += (day.water >= waterTarget * 0.9) ? 1.5 : (day.water >= waterTarget * 0.5) ? 0.8 : 0;
         score += (act.steps >= 7000 || act.burnedKcal >= 250) ? 1.5 : (act.steps >= 3500) ? 0.8 : 0;
       }
       document.getElementById('dayScoreBadge').textContent = `Оценка: ${totKcal === 0 ? '—' : Math.min(10, Math.round(score * 10) / 10)}/10`;
@@ -3177,7 +3261,7 @@
       else {
         if (pRemain > 25) tips.push(`До нормы не хватает <b>${pRemain} г белка</b> (подойдут творог, курица, рыба или яйца).`);
         else tips.push(`Отличный уровень белка (<b>${totP} г</b>) — мышцы защищены.`);
-        if (day.water < 1500) tips.push(`Выпито <b>${day.water} мл воды</b> — не забудь выпить ещё пару стаканов.`);
+        if (day.water < waterTarget * 0.75) tips.push(`Выпито <b>${day.water} из ${waterTarget} мл воды</b> — не забудь выпить ещё пару стаканов.`);
       }
       document.getElementById('instantTipsList').innerHTML = tips.map(t => `<li>${t}</li>`).join('');
 
@@ -3470,10 +3554,28 @@
 
     function renderPhotoIngredients() {
       const container = document.getElementById('photoIngredientsList');
+      if (!container) return;
+      if (currentPhotoItems.length === 0) {
+        container.innerHTML = `<div class="p-3 rounded-2xl liquid-pill text-center text-xs text-slate-400">Список ингредиентов пуст. Сделай снимок или нажми «＋ Добавить ингредиент к тарелке».</div>`;
+        updatePhotoTotals();
+        return;
+      }
       container.innerHTML = currentPhotoItems.map((it, idx) => {
         const m = photoItemMacros(it);
         const max = Math.max(500, Math.ceil((it.grams * 1.5) / 5) * 5);
-        return `<div class="p-2.5 rounded-2xl liquid-pill space-y-1 animate-card"><div class="flex justify-between text-xs font-semibold"><span class="text-white">${escapeHtml(it.name)}</span><span class="text-emerald-300" data-kcal-idx="${idx}">${m.kcal} ккал</span></div><div class="flex items-center gap-2"><input type="range" min="10" max="${max}" step="5" value="${Number(it.grams)}" data-photo-idx="${idx}" class="flex-1" /><span class="text-xs font-bold text-slate-200 w-12 text-right" data-grams-idx="${idx}">${Number(it.grams)} г</span></div></div>`;
+        return `<div class="p-2.5 rounded-2xl liquid-pill space-y-1 animate-card">
+          <div class="flex items-center justify-between gap-2 text-xs font-semibold">
+            <span class="text-white break-words flex-1">${escapeHtml(it.name)} <span class="text-[10px] text-slate-400 font-normal">(Б:${it.p100} Ж:${it.f100} У:${it.c100}/100г)</span></span>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-emerald-300 font-bold" data-kcal-idx="${idx}">${m.kcal} ккал</span>
+              <button type="button" data-photo-del-idx="${idx}" class="text-slate-400 hover:text-rose-400 px-1 text-xs" title="Убрать лишний ингредиент">✕</button>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="range" min="5" max="${max}" step="5" value="${Number(it.grams)}" data-photo-idx="${idx}" class="flex-1" />
+            <span class="text-xs font-bold text-slate-200 w-12 text-right" data-grams-idx="${idx}">${Number(it.grams)} г</span>
+          </div>
+        </div>`;
       }).join('');
       updatePhotoTotals();
     }
@@ -3492,14 +3594,144 @@
       updatePhotoTotals();
     });
 
-    function savePhotoDishToDiary() {
-      if (currentPhotoItems.length === 0) return showNotice('Сначала распознай блюдо');
+    // Удаление отдельного ошибочного ингредиента из распознанной тарелки
+    document.getElementById('photoIngredientsList').addEventListener('click', (e) => {
+      const delBtn = e.target.closest('[data-photo-del-idx]');
+      if (!delBtn) return;
+      const idx = Number(delBtn.dataset.photoDelIdx);
+      if (idx >= 0 && idx < currentPhotoItems.length) {
+        const removed = currentPhotoItems.splice(idx, 1)[0];
+        triggerHaptic('light');
+        renderPhotoIngredients();
+        if (removed?.name) showNotice(`Ингредиент «${removed.name}» убран из тарелки`);
+      }
+    });
+
+    async function promptAddPhotoIngredient() {
+      let modal = document.getElementById('nbAddPhotoIngModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'nbAddPhotoIngModal';
+        modal.className = 'fixed inset-0 z-50 bg-slate-950/90 flex items-center justify-center p-4';
+        modal.innerHTML = `
+          <div class="liquid-glass rounded-3xl max-w-sm w-full p-5 space-y-3 animate-card border border-cyan-400/35">
+            <div class="flex items-center justify-between">
+              <div class="font-bold text-sm text-white">Добавить ингредиент к тарелке</div>
+              <button type="button" id="nbPhotoIngClose" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+            <input type="text" id="nbPhotoIngName" placeholder="Например: Сыр пармезан 30 г или Хлеб ржаной" class="liquid-input w-full rounded-xl px-3 py-2 text-xs text-white" />
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-300 mb-0.5">Вес порции (г)</label>
+                <input type="number" id="nbPhotoIngGrams" value="100" min="5" max="2000" class="liquid-input w-full rounded-xl px-2.5 py-1.5 text-xs font-bold text-white" />
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-300 mb-0.5">Ккал на 100г (0 = авто)</label>
+                <input type="number" id="nbPhotoIngKcal100" value="0" min="0" max="900" class="liquid-input w-full rounded-xl px-2.5 py-1.5 text-xs font-bold text-emerald-300" />
+              </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" id="nbPhotoIngCancel" class="btn-spring liquid-pill px-3.5 py-1.5 rounded-xl text-xs text-slate-200">Отмена</button>
+              <button type="button" id="nbPhotoIngAddBtn" class="btn-spring liquid-btn-primary px-4 py-1.5 rounded-xl font-bold text-xs">Добавить</button>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
+      }
+      const nameInput = document.getElementById('nbPhotoIngName');
+      const gramsInput = document.getElementById('nbPhotoIngGrams');
+      const kcalInput = document.getElementById('nbPhotoIngKcal100');
+      nameInput.value = '';
+      gramsInput.value = '100';
+      kcalInput.value = '';
+      modal.classList.remove('hidden');
+      setTimeout(() => nameInput.focus(), 30);
+
+      const close = () => modal.classList.add('hidden');
+      document.getElementById('nbPhotoIngClose').onclick = close;
+      document.getElementById('nbPhotoIngCancel').onclick = close;
+      document.getElementById('nbPhotoIngAddBtn').onclick = async () => {
+        const rawName = nameInput.value.trim();
+        if (!rawName) return showNotice('Укажи название ингредиента');
+        const gVal = Math.round(num(gramsInput.value, 5, 2500, 100));
+        const manualKcal = Math.round(num(kcalInput.value, 0, 900, 0));
+        close();
+
+        if (manualKcal > 0) {
+          currentPhotoItems.push({
+            name: rawName.slice(0, 70),
+            grams: gVal,
+            kcal100: manualKcal,
+            p100: round1((manualKcal * 0.2) / 4),
+            f100: round1((manualKcal * 0.3) / 9),
+            c100: round1((manualKcal * 0.5) / 4)
+          });
+        } else {
+          const est = await estimateDishLocally(`${rawName} ${gVal} г`);
+          currentPhotoItems.push({
+            name: (est.name || rawName).slice(0, 70),
+            grams: gVal,
+            kcal100: est.kcal100 || 150,
+            p100: est.p100 || 10,
+            f100: est.f100 || 6,
+            c100: est.c100 || 14
+          });
+        }
+        triggerHaptic('success');
+        renderPhotoIngredients();
+      };
+    }
+
+    function savePhotoDishToDiary(alsoSaveToCustom = false) {
+      if (currentPhotoItems.length === 0) return showNotice('Сначала распознай блюдо или добавь ингредиенты');
       const meal = document.getElementById('photoTargetMeal').value;
       const day = ensureDay(currentDate);
+      let totGrams = 0, totKcal = 0, totP = 0, totF = 0, totC = 0;
+
       currentPhotoItems.forEach(it => {
-        if (it.grams > 0) day.items.push(makeDiaryItem(meal, it.name + ' (фото)', it.grams, it.kcal100, it.p100, it.f100, it.c100));
+        if (it.grams > 0) {
+          day.items.push(makeDiaryItem(meal, it.name + ' (фото)', it.grams, it.kcal100, it.p100, it.f100, it.c100));
+          totGrams += it.grams;
+          totKcal += (it.kcal100 * it.grams) / 100;
+          totP += (it.p100 * it.grams) / 100;
+          totF += (it.f100 * it.grams) / 100;
+          totC += (it.c100 * it.grams) / 100;
+        }
       });
-      triggerHaptic('success'); checkAndCelebrateGoals(day); saveState(); switchTab('diary');
+
+      if (alsoSaveToCustom && totGrams > 0) {
+        if (!Array.isArray(state.customFoods)) state.customFoods = [];
+        const rawTitle = document.getElementById('recognizedDishTitle')?.textContent || '';
+        const cleanTitle = (rawTitle && rawTitle !== 'Состав тарелки' && rawTitle !== 'Распознано'
+          ? rawTitle
+          : currentPhotoItems.map(i => i.name).join(' + ')
+        ).trim().slice(0, 160);
+        const factor = 100 / Math.max(1, totGrams);
+        const customObj = {
+          id: uid('custom'),
+          name: cleanTitle,
+          kcal: Math.round(totKcal * factor),
+          p: round1(totP * factor),
+          f: round1(totF * factor),
+          c: round1(totC * factor)
+        };
+        const existingIdx = state.customFoods.findIndex(f => f && String(f.name || '').trim().toLowerCase() === cleanTitle.toLowerCase());
+        if (existingIdx >= 0) {
+          customObj.id = state.customFoods[existingIdx].id;
+          state.customFoods[existingIdx] = customObj;
+        } else {
+          state.customFoods.unshift(customObj);
+        }
+      }
+
+      triggerHaptic('success');
+      checkAndCelebrateGoals(day);
+      saveState();
+      renderFoodSearchResults();
+      renderProfileForm();
+      switchTab('diary');
+      if (alsoSaveToCustom) {
+        showNotice('Блюдо с фото записано в дневник и сохранено в твои продукты!');
+      }
     }
 
     // =====================================================================
@@ -3581,7 +3813,10 @@
     }
 
     function removeWeightEntry(id) {
-      if (state.weightHistory.length <= 1) return;
+      if (state.weightHistory.length <= 1) {
+        triggerHaptic('warning');
+        return showNotice('Нельзя удалить единственную запись веса — добавь новое взвешивание, чтобы обновить текущий вес');
+      }
       if (!Array.isArray(state.deletedWeightIds)) state.deletedWeightIds = [];
       state.deletedWeightIds.push(id);
       state.weightHistory = state.weightHistory.filter(w => w.id !== id);
@@ -3657,9 +3892,10 @@
       day.items.forEach(it => { totKcal += it.kcal; totP += it.p; totF += it.f; totC += it.c; });
       totKcal = Math.round(totKcal); totP = Math.round(totP); totF = Math.round(totF); totC = Math.round(totC);
 
+      const waterTarget = targets.waterTarget || getWaterTargetMl(day);
       document.getElementById('currentDateInput').value = currentDate;
-      document.getElementById('waterValue').textContent = `${day.water} мл`;
-      const waterPct = Math.min(100, Math.round((day.water / 2000) * 100));
+      document.getElementById('waterValue').textContent = `${day.water} / ${waterTarget} мл`;
+      const waterPct = Math.min(100, Math.round((day.water / Math.max(1, waterTarget)) * 100));
       const cupFill = document.getElementById('waterCupFill');
       if (cupFill) cupFill.style.height = `${waterPct}%`;
 
@@ -3704,9 +3940,10 @@
       return getLocalDateString(dt);
     }
 
-    // Рендерим карточки приёмов пищи с поддержкой повтора вчерашнего дня и редактирования веса
+    // Рендерим карточки приёмов пищи с поддержкой повтора вчерашнего дня, копирования в сегодня и редактирования веса/приёма пищи
     function renderMeals() {
       const day = ensureDay(currentDate);
+      const isViewingPastOrFuture = currentDate !== getLocalDateString();
       const prevDayItems = state.days[getPrevDateString(currentDate)]?.items || [];
       const mealsMeta = [
         { key: 'breakfast', title: 'Завтрак' }, { key: 'lunch', title: 'Обед' },
@@ -3732,27 +3969,29 @@
         return `<div class="liquid-glass rounded-3xl p-3.5 sm:p-4 animate-card" style="animation-delay: ${idx * 45}ms">
           <div class="flex items-center justify-between mb-2 pb-2 border-b border-white/10 gap-2">
             <h3 class="font-bold text-xs sm:text-sm text-white flex items-center gap-2">${getMealSvgIcon(m.key)}<span>${m.title}</span></h3>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5 flex-wrap justify-end">
+              ${isViewingPastOrFuture && list.length > 0 ? `<button type="button" data-copy-to-today="${m.key}" class="btn-spring liquid-pill px-2 py-0.5 rounded-lg text-[10px] text-emerald-300 font-semibold" title="Скопировать этот приём пищи в сегодняшний день">📲 В сегодня</button>` : ''}
               ${list.length >= 2 ? `<button type="button" data-save-set-meal="${m.key}" class="btn-spring liquid-pill px-2 py-0.5 rounded-lg text-[10px] text-cyan-300 font-semibold" title="Сохранить этот набор блюд как готовый сет">🍱 В сет</button>` : ''}
               <span class="text-xs font-extrabold text-emerald-300">${mKcal} ккал</span>
             </div>
           </div>
           ${list.length === 0 ? emptyStateHtml : `<div class="space-y-1.5">${list.map(item => `
             <div class="flex items-start justify-between liquid-pill rounded-2xl px-3 py-2.5 text-xs gap-2">
-              <div class="min-w-0 pr-1 flex-1 cursor-pointer" data-edit-id="${escapeHtml(item.id)}" title="Нажми, чтобы изменить вес">
-                <div class="font-semibold text-white break-words leading-snug">${escapeHtml(item.name)} <span class="text-emerald-300 underline decoration-dotted whitespace-nowrap">(${Number(item.grams)}г)</span></div>
+              <div class="min-w-0 pr-1 flex-1 cursor-pointer" data-edit-id="${escapeHtml(item.id)}" title="Нажми, чтобы изменить граммовку или перенести в другой приём пищи">
+                <div class="font-semibold text-white break-words leading-snug">${escapeHtml(item.name)} <span class="text-emerald-300 underline decoration-dotted whitespace-nowrap">(${Number(item.grams)}г ✎)</span></div>
                 <div class="text-[10px] text-slate-300 mt-0.5">Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г</div>
               </div>
-              <div class="flex items-center gap-2 flex-shrink-0 pt-0.5">
+              <div class="flex items-center gap-1.5 flex-shrink-0 pt-0.5">
                 <span class="font-bold text-emerald-300 whitespace-nowrap">${Number(item.kcal)}</span>
-                <button type="button" data-remove-id="${escapeHtml(item.id)}" class="text-slate-400 hover:text-rose-400 px-1">✕</button>
+                <button type="button" data-edit-id="${escapeHtml(item.id)}" class="text-slate-400 hover:text-cyan-300 px-1" title="Изменить вес или перенести">✎</button>
+                <button type="button" data-remove-id="${escapeHtml(item.id)}" class="text-slate-400 hover:text-rose-400 px-1" title="Удалить запись">✕</button>
               </div>
             </div>`).join('')}</div>`}
         </div>`;
       }).join('');
     }
 
-    // Единый обработчик кликов для дневника (удаление, редактирование веса, повтор вчерашнего)
+    // Единый обработчик кликов для дневника (удаление, редактирование веса/приёма пищи, повтор вчерашнего, копирование в сегодня)
     document.getElementById('mealsContainer').addEventListener('click', (e) => {
       const removeBtn = e.target.closest('[data-remove-id]');
       if (removeBtn) return removeDiaryItem(removeBtn.dataset.removeId);
@@ -3763,9 +4002,26 @@
       const copyBtn = e.target.closest('[data-copy-meal]');
       if (copyBtn) return copyMealFromYesterday(copyBtn.dataset.copyMeal);
 
+      const copyTodayBtn = e.target.closest('[data-copy-to-today]');
+      if (copyTodayBtn) return copyMealFromCurrentDateToToday(copyTodayBtn.dataset.copyToToday);
+
       const saveSetBtn = e.target.closest('[data-save-set-meal]');
       if (saveSetBtn) return saveMealAsSet(saveSetBtn.dataset.saveSetMeal);
     });
+
+    function copyMealFromCurrentDateToToday(mealKey) {
+      const srcItems = (state.days[currentDate]?.items || []).filter(i => i.meal === mealKey);
+      if (!srcItems.length) return;
+      const todayKey = getLocalDateString();
+      const todayDay = ensureDay(todayKey);
+      srcItems.forEach(it => todayDay.items.push({ ...it, id: uid('item') }));
+      todayDay.updatedAt = Date.now();
+      currentDate = todayKey;
+      triggerHaptic('success');
+      checkAndCelebrateGoals(todayDay);
+      saveState();
+      showNotice('Приём пищи скопирован в сегодняшний дневник!');
+    }
 
     function removeDiaryItem(itemId) {
       const day = ensureDay(currentDate);
@@ -3773,18 +4029,27 @@
       saveState();
     }
 
-    // Пропорциональный пересчёт КБЖУ при смене веса в дневнике
-    function applyDiaryItemGrams(day, item, rawInput) {
+    // Пропорциональный пересчёт КБЖУ и/или смена приёма пищи в дневнике
+    function applyDiaryItemGrams(day, item, rawInput, newMealKey = null) {
       if (rawInput === null || rawInput === undefined) return;
       const newGrams = Math.round(num(parseFloat(rawInput), 1, 3000, 0));
-      if (!newGrams || newGrams === item.grams) return;
+      if (!newGrams) return;
 
-      const ratio = newGrams / item.grams;
-      item.grams = newGrams;
-      item.kcal = Math.round(item.kcal * ratio);
-      item.p = round1(item.p * ratio);
-      item.f = round1(item.f * ratio);
-      item.c = round1(item.c * ratio);
+      const gramsChanged = newGrams !== item.grams;
+      const mealChanged = Boolean(newMealKey && newMealKey !== item.meal);
+      if (!gramsChanged && !mealChanged) return;
+
+      if (gramsChanged) {
+        const ratio = newGrams / item.grams;
+        item.grams = newGrams;
+        item.kcal = Math.round(item.kcal * ratio);
+        item.p = round1(item.p * ratio);
+        item.f = round1(item.f * ratio);
+        item.c = round1(item.c * ratio);
+      }
+      if (mealChanged) {
+        item.meal = newMealKey;
+      }
 
       triggerHaptic('light');
       checkAndCelebrateGoals(day);
@@ -3796,9 +4061,88 @@
       const item = day.items.find(i => i.id === itemId);
       if (!item || !item.grams) return;
 
-      openCustomPromptModal(`Новый вес для «${item.name}» (в граммах):`, item.grams, (input) => {
-        applyDiaryItemGrams(day, item, input);
+      let modal = document.getElementById('nbDiaryEditModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'nbDiaryEditModal';
+        modal.className = 'fixed inset-0 z-50 bg-slate-950/90 flex items-center justify-center p-4';
+        modal.innerHTML = `
+          <div class="liquid-glass rounded-3xl max-w-xs w-full p-5 space-y-3.5 animate-card border border-emerald-400/35">
+            <div class="flex items-start justify-between gap-2">
+              <div id="nbEditDiaryTitle" class="font-bold text-sm text-white leading-snug break-words"></div>
+              <button type="button" id="nbEditDiaryClose" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-300 mb-1">Вес порции (в граммах):</label>
+              <input type="number" id="nbEditDiaryGrams" min="1" max="3000" class="liquid-input w-full rounded-xl px-3 py-2 text-sm font-bold text-white" />
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <button type="button" data-q-grams="50" class="btn-spring liquid-pill px-2 py-1 rounded-lg text-[11px] text-slate-200">50г</button>
+                <button type="button" data-q-grams="100" class="btn-spring liquid-pill px-2 py-1 rounded-lg text-[11px] text-slate-200">100г</button>
+                <button type="button" data-q-grams="150" class="btn-spring liquid-pill px-2 py-1 rounded-lg text-[11px] text-slate-200">150г</button>
+                <button type="button" data-q-grams="200" class="btn-spring liquid-pill px-2 py-1 rounded-lg text-[11px] text-slate-200">200г</button>
+                <button type="button" data-q-grams="300" class="btn-spring liquid-pill px-2 py-1 rounded-lg text-[11px] text-slate-200">300г</button>
+              </div>
+            </div>
+            <div id="nbEditDiaryLiveMacros" class="p-2.5 rounded-xl bg-slate-950/60 border border-white/10 text-xs text-slate-200"></div>
+            <div>
+              <label class="block text-[11px] text-slate-300 mb-1">Приём пищи (перенос записи):</label>
+              <select id="nbEditDiaryMeal" class="liquid-input w-full rounded-xl px-3 py-2 text-xs font-semibold text-white">
+                <option value="breakfast" class="bg-slate-900">🌅 Завтрак</option>
+                <option value="lunch" class="bg-slate-900">🍲 Обед</option>
+                <option value="dinner" class="bg-slate-900">🌙 Ужин</option>
+                <option value="snack" class="bg-slate-900">🍎 Перекус</option>
+              </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" id="nbEditDiaryCancel" class="btn-spring liquid-pill px-3.5 py-1.5 rounded-xl text-xs text-slate-200">Отмена</button>
+              <button type="button" id="nbEditDiarySave" class="btn-spring liquid-btn-primary px-4 py-1.5 rounded-xl font-bold text-xs">Сохранить</button>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
+      }
+
+      const titleEl = document.getElementById('nbEditDiaryTitle');
+      const gramsInput = document.getElementById('nbEditDiaryGrams');
+      const mealSelect = document.getElementById('nbEditDiaryMeal');
+      const liveBox = document.getElementById('nbEditDiaryLiveMacros');
+
+      titleEl.textContent = item.name;
+      gramsInput.value = item.grams;
+      mealSelect.value = item.meal || 'breakfast';
+
+      const updateLive = () => {
+        const g = Math.max(1, parseFloat(gramsInput.value) || 0);
+        const r = g / item.grams;
+        const k = Math.round(item.kcal * r);
+        const p = round1(item.p * r);
+        const f = round1(item.f * r);
+        const c = round1(item.c * r);
+        liveBox.innerHTML = `Пересчёт: <b class="text-emerald-300">${k} ккал</b> • Б: ${p}г • Ж: ${f}г • У: ${c}г`;
+      };
+      updateLive();
+      gramsInput.oninput = updateLive;
+
+      modal.querySelectorAll('[data-q-grams]').forEach(btn => {
+        btn.onclick = () => {
+          gramsInput.value = btn.dataset.qGrams;
+          updateLive();
+        };
       });
+
+      const close = () => modal.classList.add('hidden');
+      document.getElementById('nbEditDiaryClose').onclick = close;
+      document.getElementById('nbEditDiaryCancel').onclick = close;
+      document.getElementById('nbEditDiarySave').onclick = () => {
+        close();
+        applyDiaryItemGrams(day, item, gramsInput.value, mealSelect.value);
+      };
+      gramsInput.onkeydown = (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); document.getElementById('nbEditDiarySave').click(); }
+        if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+      };
+
+      modal.classList.remove('hidden');
+      setTimeout(() => { gramsInput.focus(); gramsInput.select(); }, 30);
     }
 
     // Копирование приёма пищи за вчерашний день
@@ -3866,12 +4210,24 @@
       const setIfIdle = (id, val) => { const el = document.getElementById(id); if (el && document.activeElement !== el) el.value = val; };
       setIfIdle('profGender', p.gender); setIfIdle('profAge', p.age); setIfIdle('profHeight', p.height);
       setIfIdle('profWeight', p.weight); setIfIdle('profActivity', p.activity); setIfIdle('profGoal', p.goal);
+      setIfIdle('profWaterGoal', p.waterGoalMl || '');
 
       const t = calculateTargets();
+      const waterModeNote = (Number(p.waterGoalMl) >= 1000) ? 'вручную' : `авто по весу ${p.weight} кг`;
       const floorNote = t.floorApplied ? `<br><span class="text-amber-300">Норма поднята до безопасного минимума (${t.minSafe} ккал) — дефицит ${p.goal}% оказался слишком жёстким.</span>` : '';
-      document.getElementById('calcResultSummary').innerHTML = `Базовый обмен: <b>${t.bmr} ккал</b> • Поддержание: <b>${t.tdee} ккал</b><br>Ваша дневная норма: <b class="text-emerald-300">${t.targetKcal} ккал</b> (Б: ${t.p}г, Ж: ${t.f}г, У: ${t.c}г)${floorNote}`;
+      document.getElementById('calcResultSummary').innerHTML = `Базовый обмен: <b>${t.bmr} ккал</b> • Поддержание: <b>${t.tdee} ккал</b><br>Ваша дневная норма: <b class="text-emerald-300">${t.targetKcal} ккал</b> (Б: ${t.p}г, Ж: ${t.f}г, У: ${t.c}г)<br>💧 Дневная норма воды: <b class="text-cyan-300">${t.waterTarget} мл</b> (${waterModeNote})${floorNote}`;
       document.getElementById('foodsCountBadge').textContent = `В базе: ${getAllFoods().length} поз.`;
       renderCustomFoodsList();
+      renderProfileMealSetsList();
+    }
+
+    function resetWaterGoalToAuto() {
+      state.profile.waterGoalMl = 0;
+      const el = document.getElementById('profWaterGoal');
+      if (el) el.value = '';
+      triggerHaptic('light');
+      saveProfileAndRecalc();
+      showNotice(`Включён авторасчёт нормы воды по весу (${getWaterTargetMl()} мл/день)`);
     }
 
     function renderCustomFoodsList() {
@@ -3887,19 +4243,54 @@
       }
 
       box.innerHTML = list.map(item => `
-        <div class="flex items-start justify-between liquid-pill rounded-2xl px-3 py-2.5 text-xs gap-2">
-          <div class="min-w-0 pr-1 flex-1">
+        <div class="flex items-start justify-between liquid-pill rounded-2xl px-3 py-2.5 text-xs gap-2 ${editingCustomFoodId === item.id ? 'border border-cyan-400/50 bg-cyan-500/10' : ''}">
+          <div class="min-w-0 pr-1 flex-1 cursor-pointer" data-custom-edit-id="${escapeHtml(item.id)}" title="Нажми, чтобы изменить КБЖУ или название">
             <div class="font-semibold text-white break-words leading-snug">${escapeHtml(item.name)}</div>
             <div class="text-[10px] text-slate-300 mt-0.5">
               <span class="text-emerald-300 font-bold">${Number(item.kcal)} ккал</span> • Б: ${Number(item.p)}г • Ж: ${Number(item.f)}г • У: ${Number(item.c)}г
             </div>
           </div>
-          <button type="button" data-custom-del-id="${escapeHtml(item.id)}" class="btn-spring liquid-pill px-2.5 py-1 rounded-xl text-rose-300 hover:text-rose-200 text-xs font-bold flex items-center gap-1 flex-shrink-0 mt-0.5" title="Удалить продукт">
-            <span>✕</span>
-            <span class="text-[10px] hidden sm:inline">Удалить</span>
-          </button>
+          <div class="flex items-center gap-1 flex-shrink-0 mt-0.5">
+            <button type="button" data-custom-edit-id="${escapeHtml(item.id)}" class="btn-spring liquid-pill px-2 py-1 rounded-xl text-cyan-300 hover:text-white text-xs font-bold" title="Редактировать продукт">✎</button>
+            <button type="button" data-custom-del-id="${escapeHtml(item.id)}" class="btn-spring liquid-pill px-2 py-1 rounded-xl text-rose-300 hover:text-rose-200 text-xs font-bold" title="Удалить продукт">✕</button>
+          </div>
         </div>
       `).join('');
+    }
+
+    function startEditCustomFood(foodId) {
+      const item = (state.customFoods || []).find(f => f.id === foodId);
+      if (!item) return;
+      editingCustomFoodId = item.id;
+      document.getElementById('newFoodName').value = item.name || '';
+      document.getElementById('newFoodP').value = item.p ?? 0;
+      document.getElementById('newFoodF').value = item.f ?? 0;
+      document.getElementById('newFoodC').value = item.c ?? 0;
+      document.getElementById('newFoodKcal').value = item.kcal ?? 0;
+      const titleEl = document.getElementById('customFoodFormTitle');
+      const saveBtn = document.getElementById('btnSaveCustomFood');
+      const cancelBtn = document.getElementById('btnCancelCustomFoodEdit');
+      if (titleEl) titleEl.textContent = 'Редактирование своего продукта (на 100 г)';
+      if (saveBtn) saveBtn.textContent = '💾 Сохранить изменения';
+      if (cancelBtn) cancelBtn.classList.remove('hidden');
+      renderCustomFoodsList();
+      document.getElementById('newFoodName')?.focus();
+    }
+
+    function cancelEditCustomFood() {
+      editingCustomFoodId = null;
+      document.getElementById('newFoodName').value = '';
+      document.getElementById('newFoodP').value = '';
+      document.getElementById('newFoodF').value = '';
+      document.getElementById('newFoodC').value = '';
+      document.getElementById('newFoodKcal').value = '';
+      const titleEl = document.getElementById('customFoodFormTitle');
+      const saveBtn = document.getElementById('btnSaveCustomFood');
+      const cancelBtn = document.getElementById('btnCancelCustomFoodEdit');
+      if (titleEl) titleEl.textContent = 'Добавить свой продукт в базу (на 100 г)';
+      if (saveBtn) saveBtn.textContent = 'Сохранить продукт в базу';
+      if (cancelBtn) cancelBtn.classList.add('hidden');
+      renderCustomFoodsList();
     }
 
     function deleteCustomFood(foodId) {
@@ -3912,6 +4303,9 @@
       if (selectedFoodObj && selectedFoodObj.id === foodId) {
         selectedFoodObj = null;
       }
+      if (editingCustomFoodId === foodId) {
+        cancelEditCustomFood();
+      }
       triggerHaptic('light');
       saveState();
       renderFoodSearchResults();
@@ -3920,13 +4314,45 @@
     }
 
     document.getElementById('customFoodsList')?.addEventListener('click', (e) => {
+      const editBtn = e.target.closest('[data-custom-edit-id]');
+      if (editBtn) {
+        startEditCustomFood(editBtn.dataset.customEditId);
+        return;
+      }
       const btn = e.target.closest('[data-custom-del-id]');
       if (btn) {
         deleteCustomFood(btn.dataset.customDelId);
       }
     });
 
+    function renderProfileMealSetsList() {
+      const box = document.getElementById('profileMealSetsList');
+      const countEl = document.getElementById('profileMealSetsCountLabel');
+      if (!box) return;
+      const sets = state.mealSets || [];
+      if (countEl) countEl.textContent = `${sets.length} шт.`;
+      if (sets.length === 0) {
+        box.innerHTML = `<div class="p-3 rounded-2xl liquid-pill text-center text-[11px] text-slate-400">Готовых сетов пока нет. Нажми «🍱 В сет» в карточке любого приёма пищи в Дневнике, чтобы сохранить любимую комбинацию.</div>`;
+        return;
+      }
+      box.innerHTML = sets.map(ms => {
+        const totalKcal = Math.round((ms.items || []).reduce((s, x) => s + (Number(x.kcal) || 0), 0));
+        const itemsPreview = (ms.items || []).map(x => `${x.name} (${x.grams}г)`).join(', ');
+        return `<div class="flex items-start justify-between liquid-pill rounded-2xl px-3 py-2.5 text-xs gap-2">
+          <div class="min-w-0 pr-1 flex-1 cursor-pointer" onclick="openEditMealSetModal('${escapeHtml(ms.id)}')" title="Нажми, чтобы переименовать или изменить состав сета">
+            <div class="font-semibold text-white break-words leading-snug">🍱 ${escapeHtml(ms.title)} <span class="text-emerald-300 font-bold">(${totalKcal} ккал)</span></div>
+            <div class="text-[10px] text-slate-300 mt-0.5 truncate">${escapeHtml(itemsPreview)}</div>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0 mt-0.5">
+            <button type="button" onclick="openEditMealSetModal('${escapeHtml(ms.id)}')" class="btn-spring liquid-pill px-2 py-1 rounded-xl text-cyan-300 hover:text-white text-xs font-bold" title="Редактировать сет">✎</button>
+            <button type="button" onclick="deleteMealSet('${escapeHtml(ms.id)}')" class="btn-spring liquid-pill px-2 py-1 rounded-xl text-rose-300 hover:text-rose-200 text-xs font-bold" title="Удалить сет">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
     function saveProfileAndRecalc() {
+      const rawWater = parseFloat(document.getElementById('profWaterGoal')?.value || '0');
       state.profile = {
         ...state.profile, gender: document.getElementById('profGender').value === 'female' ? 'female' : 'male',
         age: num(document.getElementById('profAge').value, 12, 100, 28),
@@ -3934,6 +4360,7 @@
         weight: num(parseFloat(document.getElementById('profWeight').value), 30, 300, 80),
         activity: Number(document.getElementById('profActivity').value) || 1.375,
         goal: Number(document.getElementById('profGoal').value),
+        waterGoalMl: rawWater >= 500 ? Math.round(num(rawWater, 1000, 6000, 2000)) : 0,
         updatedAt: Date.now()
       };
       saveState(true, true); renderSummary(); renderDailyInsights(); renderProfileForm(); renderProgressTab();
@@ -3942,14 +4369,31 @@
     function addCustomFood() {
       const name = document.getElementById('newFoodName').value.trim();
       if (!name) return showNotice('Укажите название продукта');
-      const p = num(parseFloat(document.getElementById('newFoodP').value), 0, 100, 0);
-      const f = num(parseFloat(document.getElementById('newFoodF').value), 0, 100, 0);
-      const c = num(parseFloat(document.getElementById('newFoodC').value), 0, 100, 0);
+      const p = round1(num(parseFloat(document.getElementById('newFoodP').value), 0, 100, 0));
+      const f = round1(num(parseFloat(document.getElementById('newFoodF').value), 0, 100, 0));
+      const c = round1(num(parseFloat(document.getElementById('newFoodC').value), 0, 100, 0));
       const kcal = Math.round(num(document.getElementById('newFoodKcal').value, 0, 900, 0)) || Math.round(p * 4 + f * 9 + c * 4);
+
+      if (editingCustomFoodId) {
+        const idx = (state.customFoods || []).findIndex(item => item && item.id === editingCustomFoodId);
+        if (idx >= 0) {
+          const updatedObj = { id: editingCustomFoodId, name: name.slice(0, 160), kcal, p, f, c };
+          state.customFoods[idx] = updatedObj;
+          if (selectedFoodObj && selectedFoodObj.id === editingCustomFoodId) {
+            selectedFoodObj = updatedObj;
+          }
+          cancelEditCustomFood();
+          triggerHaptic('success');
+          saveState();
+          renderFoodSearchResults();
+          showNotice(`Изменения продукта «${name}» сохранены!`);
+          return;
+        }
+      }
+
       const newObj = { id: uid('custom'), name: name.slice(0, 160), kcal, p, f, c };
-      state.customFoods.unshift(newObj); selectedFoodObj = newObj;
-      document.getElementById('newFoodName').value = ''; document.getElementById('newFoodP').value = '';
-      document.getElementById('newFoodF').value = ''; document.getElementById('newFoodC').value = ''; document.getElementById('newFoodKcal').value = '';
+      state.customFoods.unshift(newObj);
+      cancelEditCustomFood();
       triggerHaptic('success'); saveState(); renderFoodSearchResults(); showNotice(`Продукт «${name}» сохранён в базу!`);
     }
 
@@ -3965,8 +4409,9 @@
     function addWater(ml) {
       triggerHaptic('light');
       const day = ensureDay(currentDate);
+      const waterTarget = getWaterTargetMl(day);
       day.water = Math.max(0, day.water + ml);
-      if (!day.celebratedWater && day.water >= 2000) { day.celebratedWater = true; launchGoalConfetti(); }
+      if (!day.celebratedWater && day.water >= waterTarget) { day.celebratedWater = true; launchGoalConfetti(); }
       saveState();
     }
 
@@ -4039,7 +4484,12 @@
       '4607065000051': { name: 'Творог 5% Простоквашино', kcal: 121, p: 16, f: 5, c: 3 },
       '4607004891467': { name: 'Йогурт греческий Teos 2% (Савушкин)', kcal: 68, p: 8, f: 2, c: 4.2 },
       '4600605022378': { name: 'Хлебцы гречневые Dr.Korner', kcal: 310, p: 12, f: 3.3, c: 57 },
-      '8000500037560': { name: 'Батончик Kinder Bueno', kcal: 572, p: 8.6, f: 37.3, c: 49.5 }
+      '8000500037560': { name: 'Батончик Kinder Bueno', kcal: 572, p: 8.6, f: 37.3, c: 49.5 },
+      '4607004891450': { name: 'Йогурт греческий Teos 2% натуральный (Савушкин)', kcal: 68, p: 8, f: 2, c: 4.2 },
+      '4607163090266': { name: 'Йогурт Epica 4.8% с клубникой', kcal: 120, p: 5.7, f: 4.8, c: 13.5 },
+      '4630037991145': { name: 'Протеиновый батончик Bombbar (60г)', kcal: 285, p: 33, f: 11, c: 8 },
+      '8076800195057': { name: 'Спагетти Barilla №5 (сухие)', kcal: 359, p: 12.5, f: 1.5, c: 71.7 },
+      '4607025392400': { name: 'Овсяное Nemoloko 3.2% Классическое', kcal: 60, p: 1, f: 3.2, c: 6.5 }
     };
 
     let barcodeVideoStream = null;
@@ -4268,6 +4718,39 @@
           }
         } catch (e) {}
       }
+
+      // 3) Если браузерный декодер не взял фото — пробуем считать штрихкод или этикетку через ИИ Gemini Vision
+      try {
+        if (statusEl) statusEl.textContent = 'Распознаём штрихкод и упаковку через ИИ...';
+        const dataUrl = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = reject;
+          r.readAsDataURL(file);
+        });
+        const imgObj = new Image();
+        await new Promise((res, rej) => { imgObj.onload = res; imgObj.onerror = rej; imgObj.src = dataUrl; });
+        const c = document.createElement('canvas');
+        const jpeg64 = downscaleToJpeg(imgObj, imgObj.naturalWidth || 800, imgObj.naturalHeight || 600, c);
+        const aiRes = await callAIJson('Прочитай цифры штрихкода на фото упаковки (или название продукта и КБЖУ на 100г с этикетки). ТОЛЬКО JSON: {"barcode":"4607004891467","name":"Название продукта","kcal100":120,"p100":8,"f100":4,"c100":12}', jpeg64);
+        const p = aiRes?.parsed || {};
+        const cleanCode = String(p.barcode || '').replace(/\D/g, '');
+        if (/^\d{8,14}$/.test(cleanCode)) {
+          return onBarcodeDetected(cleanCode);
+        }
+        const per = sanitizePer100(p);
+        if (p.name && per.kcal100 > 0) {
+          return selectScannedFoodItem({
+            id: uid('off_ai'),
+            name: String(p.name).slice(0, 160),
+            kcal: per.kcal100,
+            p: per.p100,
+            f: per.f100,
+            c: per.c100,
+            isOnline: true
+          });
+        }
+      } catch (e) {}
 
       showNotice('Не удалось прочитать штрихкод с фото — введи цифры под полосками вручную');
       if (statusEl) statusEl.textContent = 'Не удалось считать полоски — введи цифры вручную ниже';
@@ -5107,6 +5590,9 @@
         deletedCustomFoodIds: (state.deletedCustomFoodIds || []).slice(-50),
         weightHistory: (state.weightHistory || []).slice(-40),
         deletedWeightIds: (state.deletedWeightIds || []).slice(-50),
+        bodyMeasurements: (state.bodyMeasurements || []).slice(-30),
+        mealSets: (state.mealSets || []).slice(0, 25),
+        deletedMealSetIds: (state.deletedMealSetIds || []).slice(-50),
         days: recentDays
       };
     }
@@ -5786,10 +6272,11 @@
         setsChips.innerHTML = sets.map(ms => {
           const totalKcal = Math.round((ms.items || []).reduce((s, x) => s + (Number(x.kcal) || 0), 0));
           return `<div class="liquid-pill px-2.5 py-1 rounded-xl text-[11px] border border-cyan-400/30 flex items-center gap-1.5 flex-shrink-0">
-            <button type="button" onclick="applyMealSet('${escapeHtml(ms.id)}')" class="btn-spring text-left flex items-center gap-1 text-white hover:text-cyan-300">
+            <button type="button" onclick="applyMealSet('${escapeHtml(ms.id)}')" class="btn-spring text-left flex items-center gap-1 text-white hover:text-cyan-300" title="Добавить сет в выбранный приём пищи">
               <span class="font-bold">🍱 ${escapeHtml(ms.title)}</span>
               <span class="text-[10px] text-emerald-300 font-semibold">(${totalKcal} ккал)</span>
             </button>
+            <button type="button" onclick="openEditMealSetModal('${escapeHtml(ms.id)}')" class="text-slate-400 hover:text-cyan-300 text-[10px] px-0.5" title="Редактировать сет">✎</button>
             <button type="button" onclick="deleteMealSet('${escapeHtml(ms.id)}')" class="text-slate-400 hover:text-rose-400 text-[10px] px-0.5" title="Удалить сет">✕</button>
           </div>`;
         }).join('');
@@ -5830,7 +6317,7 @@
       state.mealSets.unshift(newSet);
       triggerHaptic('success');
       saveState();
-      showNotice(`🍱 Сет «${defaultTitle}» сохранён! Теперь его можно добавлять в 1 клик над поиском.`);
+      showNotice(`🍱 Сет «${defaultTitle}» сохранён! Теперь его можно добавлять в 1 клик или редактировать (✎).`);
     }
 
     function applyMealSet(setId) {
@@ -5856,9 +6343,116 @@
     }
 
     function deleteMealSet(setId) {
+      if (!Array.isArray(state.deletedMealSetIds)) state.deletedMealSetIds = [];
+      state.deletedMealSetIds.push(setId);
       state.mealSets = (state.mealSets || []).filter(ms => ms.id !== setId);
       triggerHaptic('light');
       saveState();
+    }
+
+    function openEditMealSetModal(setId) {
+      const found = (state.mealSets || []).find(ms => ms.id === setId);
+      if (!found || !Array.isArray(found.items)) return;
+
+      let modal = document.getElementById('nbEditMealSetModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'nbEditMealSetModal';
+        modal.className = 'fixed inset-0 z-50 bg-slate-950/90 flex items-center justify-center p-4 overflow-y-auto';
+        modal.innerHTML = `
+          <div class="liquid-glass rounded-3xl max-w-sm w-full p-5 space-y-3.5 animate-card border border-cyan-400/35 my-auto">
+            <div class="flex items-center justify-between">
+              <div class="font-bold text-sm text-white">🍱 Редактировать сет</div>
+              <button type="button" id="nbEditSetClose" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-300 mb-1">Название сета:</label>
+              <input type="text" id="nbEditSetTitle" class="liquid-input w-full rounded-xl px-3 py-2 text-xs font-bold text-white" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-300 mb-1">Состав сета (вес в граммах):</label>
+              <div id="nbEditSetItemsBox" class="space-y-2 max-h-52 overflow-y-auto pr-1"></div>
+            </div>
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" id="nbEditSetCancel" class="btn-spring liquid-pill px-3.5 py-1.5 rounded-xl text-xs text-slate-200">Отмена</button>
+              <button type="button" id="nbEditSetSave" class="btn-spring liquid-btn-primary px-4 py-1.5 rounded-xl font-bold text-xs">Сохранить сет</button>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
+      }
+
+      const workingItems = found.items.map(it => ({ ...it }));
+      const titleInput = document.getElementById('nbEditSetTitle');
+      const itemsBox = document.getElementById('nbEditSetItemsBox');
+      titleInput.value = found.title || '';
+
+      function renderSetModalItems() {
+        if (workingItems.length === 0) {
+          itemsBox.innerHTML = `<div class="text-xs text-slate-400 text-center py-2">В сете не осталось продуктов</div>`;
+          return;
+        }
+        itemsBox.innerHTML = workingItems.map((it, idx) => `
+          <div class="liquid-pill rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs">
+            <div class="min-w-0 flex-1">
+              <div class="font-semibold text-white truncate">${escapeHtml(it.name)}</div>
+              <div class="text-[10px] text-emerald-300">${Math.round(it.kcal)} ккал • Б:${round1(it.p)} Ж:${round1(it.f)} У:${round1(it.c)}</div>
+            </div>
+            <input type="number" data-set-item-idx="${idx}" value="${Number(it.grams)}" min="5" max="3000" class="liquid-input w-20 rounded-lg px-2 py-1 text-xs font-bold text-white text-right" />
+            <span class="text-[10px] text-slate-300">г</span>
+            <button type="button" data-set-item-del="${idx}" class="text-slate-400 hover:text-rose-400 px-1" title="Убрать из сета">✕</button>
+          </div>
+        `).join('');
+      }
+      renderSetModalItems();
+
+      itemsBox.oninput = (ev) => {
+        const inp = ev.target.closest('[data-set-item-idx]');
+        if (!inp) return;
+        const idx = Number(inp.dataset.setItemIdx);
+        const it = workingItems[idx];
+        if (!it) return;
+        const newG = Math.round(num(inp.value, 1, 3000, it.grams));
+        if (newG > 0 && it.grams > 0) {
+          const r = newG / it.grams;
+          it.grams = newG;
+          it.kcal = Math.round(it.kcal * r);
+          it.p = round1(it.p * r);
+          it.f = round1(it.f * r);
+          it.c = round1(it.c * r);
+        }
+      };
+
+      itemsBox.onclick = (ev) => {
+        const delBtn = ev.target.closest('[data-set-item-del]');
+        if (!delBtn) return;
+        const idx = Number(delBtn.dataset.setItemDel);
+        if (idx >= 0 && idx < workingItems.length) {
+          workingItems.splice(idx, 1);
+          renderSetModalItems();
+        }
+      };
+
+      const close = () => modal.classList.add('hidden');
+      document.getElementById('nbEditSetClose').onclick = close;
+      document.getElementById('nbEditSetCancel').onclick = close;
+      document.getElementById('nbEditSetSave').onclick = () => {
+        const newTitle = titleInput.value.trim();
+        if (!newTitle) return showNotice('Укажи название сета');
+        if (workingItems.length === 0) {
+          close();
+          deleteMealSet(setId);
+          return showNotice('Пустой сет удалён');
+        }
+        found.title = newTitle.slice(0, 80);
+        found.items = workingItems;
+        close();
+        triggerHaptic('success');
+        saveState();
+        showNotice(`Сет «${found.title}» обновлён!`);
+      };
+
+      modal.classList.remove('hidden');
+      setTimeout(() => titleInput.focus(), 30);
     }
 
     // 16.3 Голосовой ввод блюд в ИИ-сканере (Web Speech API)
@@ -6604,9 +7198,10 @@ ${userFoodsPromptLines}
       ctx.roundRect(80, 640, W - 160, 110, 22);
       ctx.fill();
 
+      const waterTarget = targets.waterTarget || getWaterTargetMl(day);
       ctx.fillStyle = '#67e8f9';
       ctx.font = '700 22px Inter, sans-serif';
-      ctx.fillText(`💧 Вода: ${day.water} мл`, 110, 688);
+      ctx.fillText(`💧 Вода: ${day.water}/${waterTarget} мл`, 110, 688);
       ctx.fillStyle = '#fcd34d';
       ctx.fillText(`👟 Шаги: ${(act.steps || 0).toLocaleString('ru-RU')}`, 360, 688);
       ctx.fillStyle = '#6ee7b7';
