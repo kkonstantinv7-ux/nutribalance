@@ -1606,7 +1606,7 @@
     // 1. ДИАГНОСТИЧЕСКИЙ ЛОГГЕР IME И АВТО-ПЕРЕПРИВЯЗКА КЛАВИАТУРЫ В TELEGRAM ANDROID
     // =====================================================================
     // Версия сборки: показывается в логе, чтобы точно знать, какой файл запущен в Telegram
-    const APP_BUILD = 'ime-fix-2026-11-09-a';
+    const APP_BUILD = 'ime-diag-2026-11-09-b';
     // Рукопожатие с мостом ломало ввод (restartInput в момент анимации клавиатуры) — отключено.
     // Включать только для эксперимента.
     const IME_HANDSHAKE_ENABLED = false;
@@ -1887,6 +1887,48 @@
       }, true);
     })();
 
+    // Расширенная диагностика ввода: фокус окна, видимость, события Telegram, подвисания основного потока
+    (function initExtraImeDiagnostics() {
+      const L = (t, d = '') => logImeEvent(t, d);
+      window.addEventListener('focus', () => L('WIN_FOCUS', `docFocus=${document.hasFocus()}`));
+      window.addEventListener('blur', () => L('WIN_BLUR', `docFocus=${document.hasFocus()}`));
+      document.addEventListener('visibilitychange', () => L('VISIBILITY', document.visibilityState));
+      window.addEventListener('pageshow', (e) => L('PAGESHOW', `persisted=${e.persisted}`));
+      window.addEventListener('pagehide', () => L('PAGEHIDE'));
+      document.addEventListener('pointerdown', (e) => {
+        const el = e.target && e.target.closest ? e.target.closest('input, textarea, select') : null;
+        if (el) L('POINTERDOWN', `target=${describeEl(el)} docFocus=${document.hasFocus()} active=${describeEl(document.activeElement)}`);
+      }, true);
+      document.addEventListener('click', (e) => {
+        const el = e.target && e.target.closest ? e.target.closest('input, textarea, select') : null;
+        if (el) L('CLICK', `target=${describeEl(el)} active=${describeEl(document.activeElement)}`);
+      }, true);
+
+      // Детектор подвисаний основного потока: таймер раз в 250 мс, запаздывание > 150 мс = подвисание
+      let lastT = performance.now();
+      setInterval(() => {
+        const now = performance.now();
+        const lag = now - lastT - 250;
+        lastT = now;
+        if (lag > 150) L('MAIN_THREAD_STALL', `${Math.round(lag)}ms`);
+      }, 250);
+      try {
+        new PerformanceObserver((list) => {
+          list.getEntries().forEach((en) => L('LONGTASK', `${Math.round(en.duration)}ms`));
+        }).observe({ entryTypes: ['longtask'] });
+      } catch (e) {}
+
+      try {
+        const w = window.Telegram && window.Telegram.WebApp;
+        if (w && typeof w.onEvent === 'function') {
+          ['activated', 'deactivated', 'viewportChanged', 'safeAreaChanged', 'contentSafeAreaChanged', 'fullscreenChanged'].forEach((ev) => {
+            w.onEvent(ev, (p) => L('TG_' + ev, JSON.stringify(p || {})));
+          });
+          L('TG_INFO', `platform=${w.platform} ver=${w.version} h=${w.viewportHeight} stable=${w.viewportStableHeight} expanded=${w.isExpanded}`);
+        }
+      } catch (e) {}
+    })();
+
     (function initPlasmaBackground() {
       const canvas = document.getElementById('plasmaCanvas');
       if (!canvas) return;
@@ -2017,8 +2059,14 @@
     if (tg) {
       try {
         tg.ready(); tg.expand();
+        if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
         if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#03060c');
         if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#03060c');
+        if (typeof tg.onEvent === 'function') {
+          tg.onEvent('viewportChanged', () => {
+            syncViewportHeight();
+          });
+        }
       } catch (e) {}
     }
 
