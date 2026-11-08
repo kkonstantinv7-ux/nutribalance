@@ -178,9 +178,6 @@
   <!-- ХОЛСТ ДЛЯ САЛЮТА ЧАСТИЦ -->
   <canvas id="celebrationCanvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
 
-  <!-- СЛУЖЕБНЫЙ МОСТ ДЛЯ МГНОВЕННОЙ ПЕРЕПРИВЯЗКИ ANDROID WEBVIEW IME (GBOARD) -->
-  <input type="text" id="nbImeBridgeInput" tabindex="-1" aria-hidden="true" autocomplete="off" style="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1;border:0;padding:0;margin:0;background:transparent;color:transparent;" />
-
   <!-- ВСТРОЕННАЯ ПАНЕЛЬ ЛОГИРОВАНИЯ ВВОДА (ДЛЯ ДИАГНОСТИКИ КЛАВИАТУРЫ В TELEGRAM ANDROID) -->
   <div id="nbImeDebugPanel" class="hidden fixed top-14 left-2 right-2 z-50 max-w-xl mx-auto rounded-2xl bg-slate-950/95 border border-emerald-400/50 p-2.5 shadow-2xl text-[11px] text-slate-200 space-y-1.5">
     <div class="flex flex-wrap items-center justify-between gap-1.5 border-b border-white/10 pb-1.5">
@@ -1603,13 +1600,10 @@
     }
 
     // =====================================================================
-    // 1. ДИАГНОСТИЧЕСКИЙ ЛОГГЕР IME И АВТО-ПЕРЕПРИВЯЗКА КЛАВИАТУРЫ В TELEGRAM ANDROID
+    // 1. ДИАГНОСТИЧЕСКИЙ ЛОГГЕР IME И ЛЕЧЕНИЕ «БАГА ПРОБЕЛОВ» В TELEGRAM ANDROID
     // =====================================================================
     // Версия сборки: показывается в логе, чтобы точно знать, какой файл запущен в Telegram
-    const APP_BUILD = 'ime-recover-2026-11-09-c';
-    // Рукопожатие с мостом ломало ввод (restartInput в момент анимации клавиатуры) — отключено.
-    // Включать только для эксперимента.
-    const IME_HANDSHAKE_ENABLED = false;
+    const APP_BUILD = 'ime-space-fix-2026-11-09-d';
     let isTextInputFocused = false;
     let isImeHandshaking = false;
     let maxObservedViewportHeight = window.innerHeight || 780;
@@ -1618,7 +1612,7 @@
     const imeStartTs = performance.now();
 
     function isTextEditableElement(el) {
-      if (!el || !el.tagName || el.id === 'nbImeBridgeInput') return false;
+      if (!el || !el.tagName) return false;
       const tag = el.tagName.toUpperCase();
       if (tag === 'TEXTAREA') return !el.disabled && !el.readOnly;
       if (tag === 'INPUT') {
@@ -1631,6 +1625,16 @@
     function describeEl(el) {
       if (!el || !el.tagName) return 'null';
       return `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}`;
+    }
+
+    // Скрывать модалку можно только сняв фокус с поля внутри неё:
+    // иначе Gboard остаётся подключён к невидимому input и следующий ввод ломается.
+    function blurFocusedInside(containerSelector) {
+      const el = document.activeElement;
+      if (!el || el === document.body || typeof el.blur !== 'function') return;
+      try {
+        if (!containerSelector || (el.closest && el.closest(containerSelector))) el.blur();
+      } catch (e) {}
     }
 
     function logImeEvent(type, detail = '') {
@@ -1700,15 +1704,12 @@
       copyTextSafe(header + imeLogEntries.join('\n'), 'Лог клавиатуры скопирован в буфер обмена!');
     }
 
-    // Двухкадровая перепривязка фокуса через служебный input-мост (#nbImeBridgeInput):
-    // имитирует «выход из поля в другой элемент и повторный вход» за 35 мс без закрытия клавиатуры,
-    // заставляя Chromium ImeAdapterAndroid вызвать InputMethodManager.restartInput(webView) для включения русских букв в Gboard.
-    function performAndroidImeHandshake(targetEl, reason = 'auto', force = false) {
-      if (!IME_HANDSHAKE_ENABLED && !force) { logImeEvent('HANDSHAKE_DISABLED', `reason=${reason}`); return; }
+    // Перезапуск ввода: снять фокус с поля и снова поставить его через 120 мс.
+    // Это известный обходной путь для Telegram Android (WebView теряет InputConnection).
+    // Делать это можно только пока пользователь ещё не начал набирать текст:
+    // во время composition blur/focus теряет composing region и буквы дублируются.
+    function softRestartIme(targetEl) {
       if (!isTextEditableElement(targetEl) || isImeHandshaking) return;
-      const bridge = document.getElementById('nbImeBridgeInput');
-      if (!bridge) return;
-
       isImeHandshaking = true;
       const val = targetEl.value || '';
       let selStart = val.length, selEnd = val.length;
@@ -1717,40 +1718,31 @@
         if (typeof targetEl.selectionEnd === 'number') selEnd = targetEl.selectionEnd;
       } catch (e) {}
 
-      logImeEvent('IME_HANDSHAKE_START', `target=${describeEl(targetEl)} reason=${reason}`);
+      logImeEvent('SOFT_RESTART', `target=${describeEl(targetEl)}`);
+      try { targetEl.blur(); } catch (e) {}
 
-      try {
-        bridge.value = ' ';
-        bridge.focus({ preventScroll: true });
-      } catch (e) {
-        try { targetEl.blur(); } catch (e2) {}
-      }
-
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          try {
-            targetEl.focus({ preventScroll: true });
-            const canSelect = ['text', 'search', 'tel', 'url', 'password'].includes((targetEl.type || 'text').toLowerCase()) || targetEl.tagName === 'TEXTAREA';
-            if (canSelect && typeof targetEl.setSelectionRange === 'function') {
-              const len = (targetEl.value || '').length;
-              targetEl.setSelectionRange(Math.min(selStart, len), Math.min(selEnd, len));
-            }
-            targetEl._nbImeReady = true;
-            logImeEvent('IME_HANDSHAKE_DONE', `active=${describeEl(document.activeElement)} docFocus=${document.hasFocus()}`);
-          } catch (err) {
-            logImeEvent('IME_HANDSHAKE_ERR', String(err?.message || err));
-          } finally {
-            isImeHandshaking = false;
+      setTimeout(() => {
+        try {
+          if (!document.body.contains(targetEl)) return;
+          targetEl.focus({ preventScroll: true });
+          const canSelect = ['text', 'search', 'tel', 'url', 'password'].includes((targetEl.type || 'text').toLowerCase()) || targetEl.tagName === 'TEXTAREA';
+          if (canSelect && typeof targetEl.setSelectionRange === 'function') {
+            const len = (targetEl.value || '').length;
+            targetEl.setSelectionRange(Math.min(selStart, len), Math.min(selEnd, len));
           }
-        }, 32);
-      });
+          logImeEvent('SOFT_RESTART_DONE', `active=${describeEl(document.activeElement)} docFocus=${document.hasFocus()}`);
+        } catch (err) {
+          logImeEvent('SOFT_RESTART_ERR', String(err?.message || err));
+        } finally {
+          isImeHandshaking = false;
+        }
+      }, 120);
     }
 
     function manualRebindActiveInput() {
       const el = document.activeElement;
       if (isTextEditableElement(el)) {
-        el._nbImeReady = false;
-        performAndroidImeHandshake(el, 'manual_btn');
+        softRestartIme(el);
       } else {
         logImeEvent('MANUAL_REBIND_SKIP', 'no active input');
       }
@@ -1769,20 +1761,11 @@
         navEl.classList.toggle('nav-kb-hidden', kbShrunk);
       }
 
-      // Когда клавиатура Gboard открылась и уменьшила visualViewport — если поле в фокусе и пользователь ещё не ввёл ни одной буквы,
-      // выполняем контрольную перепривязку InputConnection уже при открытой клавиатуре
+      // Когда клавиатура Gboard открылась и уменьшила visualViewport — только логируем.
+      // Ничего не перепривязываем: во время анимации клавиатуры это ломает ввод.
       if (kbShrunk && !lastKeyboardOpenState) {
         lastKeyboardOpenState = true;
         logImeEvent('KB_OPENED', `vvH=${h} maxH=${maxObservedViewportHeight}`);
-        const active = document.activeElement;
-        if (isTextEditableElement(active) && !active._nbUserTyped && !active._nbKbRebound) {
-          active._nbKbRebound = true;
-          setTimeout(() => {
-            if (document.activeElement === active && !active._nbUserTyped) {
-              performAndroidImeHandshake(active, 'kb_opened_vv');
-            }
-          }, 90);
-        }
       } else if (!kbShrunk && lastKeyboardOpenState) {
         lastKeyboardOpenState = false;
         logImeEvent('KB_CLOSED', `vvH=${h}`);
@@ -1799,39 +1782,26 @@
       // При первом касании любого поля ввода активируем системный фокус окна WebView
       document.addEventListener('touchstart', (e) => {
         const el = e.target && e.target.closest ? e.target.closest('input, textarea, select') : null;
-        if (!el || el.id === 'nbImeBridgeInput') return;
+        if (!el) return;
         try { window.focus(); } catch (err) {}
         logImeEvent('TOUCHSTART', `target=${describeEl(el)} docFocus=${document.hasFocus()}`);
       }, { passive: true, capture: true });
 
       let blurTimer = null;
-      let handshakeTimer = null;
 
       document.addEventListener('focusin', (e) => {
-        if (e.target && e.target.id === 'nbImeBridgeInput') return;
         if (!isTextEditableElement(e.target)) return;
         clearTimeout(blurTimer);
         const el = e.target;
         isTextInputFocused = true;
-        logImeEvent('FOCUSIN', `target=${describeEl(el)} ready=${Boolean(el._nbImeReady)} handshaking=${isImeHandshaking}`);
-
-        if (!isImeHandshaking && !el._nbImeReady) {
-          clearTimeout(handshakeTimer);
-          handshakeTimer = setTimeout(() => {
-            if (document.activeElement === el && !el._nbImeReady && !el._nbUserTyped) {
-              performAndroidImeHandshake(el, 'focusin_45ms');
-            }
-          }, 45);
-        }
+        logImeEvent('FOCUSIN', `target=${describeEl(el)}`);
       });
 
       document.addEventListener('focusout', (e) => {
-        if (isImeHandshaking || (e.target && e.target.id === 'nbImeBridgeInput')) return;
+        if (isImeHandshaking) return;
         const leftEl = e.target;
         if (isTextEditableElement(leftEl)) {
-          leftEl._nbImeReady = false;
           leftEl._nbUserTyped = false;
-          leftEl._nbKbRebound = false;
           logImeEvent('FOCUSOUT', `target=${describeEl(leftEl)}`);
         }
         clearTimeout(blurTimer);
@@ -1842,23 +1812,9 @@
         }, 120);
       });
 
-      // Логирование всех событий клавиатуры и авто-восстановление, если Gboard прислал keyCode=229 без букв
-      let deadKey229Timer = null;
       document.addEventListener('keydown', (e) => {
         if (!isTextEditableElement(e.target)) return;
-        const el = e.target;
         logImeEvent('KEYDOWN', `key="${e.key}" code="${e.code}" keyCode=${e.keyCode} comp=${e.isComposing}`);
-        if (e.keyCode === 229) {
-          const valBefore = el.value;
-          clearTimeout(deadKey229Timer);
-          deadKey229Timer = setTimeout(() => {
-            if (document.activeElement === el && el.value === valBefore && !el._nbUserTyped) {
-              logImeEvent('DEAD_229_DETECTED', 'keyCode=229 produced no text -> triggering handshake');
-              el._nbImeReady = false;
-              performAndroidImeHandshake(el, 'dead_key_229');
-            }
-          }, 60);
-        }
       }, true);
 
       document.addEventListener('compositionstart', (e) => {
@@ -1882,7 +1838,6 @@
       document.addEventListener('input', (e) => {
         if (!isTextEditableElement(e.target)) return;
         e.target._nbUserTyped = true;
-        clearTimeout(deadKey229Timer);
         logImeEvent('INPUT', `type="${e.inputType || ''}" data="${e.data ?? ''}" len=${(e.target.value || '').length}`);
       }, true);
     })();
@@ -1929,79 +1884,64 @@
       } catch (e) {}
     })();
 
-    // АВТО-ВОССТАНОВЛЕНИЕ «БАГА ПРОБЕЛОВ».
-    // Симптом (по логам): клавиатура открыта, но каждая буква приходит как KEYDOWN key=" " code="" keyCode=32 +
-    // insertText data=" " — Gboard не привязан к полю и шлёт «сырые» события. Поле выглядит пустым (в нём одни пробелы).
-    // Признак сбоя: >=2 таких события подряд, пока в поле не было ни одной настоящей буквы.
-    // Лечение по ступеням: 1) рукопожатие через мост, 2) blur+focus, 3) readOnly-переключение + blur+focus.
+    // ЛЕЧЕНИЕ «БАГА ПРОБЕЛОВ» В TELEGRAM ANDROID.
+    // Симптом (по логам): клавиатура открыта, но вместо букв приходит insertText data=" "
+    // (в поле одни пробелы). Это теряется InputConnection WebView, а не ошибка ввода.
+    // Помогает ОДИН разовый blur+focus (softRestartIme), но только пока в поле нет настоящих
+    // букв: если дёргать фокус во время composition, Gboard теряет composing region и
+    // дублирует/переставляет буквы — именно это и происходило раньше.
     (function initImeSpaceRecovery() {
-      const FOCUS_RESET_MS = 4000;
-      const RETRY_GAP_MS = 900;
-      const refocus = (el, delay) => setTimeout(() => {
-        try { el.focus({ preventScroll: true }); } catch (e) {}
-      }, delay);
+      const RETRY_GAP_MS = 1500;
 
       function recover(el) {
         const now = Date.now();
         if (now - (el._nbLastRec || 0) < RETRY_GAP_MS) return;
         el._nbLastRec = now;
-        const stage = el._nbStage || 0;
-        if (stage >= 3) {
+        el._nbRecCount = (el._nbRecCount || 0) + 1;
+        if (el._nbRecCount > 3) {
           if (!el._nbGaveUp) {
             el._nbGaveUp = true;
-            logImeEvent('RECOVERY_GAVE_UP', `target=${describeEl(el)}`);
+            logImeEvent('SPACE_RECOVERY_GAVE_UP', `target=${describeEl(el)}`);
             try { showNotice('Клавиатура не подключилась к полю. Закрой поле и нажми на него заново.'); } catch (e) {}
           }
           return;
         }
-        el._nbStage = stage + 1;
-        const n = el._nbBad || 0;
-        el._nbBad = 0;
-        try {
-          const v = el.value || '';
-          if (n > 0 && v.endsWith(' '.repeat(n))) el.value = v.slice(0, v.length - n);
-        } catch (e) {}
-        logImeEvent('RECOVERY_START', `stage=${el._nbStage} stripped=${n} target=${describeEl(el)}`);
-        if (stage === 0) {
-          performAndroidImeHandshake(el, 'space_bug', true);
-        } else if (stage === 1) {
-          try { el.blur(); } catch (e) {}
-          refocus(el, 80);
-        } else {
-          el.readOnly = true;
-          setTimeout(() => {
-            el.readOnly = false;
-            try { el.blur(); } catch (e) {}
-            refocus(el, 60);
-          }, 60);
+
+        // Убираем мусорные пробелы, которые уже успели вставиться.
+        const v = el.value || '';
+        const trimmed = v.replace(/[ \u00a0]+$/, '');
+        if (trimmed !== v) {
+          try { el.value = trimmed; } catch (e) {}
         }
+        logImeEvent('SPACE_RECOVERY', `target=${describeEl(el)} attempt=${el._nbRecCount}`);
+        softRestartIme(el);
       }
 
       document.addEventListener('focusin', (e) => {
         const el = e.target;
         if (!isTextEditableElement(el)) return;
-        if (Date.now() - (el._nbLastRec || 0) > FOCUS_RESET_MS) {
-          el._nbBad = 0; el._nbReal = false; el._nbStage = 0; el._nbGaveUp = false;
-        }
-      }, true);
-
-      document.addEventListener('keydown', (e) => {
-        const el = e.target;
-        if (!isTextEditableElement(el)) return;
-        if (e.key === ' ' && !e.code && !e.isComposing && !el._nbReal) {
-          el._nbBad = (el._nbBad || 0) + 1;
-          if (el._nbBad >= 2) recover(el);
+        el._nbSpaceOnly = 0;
+        el._nbRealThisFocus = false;
+        if (Date.now() - (el._nbLastRec || 0) > 4000) {
+          el._nbLastRec = 0;
+          el._nbRecCount = 0;
+          el._nbGaveUp = false;
         }
       }, true);
 
       document.addEventListener('input', (e) => {
         const el = e.target;
         if (!isTextEditableElement(el)) return;
-        if (e.data && String(e.data).trim()) {
-          if (el._nbStage && !el._nbReal) logImeEvent('RECOVERY_OK', `stage=${el._nbStage}`);
-          el._nbReal = true;
-          el._nbBad = 0;
-          el._nbStage = 0;
+        const data = e.data == null ? '' : String(e.data);
+        if (data.trim()) {
+          el._nbRealThisFocus = true;
+          el._nbSpaceOnly = 0;
+          return;
+        }
+        if (data === ' ' || data === '\u00a0') {
+          if (el._nbRealThisFocus) return;
+          el._nbSpaceOnly = (el._nbSpaceOnly || 0) + 1;
+          if (el._nbSpaceOnly >= 2) recover(el);
         }
       }, true);
     })();
@@ -2837,6 +2777,15 @@
       return Math.abs(kcal - calc) <= Math.max(40, kcal * 0.35);
     }
 
+    // Единый вид названий для поиска: нижний регистр, ё → е, знаки → пробелы.
+    function normalizeSearchText(str) {
+      return String(str || '')
+        .toLowerCase()
+        .replace(/ё/g, 'е')
+        .replace(/[^a-zа-я0-9]+/g, ' ')
+        .trim();
+    }
+
     async function fetchOnlineFoods(query) {
       const spinner = document.getElementById('onlineSearchSpinner');
       spinner.classList.remove('hidden');
@@ -3232,7 +3181,7 @@
         if (!dictEntry) {
           const cleanSegWords = seg.replace(/(\d+(?:[.,]\d+)?)\s*(?:г|гр|грамм|грамма|граммов|мл|шт|кус|порц)/gi, '').trim();
           if (cleanSegWords.length >= 3) {
-            const dbMatch = [...(state.customFoods || []), ...VERIFIED_FOODS_DB].find(f => f && f.name && normalizeSearchText(f.name).includes(cleanSegWords));
+            const dbMatch = [...(state.customFoods || []), ...VERIFIED_FOODS_DB].find(f => f && f.name && normalizeSearchText(f.name).includes(normalizeSearchText(cleanSegWords)));
             if (dbMatch) {
               dictEntry = {
                 name: dbMatch.name,
@@ -4733,7 +4682,7 @@
     // 12. НАСТРОЙКИ И БЕЗОПАСНЫЙ БЭКАП (СЛИЯНИЕ ИЛИ ЗАМЕНА)
     // =====================================================================
     function openBackupModal() { document.getElementById('backupModal').classList.remove('hidden'); }
-    function closeBackupModal() { document.getElementById('backupModal').classList.add('hidden'); }
+    function closeBackupModal() { blurFocusedInside('#backupModal'); document.getElementById('backupModal').classList.add('hidden'); }
     function copyBackupToClipboard() {
       const text = JSON.stringify(state);
       copyTextSafe(text, 'База скопирована в буфер обмена!');
@@ -4928,6 +4877,7 @@
 
     function closeBarcodeModal() {
       stopBarcodeCamera();
+      blurFocusedInside('#barcodeScannerModal');
       const modal = document.getElementById('barcodeScannerModal');
       if (modal) modal.classList.add('hidden');
     }
@@ -5520,6 +5470,7 @@
     }
 
     function closePaywallModal() {
+      blurFocusedInside('#paywallModal');
       document.getElementById('paywallModal').classList.add('hidden');
     }
 
@@ -5952,6 +5903,7 @@
 
     function closeAdminModal() {
       clearInterval(adminPollInterval);
+      blurFocusedInside('#adminModal');
       document.getElementById('adminModal').classList.add('hidden');
     }
 
