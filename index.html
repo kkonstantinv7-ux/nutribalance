@@ -1603,7 +1603,7 @@
     // 1. ДИАГНОСТИЧЕСКИЙ ЛОГГЕР IME И ЛЕЧЕНИЕ «БАГА ПРОБЕЛОВ» В TELEGRAM ANDROID
     // =====================================================================
     // Версия сборки: показывается в логе, чтобы точно знать, какой файл запущен в Telegram
-    const APP_BUILD = 'ime-space-fix-2026-11-09-d';
+    const APP_BUILD = 'ime-focus-restart-2026-11-09-e';
     let isTextInputFocused = false;
     let isImeHandshaking = false;
     let maxObservedViewportHeight = window.innerHeight || 780;
@@ -1739,6 +1739,44 @@
       }, 120);
     }
 
+    // Telegram Android теряет InputConnection у первого фокуса: клавиатура открывается,
+    // но буквы (особенно кириллица) не вводятся, пока не перефокусируешь поле.
+    // Один blur+focus через 100 мс после фокуса чинит привязку IME (проверенный обход).
+    function shouldUseFocusRestart() {
+      try {
+        const w = window.Telegram && window.Telegram.WebApp;
+        if (!w) return false;
+        const plat = w.platform ? String(w.platform).toLowerCase() : '';
+        return plat.includes('android') || (!plat && /Android/i.test(navigator.userAgent));
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function cancelFocusRestart(el) {
+      if (!el) return;
+      el._nbTypingStarted = true;
+      if (el._nbFocusRestartTimer) {
+        clearTimeout(el._nbFocusRestartTimer);
+        el._nbFocusRestartTimer = null;
+      }
+    }
+
+    function scheduleFocusRestart(el) {
+      if (isImeHandshaking) return;
+      if (!shouldUseFocusRestart()) return;
+      if (el._nbFocusRestartTimer) clearTimeout(el._nbFocusRestartTimer);
+      el._nbTypingStarted = false;
+      el._nbFocusRestartTimer = setTimeout(() => {
+        el._nbFocusRestartTimer = null;
+        if (document.activeElement !== el) return;
+        if (el._nbTypingStarted) return;
+        if (!isTextEditableElement(el)) return;
+        logImeEvent('FOCUS_RESTART', `target=${describeEl(el)}`);
+        softRestartIme(el);
+      }, 100);
+    }
+
     function manualRebindActiveInput() {
       const el = document.activeElement;
       if (isTextEditableElement(el)) {
@@ -1795,12 +1833,14 @@
         const el = e.target;
         isTextInputFocused = true;
         logImeEvent('FOCUSIN', `target=${describeEl(el)}`);
+        scheduleFocusRestart(el);
       });
 
       document.addEventListener('focusout', (e) => {
         if (isImeHandshaking) return;
         const leftEl = e.target;
         if (isTextEditableElement(leftEl)) {
+          cancelFocusRestart(leftEl);
           leftEl._nbUserTyped = false;
           logImeEvent('FOCUSOUT', `target=${describeEl(leftEl)}`);
         }
@@ -1818,6 +1858,7 @@
       }, true);
 
       document.addEventListener('compositionstart', (e) => {
+        if (isTextEditableElement(e.target)) cancelFocusRestart(e.target);
         logImeEvent('COMP_START', `data="${e.data || ''}"`);
       }, true);
 
@@ -1838,6 +1879,7 @@
       document.addEventListener('input', (e) => {
         if (!isTextEditableElement(e.target)) return;
         e.target._nbUserTyped = true;
+        if (e.data != null && String(e.data).trim()) cancelFocusRestart(e.target);
         logImeEvent('INPUT', `type="${e.inputType || ''}" data="${e.data ?? ''}" len=${(e.target.value || '').length}`);
       }, true);
     })();
