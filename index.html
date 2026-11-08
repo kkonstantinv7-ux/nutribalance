@@ -1606,7 +1606,7 @@
     // 1. ДИАГНОСТИЧЕСКИЙ ЛОГГЕР IME И АВТО-ПЕРЕПРИВЯЗКА КЛАВИАТУРЫ В TELEGRAM ANDROID
     // =====================================================================
     // Версия сборки: показывается в логе, чтобы точно знать, какой файл запущен в Telegram
-    const APP_BUILD = 'ime-diag-2026-11-09-b';
+    const APP_BUILD = 'ime-recover-2026-11-09-c';
     // Рукопожатие с мостом ломало ввод (restartInput в момент анимации клавиатуры) — отключено.
     // Включать только для эксперимента.
     const IME_HANDSHAKE_ENABLED = false;
@@ -1703,8 +1703,8 @@
     // Двухкадровая перепривязка фокуса через служебный input-мост (#nbImeBridgeInput):
     // имитирует «выход из поля в другой элемент и повторный вход» за 35 мс без закрытия клавиатуры,
     // заставляя Chromium ImeAdapterAndroid вызвать InputMethodManager.restartInput(webView) для включения русских букв в Gboard.
-    function performAndroidImeHandshake(targetEl, reason = 'auto') {
-      if (!IME_HANDSHAKE_ENABLED) { logImeEvent('HANDSHAKE_DISABLED', `reason=${reason}`); return; }
+    function performAndroidImeHandshake(targetEl, reason = 'auto', force = false) {
+      if (!IME_HANDSHAKE_ENABLED && !force) { logImeEvent('HANDSHAKE_DISABLED', `reason=${reason}`); return; }
       if (!isTextEditableElement(targetEl) || isImeHandshaking) return;
       const bridge = document.getElementById('nbImeBridgeInput');
       if (!bridge) return;
@@ -1927,6 +1927,83 @@
           L('TG_INFO', `platform=${w.platform} ver=${w.version} h=${w.viewportHeight} stable=${w.viewportStableHeight} expanded=${w.isExpanded}`);
         }
       } catch (e) {}
+    })();
+
+    // АВТО-ВОССТАНОВЛЕНИЕ «БАГА ПРОБЕЛОВ».
+    // Симптом (по логам): клавиатура открыта, но каждая буква приходит как KEYDOWN key=" " code="" keyCode=32 +
+    // insertText data=" " — Gboard не привязан к полю и шлёт «сырые» события. Поле выглядит пустым (в нём одни пробелы).
+    // Признак сбоя: >=2 таких события подряд, пока в поле не было ни одной настоящей буквы.
+    // Лечение по ступеням: 1) рукопожатие через мост, 2) blur+focus, 3) readOnly-переключение + blur+focus.
+    (function initImeSpaceRecovery() {
+      const FOCUS_RESET_MS = 4000;
+      const RETRY_GAP_MS = 900;
+      const refocus = (el, delay) => setTimeout(() => {
+        try { el.focus({ preventScroll: true }); } catch (e) {}
+      }, delay);
+
+      function recover(el) {
+        const now = Date.now();
+        if (now - (el._nbLastRec || 0) < RETRY_GAP_MS) return;
+        el._nbLastRec = now;
+        const stage = el._nbStage || 0;
+        if (stage >= 3) {
+          if (!el._nbGaveUp) {
+            el._nbGaveUp = true;
+            logImeEvent('RECOVERY_GAVE_UP', `target=${describeEl(el)}`);
+            try { showNotice('Клавиатура не подключилась к полю. Закрой поле и нажми на него заново.'); } catch (e) {}
+          }
+          return;
+        }
+        el._nbStage = stage + 1;
+        const n = el._nbBad || 0;
+        el._nbBad = 0;
+        try {
+          const v = el.value || '';
+          if (n > 0 && v.endsWith(' '.repeat(n))) el.value = v.slice(0, v.length - n);
+        } catch (e) {}
+        logImeEvent('RECOVERY_START', `stage=${el._nbStage} stripped=${n} target=${describeEl(el)}`);
+        if (stage === 0) {
+          performAndroidImeHandshake(el, 'space_bug', true);
+        } else if (stage === 1) {
+          try { el.blur(); } catch (e) {}
+          refocus(el, 80);
+        } else {
+          el.readOnly = true;
+          setTimeout(() => {
+            el.readOnly = false;
+            try { el.blur(); } catch (e) {}
+            refocus(el, 60);
+          }, 60);
+        }
+      }
+
+      document.addEventListener('focusin', (e) => {
+        const el = e.target;
+        if (!isTextEditableElement(el)) return;
+        if (Date.now() - (el._nbLastRec || 0) > FOCUS_RESET_MS) {
+          el._nbBad = 0; el._nbReal = false; el._nbStage = 0; el._nbGaveUp = false;
+        }
+      }, true);
+
+      document.addEventListener('keydown', (e) => {
+        const el = e.target;
+        if (!isTextEditableElement(el)) return;
+        if (e.key === ' ' && !e.code && !e.isComposing && !el._nbReal) {
+          el._nbBad = (el._nbBad || 0) + 1;
+          if (el._nbBad >= 2) recover(el);
+        }
+      }, true);
+
+      document.addEventListener('input', (e) => {
+        const el = e.target;
+        if (!isTextEditableElement(el)) return;
+        if (e.data && String(e.data).trim()) {
+          if (el._nbStage && !el._nbReal) logImeEvent('RECOVERY_OK', `stage=${el._nbStage}`);
+          el._nbReal = true;
+          el._nbBad = 0;
+          el._nbStage = 0;
+        }
+      }, true);
     })();
 
     (function initPlasmaBackground() {
