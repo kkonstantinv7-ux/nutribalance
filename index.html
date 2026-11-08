@@ -1,217 +1,298 @@
 <!DOCTYPE html>
-<html lang="ru" class="dark">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>NutriBalance Pro — Умный ИИ-дневник питания</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>NutriBalance Pro — Liquid Glass Edition</title>
+  <!-- Telegram Mini Apps SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Barcode / QR Decoder (EAN-13, EAN-8, UPC) -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <style>
-    :root {
-      --bg-deep: #03060c;
-      --glass-bg: rgba(15, 23, 42, 0.62);
-      --glass-border: rgba(255, 255, 255, 0.13);
-    }
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+    /* === 1. БАЗОВЫЕ НАСТРОЙКИ ЭКРАНА (НАТИВНЫЙ ДОКУМЕНТНЫЙ СКРОЛЛ ДЛЯ ИДЕАЛЬНОЙ РАБОТЫ IME КЛАВИАТУРЫ В ANDROID WEBVIEW) === */
     html, body {
+      width: 100%;
+      max-width: 100%;
+      min-height: 100%;
+      overflow-x: hidden;
       margin: 0;
       padding: 0;
-      min-height: 100%;
-      background-color: var(--bg-deep);
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #03060c;
       color: #f8fafc;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      overflow-x: hidden;
-      overflow-y: auto;
-      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
     }
-    /* Гарантируем нативный ввод текста в Android Telegram WebView без блокировки IME */
-    input, textarea, select {
-      -webkit-user-select: text !important;
-      user-select: text !important;
-      touch-action: manipulation;
-      font-family: inherit;
+    header.liquid-glass {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.80) 0%, rgba(3, 6, 12, 0.86) 100%);
+      backdrop-filter: blur(18px) saturate(180%);
+      -webkit-backdrop-filter: blur(18px) saturate(180%);
     }
-    /* Без backdrop-filter и без переключения слоёв при фокусе — чтобы Android WebView не терял InputConnection */
-    .liquid-glass {
-      background: linear-gradient(145deg, rgba(16, 26, 46, 0.92), rgba(8, 14, 26, 0.96));
-      border: 1px solid rgba(255, 255, 255, 0.13);
-      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    }
-    .liquid-pill {
-      background: rgba(15, 23, 42, 0.78);
-      border: 1px solid rgba(255, 255, 255, 0.11);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    }
-    .liquid-input {
-      background: rgba(6, 11, 22, 0.94);
+    #mobileBottomNav {
+      bottom: max(0.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.35rem));
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(8, 15, 30, 0.88) 100%);
+      backdrop-filter: blur(22px) saturate(190%);
+      -webkit-backdrop-filter: blur(22px) saturate(190%);
       border: 1px solid rgba(255, 255, 255, 0.18);
-      color: #ffffff;
-      outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      box-shadow:
+        0 16px 36px -4px rgba(0, 0, 0, 0.65),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.32);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+    #mobileBottomNav.nav-kb-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(120%);
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.3); }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 4px; }
+    input[type="range"] { accent-color: #10b981; }
+    input, textarea, select {
+      -webkit-user-select: text;
+      user-select: text;
+      touch-action: manipulation;
+    }
+
+    /* === 2. ПРОЗРАЧНОЕ ЖИДКОЕ СТЕКЛО (БЕЗ BACKDROP-FILTER НА КАРТОЧКАХ С ПОЛЯМИ ВВОДА, ЧТОБЫ ANDROID WEBVIEW IME НЕ СБИВАЛСЯ) === */
+    .liquid-glass {
+      position: relative;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.56) 0%, rgba(15, 23, 42, 0.40) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow:
+        0 12px 32px -4px rgba(0, 0, 0, 0.35),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.28),
+        inset 0 -1px 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .liquid-pill {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.50) 0%, rgba(15, 23, 42, 0.34) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0.5px rgba(255, 255, 255, 0.22);
+    }
+
+    .liquid-input {
+      background: rgba(15, 23, 42, 0.58);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     .liquid-input:focus {
-      border-color: rgba(52, 211, 153, 0.85);
-      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+      border-color: rgba(52, 211, 153, 0.75);
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.3);
+      outline: none;
     }
+
     .liquid-btn-primary {
-      background: linear-gradient(135deg, #34d399 0%, #10b981 55%, #06b6d4 100%);
-      color: #020617;
-      box-shadow: 0 6px 20px -4px rgba(16, 185, 129, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      background: linear-gradient(135deg, #34d399 0%, #10b981 55%, #059669 100%);
+      color: #022c22;
+      box-shadow:
+        0 8px 24px -4px rgba(16, 185, 129, 0.55),
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.6);
+    }
+    .liquid-btn-primary:hover {
+      filter: brightness(1.06);
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* === 3. СВЕЧЕНИЕ ВЕКТОРНЫХ ИЛЛЮСТРАЦИЙ (SVG GLOW) === */
+    .svg-glow-emerald { filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.75)); }
+    .svg-glow-cyan    { filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.75)); }
+    .svg-glow-rose    { filter: drop-shadow(0 0 8px rgba(251, 113, 133, 0.75)); }
+    .svg-glow-amber   { filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.75)); }
+    .svg-glow-purple  { filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.75)); }
+
+    /* === 4. МИКРО-АНИМАЦИИ (БЕЗ АНИМАЦИИ НА КОНТЕЙНЕРАХ С ПОЛЯМИ ВВОДА ДЛЯ СТАБИЛЬНОГО IME В WEBVIEW) === */
+    .animate-card {
+      animation: none;
     }
     .btn-spring {
-      transition: opacity 0.14s ease;
+      transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s, box-shadow 0.2s;
     }
-    .btn-spring:active:not(:disabled) {
-      opacity: 0.8;
+    .btn-spring:active {
+      transform: scale(0.94);
     }
-    @keyframes cardEnter {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
-    }
-    .animate-card {
-      animation: cardEnter 0.22s ease-out forwards;
-    }
-    .svg-glow-emerald { filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.55)); }
-    .svg-glow-cyan    { filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.55)); }
-    .svg-glow-amber   { filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.55)); }
-    .svg-glow-rose    { filter: drop-shadow(0 0 6px rgba(251, 113, 133, 0.55)); }
-    .svg-glow-purple  { filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.55)); }
+
     .ring-progress {
+      transition: stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1);
       transform: rotate(-90deg);
       transform-origin: 50% 50%;
-      transition: stroke-dashoffset 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+      filter: drop-shadow(0 0 9px rgba(52, 211, 153, 0.7));
+    }
+
+    @keyframes wavePulse {
+      0%, 100% { transform: translateX(0) scaleY(1); }
+      50% { transform: translateX(-15%) scaleY(1.12); }
     }
     .water-fill {
-      transition: height 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     }
-    .hud-corner {
-      position: absolute;
-      width: 18px;
-      height: 18px;
-      border-color: rgba(52, 211, 153, 0.75);
-      pointer-events: none;
-      z-index: 10;
+    .water-wave-top {
+      animation: wavePulse 2.4s ease-in-out infinite;
     }
-    @keyframes laserSweep {
-      0%, 100% { top: 8%; opacity: 0.85; }
-      50% { top: 88%; opacity: 1; }
+
+    @keyframes laserScan {
+      0% { top: 5%; opacity: 0.25; }
+      50% { top: 92%; opacity: 1; }
+      100% { top: 5%; opacity: 0.25; }
     }
     .scanner-laser {
       position: absolute;
-      left: 6%;
-      right: 6%;
+      left: 5%;
+      right: 5%;
       height: 2px;
-      background: linear-gradient(90deg, transparent, #34d399, #38bdf8, transparent);
-      box-shadow: 0 0 12px #10b981;
-      animation: laserSweep 2.1s ease-in-out infinite;
+      background: linear-gradient(90deg, transparent, #10b981, #6ee7b7, #10b981, transparent);
+      box-shadow: 0 0 14px 3px rgba(16, 185, 129, 0.85);
+      animation: laserScan 2.5s ease-in-out infinite;
       pointer-events: none;
-      z-index: 12;
+      z-index: 20;
     }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    input[type="range"] { accent-color: #10b981; }
+    .hud-corner {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-color: #34d399;
+      filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.7));
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    /* Уважаем настройку «уменьшить движение» */
+    @media (prefers-reduced-motion: reduce) {
+      .animate-card, .water-wave-top, .scanner-laser { animation: none !important; }
+      .ring-progress, .water-fill { transition: none !important; }
+    }
   </style>
 </head>
-<body class="min-h-screen flex flex-col pb-24 sm:pb-8 selection:bg-emerald-500/30 selection:text-emerald-200">
-  <!-- Фоновые холсты -->
-  <canvas id="plasmaCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-70"></canvas>
-  <canvas id="celebrationCanvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white pb-28 sm:pb-10 relative">
 
-  <!-- МОДАЛЬНОЕ ОКНО ОНБОРДИНГА (ПЕРВЫЙ ЗАПУСК) -->
-  <div id="onboardingModal" class="hidden fixed inset-0 z-50 bg-slate-950/92 flex items-center justify-center p-4 overflow-y-auto">
-    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 space-y-4 my-auto animate-card border border-emerald-400/35">
-      <div class="flex items-center gap-3">
-        <div class="w-11 h-11 rounded-2xl liquid-btn-primary flex items-center justify-center font-extrabold text-slate-950 text-lg">N</div>
+  <!-- ЖИВОЙ АНИМИРОВАННЫЙ ФОН «ЖИДКАЯ ПЛАЗМА» -->
+  <canvas id="plasmaCanvas" class="fixed inset-0 pointer-events-none z-0 w-full h-full"></canvas>
+
+  <!-- ХОЛСТ ДЛЯ САЛЮТА ЧАСТИЦ -->
+  <canvas id="celebrationCanvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
+
+  <!-- СЛУЖЕБНЫЙ МОСТ ДЛЯ МГНОВЕННОЙ ПЕРЕПРИВЯЗКИ ANDROID WEBVIEW IME (GBOARD) -->
+  <input type="text" id="nbImeBridgeInput" tabindex="-1" aria-hidden="true" autocomplete="off" style="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1;border:0;padding:0;margin:0;background:transparent;color:transparent;" />
+
+  <!-- ВСТРОЕННАЯ ПАНЕЛЬ ЛОГИРОВАНИЯ ВВОДА (ДЛЯ ДИАГНОСТИКИ КЛАВИАТУРЫ В TELEGRAM ANDROID) -->
+  <div id="nbImeDebugPanel" class="hidden fixed top-14 left-2 right-2 z-50 max-w-xl mx-auto rounded-2xl bg-slate-950/95 border border-emerald-400/50 p-2.5 shadow-2xl text-[11px] text-slate-200 space-y-1.5">
+    <div class="flex flex-wrap items-center justify-between gap-1.5 border-b border-white/10 pb-1.5">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <strong class="text-xs text-white">Лог клавиатуры (IME Debugger)</strong>
+        <span id="nbImeDebugCount" class="text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-emerald-300 font-mono">0</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button type="button" onmousedown="event.preventDefault()" onclick="manualRebindActiveInput()" class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-bold text-[10px]">🔄 Ребинд</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="copyImeDebugLog()" class="px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold text-[10px]">📋 Копировать</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="clearImeDebugLog()" class="px-2 py-1 rounded-lg bg-white/10 text-slate-300 text-[10px]">🧹</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="toggleImeDebugPanel()" class="px-2 py-1 rounded-lg bg-rose-500/20 text-rose-300 font-bold text-[10px]">✕</button>
+      </div>
+    </div>
+    <div id="nbImeDebugStateLine" class="font-mono text-[10px] text-amber-300 truncate">active: — | docFocus: — | vvH: —</div>
+    <div id="nbImeDebugLogBox" class="font-mono text-[10px] leading-relaxed max-h-36 overflow-y-auto space-y-0.5 bg-black/60 rounded-xl p-2 select-all"></div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО ПЕРВОГО ВХОДА (ОНБОРДИНГ) -->
+  <div id="onboardingModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 my-auto animate-card">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl liquid-btn-primary flex items-center justify-center font-extrabold text-xl">
+          <svg class="w-7 h-7 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
         <div>
-          <h2 class="font-extrabold text-base text-white">Добро пожаловать в NutriBalance Pro</h2>
-          <p class="text-xs text-slate-300">Укажи свои параметры для точного расчёта нормы КБЖУ и воды</p>
+          <h2 class="font-extrabold text-base sm:text-lg text-white">Добро пожаловать в NutriBalance</h2>
+          <p class="text-xs text-slate-300">Укажи свои параметры для точного расчёта КБЖУ</p>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-2.5 text-xs">
+
+      <div class="grid grid-cols-2 gap-3 text-xs">
         <div>
           <label class="block text-slate-300 mb-1">Пол</label>
-          <select id="obGender" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white">
+          <select id="obGender" class="liquid-input w-full rounded-xl px-3 py-2.5 text-white font-semibold">
             <option value="male" class="bg-slate-900">Мужской</option>
             <option value="female" class="bg-slate-900">Женский</option>
           </select>
         </div>
         <div>
           <label class="block text-slate-300 mb-1">Возраст (лет)</label>
-          <input type="number" id="obAge" value="28" min="16" max="100" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white" />
+          <input type="number" id="obAge" placeholder="28" value="28" min="12" max="100" class="liquid-input w-full rounded-xl px-3 py-2.5 text-white font-bold" />
         </div>
         <div>
           <label class="block text-slate-300 mb-1">Рост (см)</label>
-          <input type="number" id="obHeight" value="175" min="130" max="230" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white" />
+          <input type="number" id="obHeight" placeholder="175" value="175" min="120" max="230" class="liquid-input w-full rounded-xl px-3 py-2.5 text-white font-bold" />
         </div>
         <div>
           <label class="block text-slate-300 mb-1">Текущий вес (кг)</label>
-          <input type="number" step="0.1" id="obWeight" value="80" min="35" max="280" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white font-bold" />
+          <input type="number" step="0.1" id="obWeight" placeholder="80" min="30" max="250" class="liquid-input w-full rounded-xl px-3 py-2.5 text-white font-bold" />
         </div>
         <div>
           <label class="block text-slate-300 mb-1">Желаемый вес (кг)</label>
-          <input type="number" step="0.5" id="obTargetWeight" value="72" min="40" max="250" class="liquid-input w-full rounded-xl px-2.5 py-2 text-emerald-300 font-bold" />
+          <input type="number" step="0.5" id="obTargetWeight" placeholder="72" min="30" max="250" class="liquid-input w-full rounded-xl px-3 py-2.5 text-emerald-300 font-bold" />
         </div>
         <div>
-          <label class="block text-slate-300 mb-1">Цель</label>
-          <select id="obGoal" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white">
+          <label class="block text-slate-300 mb-1">Твоя цель</label>
+          <select id="obGoal" class="liquid-input w-full rounded-xl px-3 py-2.5 text-white font-semibold">
             <option value="-20" class="bg-slate-900">Похудение (-20%)</option>
             <option value="-15" class="bg-slate-900">Мягкий дефицит (-15%)</option>
             <option value="0" class="bg-slate-900">Поддержание (0%)</option>
             <option value="15" class="bg-slate-900">Набор массы (+15%)</option>
           </select>
         </div>
-        <div class="col-span-2">
-          <label class="block text-slate-300 mb-1">Уровень дневной активности</label>
-          <select id="obActivity" class="liquid-input w-full rounded-xl px-2.5 py-2 text-white">
-            <option value="1.2" class="bg-slate-900">Сидячая работа, мало шагов (1.2)</option>
-            <option value="1.375" selected class="bg-slate-900">Лёгкая активность / 1–3 тренировки (1.375)</option>
-            <option value="1.55" class="bg-slate-900">Средняя активность / 3–5 тренировок (1.55)</option>
-            <option value="1.725" class="bg-slate-900">Высокая нагрузка / спорт каждый день (1.725)</option>
-          </select>
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-300 mb-1">Обычная дневная активность</label>
+        <select id="obActivity" class="liquid-input w-full rounded-xl px-3 py-2.5 text-xs text-white">
+          <option value="1.2" class="bg-slate-900">Сидячая работа, мало движения (1.2)</option>
+          <option value="1.375" selected class="bg-slate-900">Лёгкая активность / прогулки 1–3 раза в нед. (1.375)</option>
+          <option value="1.55" class="bg-slate-900">Средняя активность / тренировки 3–5 раз в нед. (1.55)</option>
+          <option value="1.725" class="bg-slate-900">Высокая нагрузка / спорт почти каждый день (1.725)</option>
+        </select>
+      </div>
+
+      <p class="text-[10px] text-slate-400 leading-snug">Расчёты ориентировочные и не являются медицинской рекомендацией. При хронических заболеваниях, беременности или резком снижении веса проконсультируйся с врачом.</p>
+
+      <button onclick="completeOnboarding()" class="btn-spring liquid-btn-primary w-full py-3 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2">
+        <span>Рассчитать мою норму и начать</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ШАПКА ПРИЛОЖЕНИЯ -->
+  <header class="sticky top-0 z-30 liquid-glass border-t-0 border-x-0 w-full overflow-hidden">
+    <div class="max-w-4xl mx-auto px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-2">
+      <div class="flex items-center gap-2 min-w-0 flex-1">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl liquid-btn-primary flex-shrink-0 flex items-center justify-center font-extrabold text-slate-950 text-sm">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
         </div>
-      </div>
-      <p class="text-[10px] text-slate-400 leading-snug">Приложение предназначено для лиц старше 16 лет. При ИМТ ниже 18.5 дефицит калорий автоматически отключается для безопасности здоровья.</p>
-      <button type="button" onclick="completeOnboarding()" class="btn-spring liquid-btn-primary w-full py-3 rounded-2xl font-extrabold text-xs sm:text-sm">Рассчитать мою норму и начать</button>
-    </div>
-  </div>
-
-  <!-- ПЛАВАЮЩИЙ ОВЕРЛЕЙ ЛОГГЕРА (ПО УМОЛЧАНИЮ СКРЫТ, ВКЛЮЧАЕТСЯ ТОЛЬКО АДМИНОМ) -->
-  <div id="nbImeDebugPanel" class="hidden fixed bottom-20 left-2 right-2 z-50 liquid-glass rounded-2xl p-2.5 text-[10px] font-mono border border-amber-400/40 space-y-1">
-    <div class="flex items-center justify-between">
-      <span class="font-bold text-amber-300">🐞 IME Monitor (<span id="nbImeDebugCount">0</span>)</span>
-      <div class="flex gap-1.5">
-        <button type="button" onclick="copyImeDebugLog()" class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300">Копировать</button>
-        <button type="button" onclick="toggleImeDebugPanel()" class="px-2 py-0.5 rounded bg-white/10 text-slate-200">✕</button>
-      </div>
-    </div>
-    <div id="nbImeDebugStateLine" class="text-emerald-300 truncate">active: —</div>
-    <div id="nbImeDebugLogBox" class="h-24 overflow-y-auto bg-slate-950/80 rounded p-1.5 space-y-0.5 text-slate-200"></div>
-  </div>
-
-  <!-- ВЕРХНЯЯ ШАПКА -->
-  <header class="sticky top-0 z-30 liquid-glass border-b border-white/10">
-    <div class="max-w-4xl mx-auto px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2 min-w-0">
-        <div class="w-8 h-8 rounded-xl liquid-btn-primary flex items-center justify-center font-extrabold text-slate-950 text-sm flex-shrink-0">N</div>
         <div class="min-w-0">
-          <div class="flex items-center gap-1.5">
-            <h1 class="font-extrabold text-xs sm:text-sm text-white truncate">NutriBalance</h1>
-            <span id="tgUserBadge" class="hidden text-[10px] px-1.5 py-0.2 rounded-full bg-white/10 text-slate-200 font-medium truncate max-w-[90px]"></span>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5 min-w-0">
+            <h1 class="font-extrabold text-xs sm:text-base text-white tracking-tight leading-tight truncate">NutriBalance</h1>
+            <div class="flex items-center gap-1 min-w-0">
+              <span id="tgUserBadge" class="hidden text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full font-semibold bg-sky-500/20 text-sky-300 border border-sky-400/30 truncate max-w-[90px] sm:max-w-[140px]"></span>
+              <span id="syncStatusBadge" class="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
+                Сохранено
+              </span>
+            </div>
           </div>
-          <span id="syncStatusBadge" class="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">Сохранено</span>
         </div>
       </div>
 
       <!-- Навигация для ПК -->
       <nav class="hidden sm:flex items-center gap-1 liquid-pill p-1 rounded-2xl">
-        <button onclick="switchTab('diary')" id="tabBtnDesktop-diary" class="btn-spring px-3 py-1.5 rounded-xl text-xs font-bold bg-white/15 text-white border border-white/20 shadow flex items-center gap-1.5">
+        <button onclick="switchTab('diary')" id="tabBtnDesktop-diary" class="btn-spring px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5">
           <svg class="w-4 h-4 svg-glow-emerald text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           <span>Дневник</span>
         </button>
@@ -250,7 +331,7 @@
   </header>
 
   <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ ДЛЯ ТЕЛЕФОНА -->
-  <nav id="mobileBottomNav" class="sm:hidden fixed bottom-2.5 left-3 right-3 z-40 liquid-glass rounded-3xl px-2 py-1.5 grid grid-cols-4 gap-1">
+  <nav id="mobileBottomNav" class="sm:hidden fixed left-3 right-3 z-40 liquid-glass rounded-3xl px-2 py-1.5 grid grid-cols-4 gap-1">
     <button onclick="switchTab('diary')" id="tabBtnMobile-diary" class="btn-spring flex flex-col items-center justify-center py-1.5 rounded-2xl text-[11px] font-medium gap-0.5">
       <svg class="w-5 h-5 svg-glow-emerald text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       <span>Дневник</span>
@@ -1106,7 +1187,8 @@
         <label class="block text-xs text-slate-300">Восстановить из скопированного кода:</label>
         <textarea id="restoreCodeArea" rows="3" placeholder='{"profile":...}' class="liquid-input w-full rounded-xl p-2.5 text-xs text-white font-mono"></textarea>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <button type="button" onclick="restoreFromText('merge')" class="btn-spring liquid-btn-primary py-2 px-3 rounded-xl font-bold text-xs">🔄 Объединить (безопасно)</button>
+          <button type="button" onclick="restoreFromText('merge')" class="btn-spring liquid-btn-primary py-2 px-3 rounded-xl font-bold text-xs">Восстановить данные</button>
+          <button type="button" onclick="restoreFromText('merge')" class="btn-spring liquid-pill py-2 px-3 rounded-xl font-bold text-xs text-emerald-300 border border-emerald-400/30">🔄 Объединить (безопасно)</button>
           <button type="button" onclick="restoreFromText('replace')" class="btn-spring liquid-pill py-2 px-3 rounded-xl text-rose-300 font-semibold text-xs border border-rose-400/30">⚠️ Заменить полностью</button>
         </div>
       </div>
@@ -1409,6 +1491,7 @@
               <span id="admImeDebugCount" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold">0</span>
             </div>
             <div class="flex flex-wrap items-center gap-1.5">
+              <button type="button" onmousedown="event.preventDefault()" onclick="manualRebindActiveInput()" class="btn-spring px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-bold text-[11px]">🔄 Ребинд фокуса</button>
               <button type="button" onclick="copyImeDebugLog()" class="btn-spring px-2.5 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold text-[11px]">📋 Копировать лог</button>
               <button type="button" onclick="clearImeDebugLog()" class="btn-spring px-2.5 py-1 rounded-xl bg-white/10 text-slate-200 font-semibold text-[11px]">🧹 Очистить</button>
               <button type="button" onclick="toggleImeDebugPanel()" class="btn-spring px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-400/40 font-bold text-[11px]">📌 Оверлей на экран</button>
@@ -1446,15 +1529,6 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 
-    function normalizeSearchText(str) {
-      return String(str || '')
-        .toLowerCase()
-        .replace(/ё/g, 'е')
-        .replace(/[.,;:!?"'()\[\]/\\+-]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    }
-
     function getLocalDateString(dateObj = new Date()) {
       const year = dateObj.getFullYear();
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -1478,6 +1552,7 @@
       const str = String(raw).trim();
       try { return JSON.parse(str); } catch (e) {}
 
+      // 1) Пробуем блоки ```json ... ``` (с конца к началу, так как финальный ответ модели всегда в конце)
       const fenceRegex = /```(?:json)?\s*([\s\S]*?)```/gi;
       const fences = [];
       let m;
@@ -1491,13 +1566,21 @@
       const cleaned = str.replace(/```json|```/gi, '').trim();
       try { return JSON.parse(cleaned); } catch (e) {}
 
+      // 2) Ищем сбалансированные JSON-объекты { ... } с конца строки (чтобы не захватывать фигурные скобки из мыслей модели в начале)
       const endPositions = [];
       for (let i = cleaned.length - 1; i >= 0; i--) {
         if (cleaned[i] === '}') endPositions.push(i);
       }
       for (const endIdx of endPositions) {
+        let depth = 0;
+        let inStr = false;
+        let esc = false;
         for (let i = endIdx; i >= 0; i--) {
-          if (cleaned[i] === '{') {
+          const ch = cleaned[i];
+          if (i > 0 && cleaned[i - 1] === '\\') {
+            // Пропускаем экранированные кавычки при обратном проходе приблизительно через JSON.parse проверку
+          }
+          if (ch === '{') {
             const candidate = cleaned.slice(i, endIdx + 1);
             try {
               const parsed = JSON.parse(candidate);
@@ -1520,19 +1603,22 @@
     }
 
     // =====================================================================
-    // 1. ЧИСТАЯ РАБОТА КЛАВИАТУРЫ В TELEGRAM ANDROID (БЕЗ ПЕРЕХВАТА ФОКУСА!)
+    // 1. ДИАГНОСТИЧЕСКИЙ ЛОГГЕР IME И АВТО-ПЕРЕПРИВЯЗКА КЛАВИАТУРЫ В TELEGRAM ANDROID
     // =====================================================================
-    // Главная причина залипаний клавиатуры в Android WebView — сочетание backdrop-filter: blur(...)
-    // и остаточного CSS transform на карточках во время набора текста, а также программные blur()/focus().
-    // Теперь при фокусе на поле ввода мы НЕ трогаем фокус программно, а временно включаем класс body.kb-open
-    // (отключает тяжёлый backdrop-filter и нижнее меню на время печати) и снимаем animate-card после анимации.
+    // Версия сборки: показывается в логе, чтобы точно знать, какой файл запущен в Telegram
+    const APP_BUILD = 'ime-fix-2026-11-09-a';
+    // Рукопожатие с мостом ломало ввод (restartInput в момент анимации клавиатуры) — отключено.
+    // Включать только для эксперимента.
+    const IME_HANDSHAKE_ENABLED = false;
     let isTextInputFocused = false;
     let isImeHandshaking = false;
+    let maxObservedViewportHeight = window.innerHeight || 780;
+    let lastKeyboardOpenState = false;
     const imeLogEntries = [];
     const imeStartTs = performance.now();
 
     function isTextEditableElement(el) {
-      if (!el || !el.tagName) return false;
+      if (!el || !el.tagName || el.id === 'nbImeBridgeInput') return false;
       const tag = el.tagName.toUpperCase();
       if (tag === 'TEXTAREA') return !el.disabled && !el.readOnly;
       if (tag === 'INPUT') {
@@ -1551,7 +1637,7 @@
       const relMs = Math.round(performance.now() - imeStartTs);
       const line = `+${relMs}ms [${type}] ${detail}`;
       imeLogEntries.push(line);
-      if (imeLogEntries.length > 120) imeLogEntries.shift();
+      if (imeLogEntries.length > 400) imeLogEntries.shift();
 
       const floatPanel = document.getElementById('nbImeDebugPanel');
       const admModal = document.getElementById('adminModal');
@@ -1569,26 +1655,39 @@
         ? imeLogEntries.map(l => `<div>${escapeHtml(l)}</div>`).join('')
         : `<div class="text-slate-500">Событий пока нет. Коснись любого поля ввода...</div>`;
 
+      // Обновляем оверлей (если включён из админки)
       const box = document.getElementById('nbImeDebugLogBox');
       const countEl = document.getElementById('nbImeDebugCount');
       const stateEl = document.getElementById('nbImeDebugStateLine');
       if (countEl) countEl.textContent = String(imeLogEntries.length);
       if (stateEl) stateEl.textContent = stateStr;
-      if (box) { box.innerHTML = htmlLines; box.scrollTop = box.scrollHeight; }
+      if (box) {
+        box.innerHTML = htmlLines;
+        box.scrollTop = box.scrollHeight;
+      }
 
+      // Обновляем вкладку «Логи» внутри Админ-панели
       const admBox = document.getElementById('admImeDebugLogBox');
       const admCountEl = document.getElementById('admImeDebugCount');
       const admStateEl = document.getElementById('admImeDebugStateLine');
       if (admCountEl) admCountEl.textContent = String(imeLogEntries.length);
       if (admStateEl) admStateEl.textContent = stateStr;
-      if (admBox) { admBox.innerHTML = htmlLines; admBox.scrollTop = admBox.scrollHeight; }
+      if (admBox) {
+        admBox.innerHTML = htmlLines;
+        admBox.scrollTop = admBox.scrollHeight;
+      }
     }
 
     function toggleImeDebugPanel() {
-      const p = document.getElementById('nbImeDebugPanel');
-      if (!p) return;
-      p.classList.toggle('hidden');
-      if (!p.classList.contains('hidden')) renderImeDebugPanel();
+      if (isTelegramMiniApp && !isUserAdmin()) return;
+      const panel = document.getElementById('nbImeDebugPanel');
+      if (!panel) return;
+      panel.classList.toggle('hidden');
+      if (!panel.classList.contains('hidden')) {
+        logImeEvent('OVERLAY_OPEN', `build=${APP_BUILD} ua=${navigator.userAgent.slice(0, 65)}`);
+        renderImeDebugPanel();
+        closeAdminModal();
+      }
     }
 
     function clearImeDebugLog() {
@@ -1597,144 +1696,194 @@
     }
 
     function copyImeDebugLog() {
-      const txt = imeLogEntries.join('\n') || 'Лог пуст';
-      copyTextSafe(txt, 'Лог клавиатуры скопирован!');
+      const header = `BUILD: ${APP_BUILD}\nUA: ${navigator.userAgent}\nactiveElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasFocus()}\n`;
+      copyTextSafe(header + imeLogEntries.join('\n'), 'Лог клавиатуры скопирован в буфер обмена!');
     }
 
-    // Снимаем класс animate-card сразу после окончания анимации, чтобы ни один родительский блок не держал CSS transform
-    document.addEventListener('animationend', (e) => {
-      if (e.target && e.target.classList && e.target.classList.contains('animate-card')) {
-        e.target.classList.remove('animate-card');
+    // Двухкадровая перепривязка фокуса через служебный input-мост (#nbImeBridgeInput):
+    // имитирует «выход из поля в другой элемент и повторный вход» за 35 мс без закрытия клавиатуры,
+    // заставляя Chromium ImeAdapterAndroid вызвать InputMethodManager.restartInput(webView) для включения русских букв в Gboard.
+    function performAndroidImeHandshake(targetEl, reason = 'auto') {
+      if (!IME_HANDSHAKE_ENABLED) { logImeEvent('HANDSHAKE_DISABLED', `reason=${reason}`); return; }
+      if (!isTextEditableElement(targetEl) || isImeHandshaking) return;
+      const bridge = document.getElementById('nbImeBridgeInput');
+      if (!bridge) return;
+
+      isImeHandshaking = true;
+      const val = targetEl.value || '';
+      let selStart = val.length, selEnd = val.length;
+      try {
+        if (typeof targetEl.selectionStart === 'number') selStart = targetEl.selectionStart;
+        if (typeof targetEl.selectionEnd === 'number') selEnd = targetEl.selectionEnd;
+      } catch (e) {}
+
+      logImeEvent('IME_HANDSHAKE_START', `target=${describeEl(targetEl)} reason=${reason}`);
+
+      try {
+        bridge.value = ' ';
+        bridge.focus({ preventScroll: true });
+      } catch (e) {
+        try { targetEl.blur(); } catch (e2) {}
       }
-    });
 
-    (function initAndroidTelegramKeyboardFix() {
-      let blurTimer = null;
-      let vvResizeTimer = null;
-      let deadKeyTimer = null;
-      let lastFocusedInput = null;
-      let maxVvHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-
-      // Мгновенный перезапуск InputConnection на том же самом поле (blur -> rAF focus)
-      // Выполняется ТОЛЬКО после того, как клавиатура уже открылась (vvH уменьшился), и ТОЛЬКО если ввод ещё не начался!
-      function relatchSameElementIme(el, reason) {
-        if (!el || !isTextEditableElement(el) || isImeHandshaking || el._nbHasTyped) return;
-        isImeHandshaking = true;
-        logImeEvent('IME_RELATCH', `reason=${reason} target=${describeEl(el)}`);
-        const selStart = typeof el.selectionStart === 'number' ? el.selectionStart : (el.value || '').length;
-        const selEnd = typeof el.selectionEnd === 'number' ? el.selectionEnd : selStart;
-        try { el.blur(); } catch (err) {}
-        requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
           try {
-            el.focus({ preventScroll: true });
-            if (typeof el.setSelectionRange === 'function' && !['number', 'date'].includes((el.type || '').toLowerCase())) {
-              el.setSelectionRange(selStart, selEnd);
+            targetEl.focus({ preventScroll: true });
+            const canSelect = ['text', 'search', 'tel', 'url', 'password'].includes((targetEl.type || 'text').toLowerCase()) || targetEl.tagName === 'TEXTAREA';
+            if (canSelect && typeof targetEl.setSelectionRange === 'function') {
+              const len = (targetEl.value || '').length;
+              targetEl.setSelectionRange(Math.min(selStart, len), Math.min(selEnd, len));
             }
-          } catch (err) {}
-          setTimeout(() => {
+            targetEl._nbImeReady = true;
+            logImeEvent('IME_HANDSHAKE_DONE', `active=${describeEl(document.activeElement)} docFocus=${document.hasFocus()}`);
+          } catch (err) {
+            logImeEvent('IME_HANDSHAKE_ERR', String(err?.message || err));
+          } finally {
             isImeHandshaking = false;
-          }, 35);
-        });
+          }
+        }, 32);
+      });
+    }
+
+    function manualRebindActiveInput() {
+      const el = document.activeElement;
+      if (isTextEditableElement(el)) {
+        el._nbImeReady = false;
+        performAndroidImeHandshake(el, 'manual_btn');
+      } else {
+        logImeEvent('MANUAL_REBIND_SKIP', 'no active input');
+      }
+    }
+
+    function syncViewportHeight() {
+      const h = (window.visualViewport && window.visualViewport.height > 150)
+        ? Math.round(window.visualViewport.height)
+        : (window.innerHeight || 780);
+      if (h > maxObservedViewportHeight) {
+        maxObservedViewportHeight = h;
+      }
+      const kbShrunk = h < maxObservedViewportHeight - 120;
+      const navEl = document.getElementById('mobileBottomNav');
+      if (navEl) {
+        navEl.classList.toggle('nav-kb-hidden', kbShrunk);
       }
 
-      // Если пользователь нажал на поле, которое УЖЕ числится document.activeElement, но буквы ещё не печатались (как на 00:16 видео)
-      document.addEventListener('pointerdown', (e) => {
-        const el = e.target;
-        if (!isTextEditableElement(el) || isImeHandshaking) return;
-        if (document.activeElement === el && !el._nbHasTyped) {
+      // Когда клавиатура Gboard открылась и уменьшила visualViewport — если поле в фокусе и пользователь ещё не ввёл ни одной буквы,
+      // выполняем контрольную перепривязку InputConnection уже при открытой клавиатуре
+      if (kbShrunk && !lastKeyboardOpenState) {
+        lastKeyboardOpenState = true;
+        logImeEvent('KB_OPENED', `vvH=${h} maxH=${maxObservedViewportHeight}`);
+        const active = document.activeElement;
+        if (isTextEditableElement(active) && !active._nbUserTyped && !active._nbKbRebound) {
+          active._nbKbRebound = true;
           setTimeout(() => {
-            if (document.activeElement === el && !el._nbHasTyped) {
-              relatchSameElementIme(el, 'retap_while_focused');
+            if (document.activeElement === active && !active._nbUserTyped) {
+              performAndroidImeHandshake(active, 'kb_opened_vv');
             }
-          }, 50);
+          }, 90);
         }
-      }, true);
+      } else if (!kbShrunk && lastKeyboardOpenState) {
+        lastKeyboardOpenState = false;
+        logImeEvent('KB_CLOSED', `vvH=${h}`);
+      }
+    }
+
+    (function initViewportAndInputGuards() {
+      syncViewportHeight();
+      window.addEventListener('resize', syncViewportHeight);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncViewportHeight);
+      }
+
+      // При первом касании любого поля ввода активируем системный фокус окна WebView
+      document.addEventListener('touchstart', (e) => {
+        const el = e.target && e.target.closest ? e.target.closest('input, textarea, select') : null;
+        if (!el || el.id === 'nbImeBridgeInput') return;
+        try { window.focus(); } catch (err) {}
+        logImeEvent('TOUCHSTART', `target=${describeEl(el)} docFocus=${document.hasFocus()}`);
+      }, { passive: true, capture: true });
+
+      let blurTimer = null;
+      let handshakeTimer = null;
 
       document.addEventListener('focusin', (e) => {
-        const el = e.target;
-        if (!isTextEditableElement(el)) return;
+        if (e.target && e.target.id === 'nbImeBridgeInput') return;
+        if (!isTextEditableElement(e.target)) return;
         clearTimeout(blurTimer);
+        const el = e.target;
         isTextInputFocused = true;
-        lastFocusedInput = el;
-        if (!isImeHandshaking) {
-          el._nbHasTyped = false;
-          el._nbRelatchedAfterOpen = false;
-          logImeEvent('FOCUSIN', `target=${describeEl(el)}`);
-          // Если клавиатура УЖЕ была открыта в момент тапа по полю — делаем быстрый relatch через 60 мс
-          const curH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-          if (maxVvHeight - curH > 110 && !el._nbRelatchedAfterOpen) {
-            el._nbRelatchedAfterOpen = true;
-            setTimeout(() => {
-              if (document.activeElement === el && !el._nbHasTyped) {
-                relatchSameElementIme(el, 'kb_already_open');
-              }
-            }, 60);
-          }
+        logImeEvent('FOCUSIN', `target=${describeEl(el)} ready=${Boolean(el._nbImeReady)} handshaking=${isImeHandshaking}`);
+
+        if (!isImeHandshaking && !el._nbImeReady) {
+          clearTimeout(handshakeTimer);
+          handshakeTimer = setTimeout(() => {
+            if (document.activeElement === el && !el._nbImeReady && !el._nbUserTyped) {
+              performAndroidImeHandshake(el, 'focusin_45ms');
+            }
+          }, 45);
         }
       });
 
       document.addEventListener('focusout', (e) => {
-        const el = e.target;
-        if (!isTextEditableElement(el) || isImeHandshaking) return;
-        logImeEvent('FOCUSOUT', `target=${describeEl(el)}`);
+        if (isImeHandshaking || (e.target && e.target.id === 'nbImeBridgeInput')) return;
+        const leftEl = e.target;
+        if (isTextEditableElement(leftEl)) {
+          leftEl._nbImeReady = false;
+          leftEl._nbUserTyped = false;
+          leftEl._nbKbRebound = false;
+          logImeEvent('FOCUSOUT', `target=${describeEl(leftEl)}`);
+        }
         clearTimeout(blurTimer);
         blurTimer = setTimeout(() => {
-          if (isTextEditableElement(document.activeElement) || isImeHandshaking) return;
+          if (isTextEditableElement(document.activeElement)) return;
           isTextInputFocused = false;
-          lastFocusedInput = null;
-        }, 150);
+          syncViewportHeight();
+        }, 120);
       });
 
-      // Когда клавиатура Android заканчивает выезжать снизу (visualViewport уменьшился >110px и остановился),
-      // Android WebView при первом открытии теряет InputConnection. Перепривязываем его ровно в момент полной готовности клавиатуры!
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', () => {
-          const vvH = Math.round(window.visualViewport.height);
-          if (vvH > maxVvHeight) maxVvHeight = vvH;
-          const isKbOpen = (maxVvHeight - vvH) > 110;
-          clearTimeout(vvResizeTimer);
-          if (isKbOpen) {
-            vvResizeTimer = setTimeout(() => {
-              const activeEl = document.activeElement && isTextEditableElement(document.activeElement)
-                ? document.activeElement
-                : lastFocusedInput;
-              if (activeEl && !activeEl._nbHasTyped && !activeEl._nbRelatchedAfterOpen) {
-                activeEl._nbRelatchedAfterOpen = true;
-                relatchSameElementIme(activeEl, `vv_open_${vvH}px`);
-              }
-            }, 65);
-          }
-        });
-      }
-
-      // Страховка на случай, если Gboard прислал keyCode=229 в «холостое» поле и буква не вставилась
+      // Логирование всех событий клавиатуры и авто-восстановление, если Gboard прислал keyCode=229 без букв
+      let deadKey229Timer = null;
       document.addEventListener('keydown', (e) => {
+        if (!isTextEditableElement(e.target)) return;
         const el = e.target;
-        if (!isTextEditableElement(el) || isImeHandshaking) return;
-        logImeEvent('KEYDOWN', `key="${e.key}" code=${e.keyCode}`);
-        if ((e.keyCode === 229 || e.key === 'Unidentified') && !el._nbHasTyped) {
+        logImeEvent('KEYDOWN', `key="${e.key}" code="${e.code}" keyCode=${e.keyCode} comp=${e.isComposing}`);
+        if (e.keyCode === 229) {
           const valBefore = el.value;
-          clearTimeout(deadKeyTimer);
-          deadKeyTimer = setTimeout(() => {
-            if (document.activeElement === el && !el._nbHasTyped && el.value === valBefore) {
-              relatchSameElementIme(el, 'dead_key_229');
+          clearTimeout(deadKey229Timer);
+          deadKey229Timer = setTimeout(() => {
+            if (document.activeElement === el && el.value === valBefore && !el._nbUserTyped) {
+              logImeEvent('DEAD_229_DETECTED', 'keyCode=229 produced no text -> triggering handshake');
+              el._nbImeReady = false;
+              performAndroidImeHandshake(el, 'dead_key_229');
             }
-          }, 65);
+          }, 60);
         }
       }, true);
 
+      document.addEventListener('compositionstart', (e) => {
+        logImeEvent('COMP_START', `data="${e.data || ''}"`);
+      }, true);
+
       document.addEventListener('compositionupdate', (e) => {
-        if (isTextEditableElement(e.target)) {
-          e.target._nbHasTyped = true;
-          clearTimeout(deadKeyTimer);
-        }
+        if (isTextEditableElement(e.target)) e.target._nbUserTyped = true;
+        logImeEvent('COMP_UPDATE', `data="${e.data || ''}"`);
+      }, true);
+
+      document.addEventListener('compositionend', (e) => {
+        logImeEvent('COMP_END', `data="${e.data || ''}"`);
+      }, true);
+
+      document.addEventListener('beforeinput', (e) => {
+        if (!isTextEditableElement(e.target)) return;
+        logImeEvent('BEFOREINPUT', `type="${e.inputType || ''}" data="${e.data ?? ''}"`);
       }, true);
 
       document.addEventListener('input', (e) => {
         if (!isTextEditableElement(e.target)) return;
-        e.target._nbHasTyped = true;
-        clearTimeout(deadKeyTimer);
-        logImeEvent('INPUT', `target=${describeEl(e.target)} len=${(e.target.value || '').length}`);
+        e.target._nbUserTyped = true;
+        clearTimeout(deadKey229Timer);
+        logImeEvent('INPUT', `type="${e.inputType || ''}" data="${e.data ?? ''}" len=${(e.target.value || '').length}`);
       }, true);
     })();
 
@@ -1774,6 +1923,7 @@
       }
 
       window.addEventListener('resize', () => {
+        // Не пересоздаём буфер холста при открытии экранной клавиатуры, чтобы не сбивать фокус ввода
         if (isTextInputFocused && window.innerWidth === width) return;
         width = canvas.width = window.innerWidth;
         height = canvas.height = Math.max(height, window.innerHeight);
@@ -1787,7 +1937,7 @@
       function loop(now) {
         requestAnimationFrame(loop);
         if (document.hidden || isTextInputFocused || document.body.classList.contains('battery-saver')) return;
-        if (now - last < 40) return; // ~25 fps
+        if (now - last < 33) return; // ~30 fps
         last = now;
         tick += 2;
         paint();
@@ -1922,6 +2072,41 @@
       }, _activeUndoCallback ? 5500 : 3400);
     }
 
+    function openCustomPromptModal(titleText, defaultVal, onConfirm) {
+      let modal = document.getElementById('nbPromptModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'nbPromptModal';
+        modal.className = 'fixed inset-0 z-50 bg-slate-950/90 flex items-center justify-center p-4';
+        modal.innerHTML = `
+          <div class="liquid-glass rounded-3xl max-w-xs w-full p-5 space-y-3.5 animate-card">
+            <div id="nbPromptTitle" class="font-bold text-sm text-white"></div>
+            <input type="number" id="nbPromptInput" min="1" max="3000" class="liquid-input w-full rounded-xl px-3 py-2 text-sm font-bold text-white" />
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" id="nbPromptCancel" class="btn-spring liquid-pill px-3.5 py-1.5 rounded-xl text-xs text-slate-200">Отмена</button>
+              <button type="button" id="nbPromptOk" class="btn-spring liquid-btn-primary px-4 py-1.5 rounded-xl font-bold text-xs">Сохранить</button>
+            </div>
+          </div>`;
+        document.body.appendChild(modal);
+      }
+      const titleEl = document.getElementById('nbPromptTitle');
+      const inputEl = document.getElementById('nbPromptInput');
+      const cancelBtn = document.getElementById('nbPromptCancel');
+      const okBtn = document.getElementById('nbPromptOk');
+      titleEl.textContent = titleText;
+      inputEl.value = defaultVal;
+      modal.classList.remove('hidden');
+      setTimeout(() => { inputEl.focus(); inputEl.select(); }, 30);
+      const close = () => modal.classList.add('hidden');
+      cancelBtn.onclick = close;
+      okBtn.onclick = () => { close(); onConfirm(inputEl.value); };
+      inputEl.onkeydown = (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); okBtn.click(); }
+        if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+      };
+    }
+
+    
     // =====================================================================
     // 3. БАЗА ПРОДУКТОВ (С ПОДДЕРЖКОЙ ПОШТУЧНЫХ ПОРЦИЙ servingGrams)
     // =====================================================================
@@ -1966,7 +2151,8 @@
       { id: 'v35', name: 'Сыр Моцарелла / Сулугуни / Адыгейский', kcal: 260, p: 20, f: 19.5, c: 1 },
       { id: 'v36', name: 'Сыр творожный (Almette / Hochland)', kcal: 242, p: 6.5, f: 22, c: 3.5, servingGrams: 20, servingLabel: '1 ч.л.' },
       // Крупы, гарниры и хлеб
-      { id: 'v42', name: 'Гречка отварная на воде (готовая)', kcal: 110, p: 4.2, f: 1.1, c: 21.3 },
+      { id: 'v41', name: 'Гречка отварная на воде (готовая)', kcal: 110, p: 4.2, f: 1.1, c: 21.3 },
+      { id: 'v42', name: 'Гречневая крупа (сухая)', kcal: 335, p: 12.6, f: 3.3, c: 64 },
       { id: 'v43', name: 'Рис белый отварной (готовый)', kcal: 116, p: 2.4, f: 0.3, c: 25.5 },
       { id: 'v44', name: 'Рис бурый / Басмати отварной', kcal: 123, p: 2.8, f: 0.9, c: 25.8 },
       { id: 'v45', name: 'Овсяная каша на воде (готовая)', kcal: 88, p: 3, f: 1.7, c: 15 },
@@ -3795,12 +3981,12 @@
       box.innerHTML = `
         <svg viewBox="0 0 ${W} ${H}" class="w-full h-full overflow-visible">
           <defs>
-            <linearGradient id="wAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="weightAreaGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="#34d399" stop-opacity="0.38"/>
               <stop offset="100%" stop-color="#34d399" stop-opacity="0.0"/>
             </linearGradient>
           </defs>
-          ${coords.length > 1 ? `<polygon points="${areaPoints}" fill="url(#wAreaGrad)" />` : ''}
+          ${coords.length > 1 ? `<polygon points="${areaPoints}" fill="url(#weightAreaGrad)" />` : ''}
           ${coords.length > 1 ? `<polyline fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${polyPoints}" />` : ''}
           ${coords.map((c, idx) => `
             <circle cx="${c.x}" cy="${c.y}" r="${idx === coords.length - 1 ? 4.2 : 3}" fill="${idx === coords.length - 1 ? '#38bdf8' : '#10b981'}" stroke="#020617" stroke-width="1.5" />
