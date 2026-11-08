@@ -38,40 +38,27 @@
       touch-action: manipulation;
       font-family: inherit;
     }
+    /* Без backdrop-filter и без переключения слоёв при фокусе — чтобы Android WebView не терял InputConnection */
     .liquid-glass {
-      background: linear-gradient(145deg, rgba(18, 28, 48, 0.72), rgba(9, 15, 28, 0.82));
-      backdrop-filter: blur(20px) saturate(160%);
-      -webkit-backdrop-filter: blur(20px) saturate(160%);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      background: linear-gradient(145deg, rgba(16, 26, 46, 0.92), rgba(8, 14, 26, 0.96));
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.12);
     }
     .liquid-pill {
-      background: rgba(15, 23, 42, 0.68);
+      background: rgba(15, 23, 42, 0.78);
       border: 1px solid rgba(255, 255, 255, 0.11);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
-    /* На полях ввода НЕ используем backdrop-filter и transform, чтобы Android WebView не сбрасывал клавиатуру Gboard */
     .liquid-input {
-      background: rgba(7, 12, 24, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(6, 11, 22, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       color: #ffffff;
       outline: none;
-      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .liquid-input:focus {
-      border-color: rgba(52, 211, 153, 0.75);
-      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.22);
-    }
-    /* При открытой экранной клавиатуре или включённой экономии заряда отключаем тяжёлый GPU backdrop-filter,
-       который в Android WebView вызывает баг с потерей букв (keyCode 229) */
-    body.kb-open .liquid-glass,
-    body.battery-saver .liquid-glass {
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      background: rgba(11, 19, 35, 0.96) !important;
-    }
-    body.kb-open #mobileBottomNav {
-      display: none !important;
+      border-color: rgba(52, 211, 153, 0.85);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
     }
     .liquid-btn-primary {
       background: linear-gradient(135deg, #34d399 0%, #10b981 55%, #06b6d4 100%);
@@ -79,15 +66,14 @@
       box-shadow: 0 6px 20px -4px rgba(16, 185, 129, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     }
     .btn-spring {
-      transition: transform 0.14s ease, opacity 0.14s ease;
+      transition: opacity 0.14s ease;
     }
     .btn-spring:active:not(:disabled) {
-      transform: scale(0.96);
+      opacity: 0.8;
     }
-    /* В конце анимации обязательно transform: none, чтобы не оставлять композитный слой поверх input */
     @keyframes cardEnter {
-      0% { opacity: 0; transform: translateY(8px); }
-      100% { opacity: 1; transform: none; }
+      0% { opacity: 0; }
+      100% { opacity: 1; }
     }
     .animate-card {
       animation: cardEnter 0.22s ease-out forwards;
@@ -1622,35 +1608,132 @@
       }
     });
 
-    (function initCleanInputFocusGuard() {
+    (function initAndroidTelegramKeyboardFix() {
       let blurTimer = null;
+      let vvResizeTimer = null;
+      let deadKeyTimer = null;
+      let lastFocusedInput = null;
+      let maxVvHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+
+      // Мгновенный перезапуск InputConnection на том же самом поле (blur -> rAF focus)
+      // Выполняется ТОЛЬКО после того, как клавиатура уже открылась (vvH уменьшился), и ТОЛЬКО если ввод ещё не начался!
+      function relatchSameElementIme(el, reason) {
+        if (!el || !isTextEditableElement(el) || isImeHandshaking || el._nbHasTyped) return;
+        isImeHandshaking = true;
+        logImeEvent('IME_RELATCH', `reason=${reason} target=${describeEl(el)}`);
+        const selStart = typeof el.selectionStart === 'number' ? el.selectionStart : (el.value || '').length;
+        const selEnd = typeof el.selectionEnd === 'number' ? el.selectionEnd : selStart;
+        try { el.blur(); } catch (err) {}
+        requestAnimationFrame(() => {
+          try {
+            el.focus({ preventScroll: true });
+            if (typeof el.setSelectionRange === 'function' && !['number', 'date'].includes((el.type || '').toLowerCase())) {
+              el.setSelectionRange(selStart, selEnd);
+            }
+          } catch (err) {}
+          setTimeout(() => {
+            isImeHandshaking = false;
+          }, 35);
+        });
+      }
+
+      // Если пользователь нажал на поле, которое УЖЕ числится document.activeElement, но буквы ещё не печатались (как на 00:16 видео)
+      document.addEventListener('pointerdown', (e) => {
+        const el = e.target;
+        if (!isTextEditableElement(el) || isImeHandshaking) return;
+        if (document.activeElement === el && !el._nbHasTyped) {
+          setTimeout(() => {
+            if (document.activeElement === el && !el._nbHasTyped) {
+              relatchSameElementIme(el, 'retap_while_focused');
+            }
+          }, 50);
+        }
+      }, true);
+
       document.addEventListener('focusin', (e) => {
-        if (!isTextEditableElement(e.target)) return;
+        const el = e.target;
+        if (!isTextEditableElement(el)) return;
         clearTimeout(blurTimer);
         isTextInputFocused = true;
-        document.body.classList.add('kb-open');
-        logImeEvent('FOCUSIN', `target=${describeEl(e.target)}`);
-        // Плавно прокручиваем активное поле в видимую область, не сбивая InputConnection
-        setTimeout(() => {
-          if (document.activeElement === e.target && typeof e.target.scrollIntoView === 'function') {
-            try { e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (err) {}
+        lastFocusedInput = el;
+        if (!isImeHandshaking) {
+          el._nbHasTyped = false;
+          el._nbRelatchedAfterOpen = false;
+          logImeEvent('FOCUSIN', `target=${describeEl(el)}`);
+          // Если клавиатура УЖЕ была открыта в момент тапа по полю — делаем быстрый relatch через 60 мс
+          const curH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+          if (maxVvHeight - curH > 110 && !el._nbRelatchedAfterOpen) {
+            el._nbRelatchedAfterOpen = true;
+            setTimeout(() => {
+              if (document.activeElement === el && !el._nbHasTyped) {
+                relatchSameElementIme(el, 'kb_already_open');
+              }
+            }, 60);
           }
-        }, 180);
+        }
       });
 
       document.addEventListener('focusout', (e) => {
-        if (!isTextEditableElement(e.target)) return;
-        logImeEvent('FOCUSOUT', `target=${describeEl(e.target)}`);
+        const el = e.target;
+        if (!isTextEditableElement(el) || isImeHandshaking) return;
+        logImeEvent('FOCUSOUT', `target=${describeEl(el)}`);
         clearTimeout(blurTimer);
         blurTimer = setTimeout(() => {
-          if (isTextEditableElement(document.activeElement)) return;
+          if (isTextEditableElement(document.activeElement) || isImeHandshaking) return;
           isTextInputFocused = false;
-          document.body.classList.remove('kb-open');
-        }, 140);
+          lastFocusedInput = null;
+        }, 150);
       });
+
+      // Когда клавиатура Android заканчивает выезжать снизу (visualViewport уменьшился >110px и остановился),
+      // Android WebView при первом открытии теряет InputConnection. Перепривязываем его ровно в момент полной готовности клавиатуры!
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+          const vvH = Math.round(window.visualViewport.height);
+          if (vvH > maxVvHeight) maxVvHeight = vvH;
+          const isKbOpen = (maxVvHeight - vvH) > 110;
+          clearTimeout(vvResizeTimer);
+          if (isKbOpen) {
+            vvResizeTimer = setTimeout(() => {
+              const activeEl = document.activeElement && isTextEditableElement(document.activeElement)
+                ? document.activeElement
+                : lastFocusedInput;
+              if (activeEl && !activeEl._nbHasTyped && !activeEl._nbRelatchedAfterOpen) {
+                activeEl._nbRelatchedAfterOpen = true;
+                relatchSameElementIme(activeEl, `vv_open_${vvH}px`);
+              }
+            }, 65);
+          }
+        });
+      }
+
+      // Страховка на случай, если Gboard прислал keyCode=229 в «холостое» поле и буква не вставилась
+      document.addEventListener('keydown', (e) => {
+        const el = e.target;
+        if (!isTextEditableElement(el) || isImeHandshaking) return;
+        logImeEvent('KEYDOWN', `key="${e.key}" code=${e.keyCode}`);
+        if ((e.keyCode === 229 || e.key === 'Unidentified') && !el._nbHasTyped) {
+          const valBefore = el.value;
+          clearTimeout(deadKeyTimer);
+          deadKeyTimer = setTimeout(() => {
+            if (document.activeElement === el && !el._nbHasTyped && el.value === valBefore) {
+              relatchSameElementIme(el, 'dead_key_229');
+            }
+          }, 65);
+        }
+      }, true);
+
+      document.addEventListener('compositionupdate', (e) => {
+        if (isTextEditableElement(e.target)) {
+          e.target._nbHasTyped = true;
+          clearTimeout(deadKeyTimer);
+        }
+      }, true);
 
       document.addEventListener('input', (e) => {
         if (!isTextEditableElement(e.target)) return;
+        e.target._nbHasTyped = true;
+        clearTimeout(deadKeyTimer);
         logImeEvent('INPUT', `target=${describeEl(e.target)} len=${(e.target.value || '').length}`);
       }, true);
     })();
@@ -4992,7 +5075,8 @@
       return false;
     }
 
-    function renderProAndAdminUI() {
+    function renderProAndAdminUI(forceDuringInput = false) {
+      if (!forceDuringInput && (isTextInputFocused || isImeHandshaking || isTextEditableElement(document.activeElement))) return;
       const info = getAccessInfo();
       const price = Number(paymentConfig.priceRub) || 299;
 
