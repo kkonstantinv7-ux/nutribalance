@@ -70,6 +70,43 @@
         inset 0 -1px 1px 0 rgba(255, 255, 255, 0.05);
     }
 
+    /* Плотный непрозрачный фон для модальных окон (Оплата PRO, Админка, Бэкап, Онбординг и др.) без backdrop-filter */
+    #paywallModal,
+    #adminModal,
+    #onboardingModal,
+    #backupModal,
+    #shareDayModal,
+    #barcodeScannerModal,
+    #nbPromptModal,
+    #editMealSetModal {
+      background-color: rgba(2, 6, 23, 0.92) !important;
+    }
+    #paywallModal > .liquid-glass,
+    #adminModal > .liquid-glass,
+    #onboardingModal > .liquid-glass,
+    #backupModal > .liquid-glass,
+    #shareDayModal > .liquid-glass,
+    #barcodeScannerModal > .liquid-glass,
+    #nbPromptModal > .liquid-glass,
+    #editMealSetModal > .liquid-glass {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.98) 0%, rgba(6, 11, 25, 0.99) 100%) !important;
+      border-color: rgba(255, 255, 255, 0.18);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.22);
+    }
+    #paywallModal .liquid-pill,
+    #adminModal .liquid-pill,
+    #onboardingModal .liquid-pill,
+    #backupModal .liquid-pill,
+    #shareDayModal .liquid-pill,
+    #barcodeScannerModal .liquid-pill {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+    header.liquid-glass,
+    #mobileBottomNav.liquid-glass {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.94) 0%, rgba(6, 11, 25, 0.96) 100%);
+    }
+
     .liquid-pill {
       background: linear-gradient(145deg, rgba(30, 41, 59, 0.50) 0%, rgba(15, 23, 42, 0.34) 100%);
       border: 1px solid rgba(255, 255, 255, 0.12);
@@ -1150,7 +1187,7 @@
   </div>
 
   <!-- МОДАЛЬНОЕ ОКНО: КАРТОЧКА ИТОГОВ ДНЯ (SHARE IMAGE) -->
-  <div id="shareDayModal" class="hidden fixed inset-0 z-50 bg-slate-950/92 flex items-center justify-center p-4 overflow-y-auto">
+  <div id="shareDayModal" class="hidden fixed inset-0 z-50 bg-slate-950/95 flex items-center justify-center p-4 overflow-y-auto">
     <div class="liquid-glass rounded-3xl max-w-md w-full p-4 sm:p-5 space-y-3.5 my-auto animate-card border border-cyan-400/35">
       <div class="flex items-center justify-between">
         <div>
@@ -1196,7 +1233,7 @@
   </div>
 
   <!-- МОДАЛЬНОЕ ОКНО: ОПЛАТА ПО СБП (NUTRIBALANCE PRO — 299 ₽ НАВСЕГДА) -->
-  <div id="paywallModal" class="hidden fixed inset-0 z-50 bg-slate-950/92 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  <div id="paywallModal" class="hidden fixed inset-0 z-50 bg-slate-950/95 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="liquid-glass rounded-3xl max-w-md w-full p-4 sm:p-5 space-y-4 my-auto animate-card border border-emerald-400/35">
       <div class="flex items-start justify-between gap-2">
         <div class="flex items-center gap-3">
@@ -1268,7 +1305,7 @@
           <span>Оплатить <span id="btnPaySbpLinkPrice">299</span> ₽ по ссылке СБП</span>
         </button>
 
-        <div id="paywallRequisitesBox" class="bg-slate-950/65 border border-white/10 rounded-xl p-2.5 space-y-2 text-xs">
+        <div id="paywallRequisitesBox" class="bg-slate-950/75 border border-white/10 rounded-xl p-2.5 space-y-2 text-xs">
           <div class="flex items-center justify-between gap-2">
             <div>
               <div class="text-[10px] text-slate-400">Номер телефона / реквизиты СБП:</div>
@@ -1451,7 +1488,7 @@
           </div>
         </div>
 
-        <div class="bg-slate-950/65 border border-emerald-400/25 rounded-2xl p-2.5 text-xs flex flex-wrap items-center justify-between gap-2">
+        <div class="bg-slate-950/75 border border-emerald-400/25 rounded-2xl p-2.5 text-xs flex flex-wrap items-center justify-between gap-2">
           <div>
             <span class="text-[10px] text-slate-400 block">Сейчас в окне оплаты отображается:</span>
             <span id="admLivePreviewRequisites" class="font-mono font-bold text-emerald-300">+7 (999) 000-00-00 • Т-Банк / Сбербанк (СБП) • Константин К. • 299 ₽</span>
@@ -1709,7 +1746,7 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
     // Поэтому мост выставляет другой тип (search <-> tel), ждёт 2 полных кадра композитора (чтобы IPC дошёл до UI-потока Android)
     // и возвращает фокус в целевое поле, создавая полноценный ThreadedInputConnection для русского ввода (setComposingText).
     function performAndroidImeHandshake(targetEl, reason = 'auto') {
-      if (!IME_HANDSHAKE_ENABLED) { logImeEvent('HANDSHAKE_DISABLED', `reason=${reason}`); return; }
+      if (!IME_HANDSHAKE_ENABLED && reason !== 'dead_key_229' && reason !== 'manual_btn') { logImeEvent('HANDSHAKE_DISABLED', `reason=${reason}`); return; }
       if (!isTextEditableElement(targetEl) || isImeHandshaking) return;
       const bridge = document.getElementById('nbImeBridgeInput');
       if (!bridge) return;
@@ -4784,7 +4821,7 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
 
       modal = document.createElement('div');
       modal.id = 'barcodeScannerModal';
-      modal.className = 'hidden fixed inset-0 z-50 bg-slate-950/92 flex items-center justify-center p-3 sm:p-4 overflow-y-auto';
+      modal.className = 'hidden fixed inset-0 z-50 bg-slate-950/95 flex items-center justify-center p-3 sm:p-4 overflow-y-auto';
       modal.innerHTML = `
         <div class="liquid-glass rounded-3xl max-w-md w-full p-4 sm:p-5 space-y-3.5 animate-card my-auto">
           <div class="flex items-center justify-between">
@@ -7141,7 +7178,7 @@ ${userFoodsPromptLines}
           </li>
         `).join('');
 
-        return `<div class="bg-slate-950/65 border ${borderClass} rounded-xl p-3 flex flex-col justify-between gap-2.5">
+        return `<div class="bg-slate-950/75 border ${borderClass} rounded-xl p-3 flex flex-col justify-between gap-2.5">
           <div class="space-y-1.5">
             <div class="flex items-center justify-between gap-1.5 flex-wrap">
               ${typeBadge}
