@@ -1,12 +1,9 @@
-name: Build NutriBalance Android APK (with Health Connect)
+name: Build NutriBalance Android APK
 
 on:
   workflow_dispatch:
   push:
     branches: [ main, master ]
-    paths:
-      - 'index.html'
-      - '.github/workflows/build-apk.yml'
 
 jobs:
   build-android:
@@ -21,48 +18,19 @@ jobs:
           node-version: '22'
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Prepare Capacitor project from single index.html
+      - name: Prepare Capacitor 8 Android project
         run: |
           mkdir -p www
           cp index.html www/index.html
-          cat << 'EOF' > www/privacypolicy.html
-          <!DOCTYPE html>
-          <html lang="ru"><head><meta charset="utf-8"><title>Политика конфиденциальности NutriBalance</title></head>
-          <body style="font-family:sans-serif;padding:24px;background:#0f172a;color:#f8fafc;">
-            <h1>Политика конфиденциальности NutriBalance</h1>
-            <p>Приложение читает шаги, активные калории, тренировки и вес из Android Health Connect исключительно для отображения в личном дневнике питания пользователя.</p>
-          </body></html>
-          EOF
-
-          cat << 'EOF' > package.json
-          {
-            "name": "nutribalance-app",
-            "version": "1.0.0",
-            "private": true,
-            "dependencies": {
-              "@capacitor/android": "^7.0.0",
-              "@capacitor/cli": "^7.0.0",
-              "@capacitor/core": "^7.0.0",
-              "@capgo/capacitor-health": "^7.0.0"
-            }
-          }
-          EOF
-
-          cat << 'EOF' > capacitor.config.json
-          {
-            "appId": "com.konstantin.nutribalance",
-            "appName": "NutriBalance",
-            "webDir": "www",
-            "bundledWebRuntime": false
-          }
-          EOF
-
-          npm install
+          echo '<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>Privacy Policy</title></head><body><h1>NutriBalance</h1><p>Данные Health Connect используются только в личном дневнике питания пользователя.</p></body></html>' > www/privacypolicy.html
+          npm init -y
+          npm install @capacitor/core@^8.0.0 @capacitor/cli@^8.0.0 @capacitor/android@^8.0.0 @capgo/capacitor-health@^8.0.0 --legacy-peer-deps
+          npx cap init "NutriBalance" "com.konstantin.nutribalance" --web-dir www
           npx cap add android
           npx cap sync android
 
@@ -70,7 +38,7 @@ jobs:
         working-directory: ./android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload NutriBalance.apk artifact
         uses: actions/upload-artifact@v4
