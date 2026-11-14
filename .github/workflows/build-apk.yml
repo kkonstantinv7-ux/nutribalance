@@ -32,6 +32,7 @@ jobs:
           npm install @capacitor/core@^8.0.0 @capacitor/cli@^8.0.0 @capacitor/android@^8.0.0 @capgo/capacitor-health@^8.0.0 --legacy-peer-deps
           npx cap init "NutriBalance" "com.konstantin.nutribalance" --web-dir www
           npx cap add android
+          sed -i 's/minSdkVersion = [0-9]*/minSdkVersion = 26/g' android/variables.gradle
           npx cap sync android
 
       - name: Build Debug APK with Gradle
