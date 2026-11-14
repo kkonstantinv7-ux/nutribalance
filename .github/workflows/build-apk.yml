@@ -1,0 +1,79 @@
+name: Build NutriBalance Android APK (with Health Connect)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'index.html'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Prepare Capacitor project from single index.html
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+          cat << 'EOF' > www/privacypolicy.html
+          <!DOCTYPE html>
+          <html lang="ru"><head><meta charset="utf-8"><title>Политика конфиденциальности NutriBalance</title></head>
+          <body style="font-family:sans-serif;padding:24px;background:#0f172a;color:#f8fafc;">
+            <h1>Политика конфиденциальности NutriBalance</h1>
+            <p>Приложение читает шаги, активные калории, тренировки и вес из Android Health Connect исключительно для отображения в личном дневнике питания пользователя.</p>
+          </body></html>
+          EOF
+
+          cat << 'EOF' > package.json
+          {
+            "name": "nutribalance-app",
+            "version": "1.0.0",
+            "private": true,
+            "dependencies": {
+              "@capacitor/android": "^7.0.0",
+              "@capacitor/cli": "^7.0.0",
+              "@capacitor/core": "^7.0.0",
+              "@capgo/capacitor-health": "^7.0.0"
+            }
+          }
+          EOF
+
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.konstantin.nutribalance",
+            "appName": "NutriBalance",
+            "webDir": "www",
+            "bundledWebRuntime": false
+          }
+          EOF
+
+          npm install
+          npx cap add android
+          npx cap sync android
+
+      - name: Build Debug APK with Gradle
+        working-directory: ./android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload NutriBalance.apk artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NutriBalance-Android-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
