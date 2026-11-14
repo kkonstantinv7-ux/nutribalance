@@ -78,7 +78,8 @@
     #shareDayModal,
     #barcodeScannerModal,
     #nbPromptModal,
-    #editMealSetModal {
+    #editMealSetModal,
+    #watchSyncModal {
       background-color: rgba(2, 6, 23, 0.92) !important;
     }
     #paywallModal > .liquid-glass,
@@ -88,7 +89,8 @@
     #shareDayModal > .liquid-glass,
     #barcodeScannerModal > .liquid-glass,
     #nbPromptModal > .liquid-glass,
-    #editMealSetModal > .liquid-glass {
+    #editMealSetModal > .liquid-glass,
+    #watchSyncModal > .liquid-glass {
       background: linear-gradient(145deg, rgba(15, 23, 42, 0.98) 0%, rgba(6, 11, 25, 0.99) 100%) !important;
       border-color: rgba(255, 255, 255, 0.18);
       box-shadow: 0 24px 48px rgba(0, 0, 0, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.22);
@@ -98,7 +100,8 @@
     #onboardingModal .liquid-pill,
     #backupModal .liquid-pill,
     #shareDayModal .liquid-pill,
-    #barcodeScannerModal .liquid-pill {
+    #barcodeScannerModal .liquid-pill,
+    #watchSyncModal .liquid-pill {
       background: linear-gradient(145deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
       border-color: rgba(255, 255, 255, 0.14);
     }
@@ -962,11 +965,30 @@
       </div>
 
       <div class="liquid-glass rounded-3xl p-4 space-y-4 h-fit">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-2">
           <div>
             <h2 class="font-bold text-sm sm:text-base text-white">Активность и Часы</h2>
             <p class="text-[11px] text-slate-300">Шаги и сожжённые калории за <span id="activityDateLabel" class="text-emerald-300 font-semibold">сегодня</span></p>
           </div>
+          <span id="watchSyncModeBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-semibold whitespace-nowrap">⌚ Часы</span>
+        </div>
+
+        <!-- Панель интеграции с часами Huawei / Samsung / Apple (Health Connect в APK + ИИ-скриншот + Облако) -->
+        <div class="liquid-pill rounded-2xl p-3 space-y-2 border border-emerald-400/25">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-bold text-white">⌚ Huawei • Samsung • Apple Watch</span>
+            <button type="button" onclick="openWatchSyncModal()" class="text-[10px] text-cyan-300 hover:text-white font-semibold underline">⚙️ Настройка / APK</button>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button type="button" id="btnSyncWatchDirect" onclick="syncSmartwatchData(true)" class="btn-spring liquid-btn-primary py-2 px-2.5 rounded-xl font-extrabold text-[11px] flex items-center justify-center gap-1">
+              <span>🔄 Синхр. с часами</span>
+            </button>
+            <label class="btn-spring liquid-pill py-2 px-2.5 rounded-xl font-semibold text-[11px] text-emerald-300 border border-emerald-400/30 flex items-center justify-center gap-1 cursor-pointer text-center">
+              <span>📸 Скриншот часов</span>
+              <input type="file" id="watchScreenshotInput" accept="image/*" onchange="handleWatchScreenshotUpload(event)" class="hidden" />
+            </label>
+          </div>
+          <p id="watchSyncStatusLine" class="text-[10px] text-slate-300 leading-snug">В APK шаги и ккал читаются напрямую из Health Connect (Huawei / Samsung), а в Telegram — из облака или по скриншоту.</p>
         </div>
 
         <div class="space-y-1.5">
@@ -1170,6 +1192,60 @@
     </section>
 
   </main>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: ИНТЕГРАЦИЯ С ЧАСАМИ HUAWEI / SAMSUNG / APPLE И НАСТРОЙКА APK -->
+  <div id="watchSyncModal" class="hidden fixed inset-0 z-50 bg-slate-950/95 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="liquid-glass rounded-3xl max-w-lg w-full p-4 sm:p-5 space-y-3.5 my-auto animate-card border border-emerald-400/35">
+      <div class="flex items-start justify-between gap-2 border-b border-white/10 pb-2.5">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl liquid-pill border border-emerald-400/30 flex items-center justify-center text-lg">⌚</div>
+          <div>
+            <h3 class="font-extrabold text-sm sm:text-base text-white">Подключение часов (Huawei • Samsung • Apple)</h3>
+            <p id="watchModalEnvSubtitle" class="text-[11px] text-emerald-300">Единый код для Telegram Mini App и установленного APK</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeWatchSyncModal()" class="text-slate-300 hover:text-white px-2 py-1 text-sm">✕</button>
+      </div>
+
+      <!-- Защищённая привязка Telegram ID + Секретного ключа для синхронизации между APK и Telegram -->
+      <div class="liquid-pill rounded-2xl p-3 space-y-2 border border-cyan-400/30">
+        <div class="text-xs font-bold text-white">🔐 Защищённая связка APK и Telegram (только для твоего аккаунта):</div>
+        <p id="watchSyncKeyHint" class="text-[11px] text-slate-300 leading-snug">У каждого пользователя своя изолированная база. Чтобы связать установленный APK со своим Telegram-аккаунтом, введи свой Telegram ID и секретный ключ синхронизации (он виден только внутри твоего Telegram):</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input type="text" id="watchLinkedTgIdInput" placeholder="Твой Telegram ID" class="liquid-input w-full rounded-xl px-3 py-1.5 text-xs font-mono text-white" />
+          <input type="text" id="watchLinkedSyncKeyInput" placeholder="Секретный ключ (NBPRO-...)" class="liquid-input w-full rounded-xl px-3 py-1.5 text-xs font-mono text-emerald-300 uppercase" />
+        </div>
+        <button type="button" onclick="saveLinkedTgIdForStandalone()" class="btn-spring liquid-btn-primary w-full py-1.5 rounded-xl font-bold text-xs">Привязать аккаунт по ключу</button>
+      </div>
+
+      <!-- Способ 1: Установленный APK (Health Connect / HealthKit) -->
+      <div class="liquid-pill rounded-2xl p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs font-bold text-emerald-300">1. Прямая связь в установленном APK (Android Health Connect)</span>
+          <button type="button" onclick="openNativeHealthSettings()" class="btn-spring liquid-pill px-2.5 py-1 rounded-lg text-[10px] text-cyan-300 font-semibold">Открыть Health Connect</button>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          • <b>Часы Samsung:</b> в приложении Samsung Health включи синхронизацию с системным <b>Health Connect</b>.<br>
+          • <b>Часы Huawei (GT 6 и др.):</b> в Huawei Health включи передачу данных в <b>Health Connect</b> (напрямую или через приложение <b>Health Sync</b>).<br>
+          • Нажми <b>«🔄 Синхр. с часами»</b> — установленный APK сам прочитает шаги, активные ккал, минуты и вес и отправит их в твой Telegram-аккаунт.
+        </p>
+      </div>
+
+      <!-- Способ 2: Авто-вебхук для Apple Watch (iOS Команды) и Android (MacroDroid) -->
+      <div class="liquid-pill rounded-2xl p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs font-bold text-sky-300">2. Авто-отправка с iPhone (Apple Watch) или Android без APK</span>
+          <button type="button" onclick="copyWatchWebhookConfig()" class="btn-spring liquid-pill px-2.5 py-1 rounded-lg text-[10px] text-emerald-300 font-bold">📋 Скопировать Webhook</button>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          В приложении <b>«Команды» (Shortcuts) на iOS</b> или <b>MacroDroid на Android</b> создай отправку POST-запроса на URL воркера — данные сразу попадут в твой дневник:
+        </p>
+        <pre id="watchWebhookSampleBox" class="bg-slate-950/90 border border-white/10 rounded-xl p-2 text-[10px] font-mono text-emerald-300 overflow-x-auto select-all"></pre>
+      </div>
+
+      <button type="button" onclick="closeWatchSyncModal()" class="btn-spring liquid-pill w-full py-2 rounded-xl text-xs font-semibold text-slate-200 hover:text-white">Готово</button>
+    </div>
   </div>
 
   <!-- МОДАЛЬНОЕ ОКНО: КАРТОЧКА ИТОГОВ ДНЯ (SHARE IMAGE) -->
@@ -2062,7 +2138,32 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
     const tg = window.Telegram?.WebApp;
     const isTelegramMiniApp = Boolean(tg && tg.initDataUnsafe && tg.initDataUnsafe.user);
     const tgUser = tg?.initDataUnsafe?.user || null;
-    const tgUserId = tgUser?.id ? String(tgUser.id) : 'local_browser_user';
+    const STANDALONE_TG_ID_KEY = 'nutribalance_linked_tg_id';
+    const STANDALONE_SYNC_KEY_STORAGE = 'nutribalance_linked_sync_key';
+    const LOCAL_DEVICE_ID_KEY = 'nutribalance_local_device_id';
+    function getOrCreateLocalDeviceId() {
+      try {
+        let devId = localStorage.getItem(LOCAL_DEVICE_ID_KEY);
+        if (!devId || devId === '939208462') {
+          devId = 'local_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+          localStorage.setItem(LOCAL_DEVICE_ID_KEY, devId);
+        }
+        return devId;
+      } catch (e) {
+        return 'local_browser_user';
+      }
+    }
+    // Если ранее в превью автоматически записался чужой ID без ключа — очищаем его
+    try {
+      if (!isTelegramMiniApp && localStorage.getItem(STANDALONE_TG_ID_KEY) === '939208462' && !localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE)) {
+        localStorage.removeItem(STANDALONE_TG_ID_KEY);
+      }
+    } catch (e) {}
+    let tgUserId = tgUser?.id
+      ? String(tgUser.id)
+      : (localStorage.getItem(STANDALONE_TG_ID_KEY) && localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE)
+          ? localStorage.getItem(STANDALONE_TG_ID_KEY)
+          : getOrCreateLocalDeviceId());
 
     if (tg) {
       try {
@@ -2616,6 +2717,8 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
       if (isTelegramMiniApp) {
         await syncFromTelegramCloudAndMerge();
         loaded = Boolean(state.isConfigured);
+      } else if (localStorage.getItem(STANDALONE_TG_ID_KEY) && localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE)) {
+        try { await syncUserAccessFromServer(false); loaded = Boolean(state.isConfigured); } catch (e) {}
       }
 
       document.body.classList.toggle('battery-saver', Boolean(state.profile?.batterySaver));
@@ -5246,7 +5349,9 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
       renderProAndAdminUI();
 
       setTimeout(() => {
-        syncUserAccessFromServer(false);
+        if (isTelegramMiniApp || (localStorage.getItem(STANDALONE_TG_ID_KEY) && localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE))) {
+          syncUserAccessFromServer(false);
+        }
       }, 600);
     }
 
@@ -5712,7 +5817,7 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
 
     async function pushDiaryToServer() {
       const proxyUrl = (AI_PROXY_URL || '').trim();
-      if (!proxyUrl || tgUserId === 'local_browser_user') return;
+      if (!proxyUrl || String(tgUserId).startsWith('local_')) return;
       try {
         await fetchWithTimeout(proxyUrl, {
           method: 'POST',
@@ -5726,7 +5831,8 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
             name: tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : 'Пользователь',
             username: tgUser?.username ? `@${tgUser.username}` : '',
             trialStartTs: subState.trialStartTs,
-            proCode: subState.proCode || '',
+            proCode: subState.proCode || localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || '',
+            syncKey: localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || subState.proCode || '',
             diarySync: buildCompactDiarySyncPayload()
           })
         }, 8000);
@@ -5749,7 +5855,8 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
             name: tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : 'Пользователь',
             username: tgUser?.username ? `@${tgUser.username}` : '',
             trialStartTs: subState.trialStartTs,
-            proCode: subState.proCode || '',
+            proCode: subState.proCode || localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || '',
+            syncKey: localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || subState.proCode || '',
             diarySync: buildCompactDiarySyncPayload()
           })
         }, 8000);
@@ -7386,7 +7493,360 @@ ${userFoodsPromptLines}
     }
 
     // Инициализация состояния, подписки и стартовой вкладки
-    loadState(); loadSubscriptionAndConfig(); switchTab('diary');
+
+    // =====================================================================
+    // 17. ИНТЕГРАЦИЯ С ЧАСАМИ HUAWEI / SAMSUNG / APPLE (CAPACITOR HEALTH CONNECT, WEBHOOK И ИИ-СКРИНШОТ)
+    // =====================================================================
+    function getCapacitorHealthPlugin() {
+      const cap = window.Capacitor;
+      if (!cap || !cap.Plugins) return null;
+      return cap.Plugins.Health || cap.Plugins.CapacitorHealth || cap.Plugins.HealthFitness || null;
+    }
+
+    function isRunningInNativeApk() {
+      return Boolean(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+    }
+
+    function updateWatchEnvIndicators() {
+      const badge = document.getElementById('watchSyncModeBadge');
+      const statusLine = document.getElementById('watchSyncStatusLine');
+      const sub = document.getElementById('watchModalEnvSubtitle');
+      const nativeApk = isRunningInNativeApk();
+      const plugin = getCapacitorHealthPlugin();
+
+      if (badge) {
+        badge.textContent = nativeApk ? '📲 APK • Health Connect' : '☁️ Telegram • Облако + ИИ';
+      }
+      if (statusLine) {
+        statusLine.textContent = nativeApk
+          ? (plugin
+              ? 'Прямой доступ к Health Connect / HealthKit активен. Нажми «Синхр. с часами» для чтения шагов, ккал и веса.'
+              : 'Запущено в APK. Нажми «Синхр. с часами» для получения данных из Health Connect или облака.')
+          : 'В Telegram данные подтягиваются из облака (от APK или вебхука) либо распознаются за 2 сек по скриншоту часов.';
+      }
+      if (sub) {
+        sub.textContent = nativeApk
+          ? `Режим: Установленное приложение APK (ID базы: ${tgUserId})`
+          : `Режим: Telegram Mini App (ID базы: ${tgUserId})`;
+      }
+    }
+
+    function computeClientSyncKey(uidStr) {
+      const clean = String(uidStr || '').trim();
+      let h1 = 0x811c9dc5;
+      const s = clean + ':NB_LIQUID_PRO_299_SALT';
+      for (let i = 0; i < s.length; i++) {
+        h1 ^= s.charCodeAt(i);
+        h1 = Math.imul(h1, 0x01000193) >>> 0;
+      }
+      return 'NBPRO-' + h1.toString(36).toUpperCase().padStart(6, '0').slice(0, 6);
+    }
+
+    function openWatchSyncModal() {
+      triggerHaptic('light');
+      updateWatchEnvIndicators();
+      const idInput = document.getElementById('watchLinkedTgIdInput');
+      const keyInput = document.getElementById('watchLinkedSyncKeyInput');
+      const hintEl = document.getElementById('watchSyncKeyHint');
+      if (isTelegramMiniApp && tgUser?.id) {
+        const myKey = subState.proCode || computeClientSyncKey(tgUser.id);
+        if (idInput) idInput.value = String(tgUser.id);
+        if (keyInput) keyInput.value = myKey;
+        if (hintEl) hintEl.innerHTML = `Твой личный ID: <b class="text-white font-mono">${tgUser.id}</b> • Твой секретный ключ для APK: <b class="text-emerald-300 font-mono select-all">${myKey}</b> (никому его не передавай).`;
+      } else {
+        if (idInput) idInput.value = localStorage.getItem(STANDALONE_TG_ID_KEY) || '';
+        if (keyInput) keyInput.value = localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || '';
+      }
+      const sampleBox = document.getElementById('watchWebhookSampleBox');
+      if (sampleBox) {
+        const samplePayload = {
+          action: 'sync_watch',
+          userId: String(tgUserId),
+          date: currentDate,
+          steps: 8500,
+          burnedKcal: 420,
+          activeMinutes: 45,
+          weight: state.profile?.weight || 80,
+          source: 'Huawei Watch GT 6'
+        };
+        sampleBox.textContent = `POST ${AI_PROXY_URL}\n` + JSON.stringify(samplePayload, null, 2);
+      }
+      document.getElementById('watchSyncModal')?.classList.remove('hidden');
+    }
+
+    function closeWatchSyncModal() {
+      document.getElementById('watchSyncModal')?.classList.add('hidden');
+    }
+
+    function saveLinkedTgIdForStandalone() {
+      const rawId = (document.getElementById('watchLinkedTgIdInput')?.value || '').trim();
+      const rawKey = (document.getElementById('watchLinkedSyncKeyInput')?.value || '').trim().toUpperCase();
+      if (!rawId || !rawKey) return showNotice('Введи и свой Telegram ID, и секретный ключ синхронизации из Telegram!');
+      localStorage.setItem(STANDALONE_TG_ID_KEY, rawId);
+      localStorage.setItem(STANDALONE_SYNC_KEY_STORAGE, rawKey);
+      if (!isTelegramMiniApp) {
+        tgUserId = rawId;
+      }
+      updateWatchEnvIndicators();
+      syncUserAccessFromServer(true);
+      showNotice(`Аккаунт ${rawId} успешно привязан по секретному ключу!`);
+    }
+
+    function copyWatchWebhookConfig() {
+      const payload = {
+        action: 'sync_watch',
+        userId: String(tgUserId),
+        date: getLocalDateString(),
+        steps: 8500,
+        burnedKcal: 420,
+        activeMinutes: 45,
+        weight: state.profile?.weight || 80,
+        source: 'Huawei / Samsung / Apple Watch'
+      };
+      const textToCopy = `URL (POST): ${AI_PROXY_URL}\nHeaders: {"Content-Type": "application/json"}\nBody:\n${JSON.stringify(payload, null, 2)}`;
+      copyTextSafe(textToCopy, 'Настройки вебхука для часов скопированы!');
+    }
+
+    async function openNativeHealthSettings() {
+      const plugin = getCapacitorHealthPlugin();
+      if (plugin && typeof plugin.openHealthConnectSettings === 'function') {
+        try {
+          await plugin.openHealthConnectSettings();
+          return;
+        } catch (e) {}
+      }
+      showNotice('Открытие системного экрана Health Connect доступно внутри установленного на Android .APK приложения.');
+    }
+
+    async function applyWatchMetricsToDiary({ steps = 0, burnedKcal = 0, activeMinutes = 0, weight = 0, source = 'Смарт-часы' }) {
+      const day = ensureDay(currentDate);
+      const prev = day.activity || { steps: 0, burnedKcal: 0, activeMinutes: 0, note: '' };
+
+      const newSteps = Math.max(Number(prev.steps) || 0, Math.round(Number(steps) || 0));
+      const newBurned = Math.max(Number(prev.burnedKcal) || 0, Math.round(Number(burnedKcal) || 0));
+      const newMins = Math.max(Number(prev.activeMinutes) || 0, Math.round(Number(activeMinutes) || 0));
+
+      day.activity = {
+        steps: newSteps,
+        burnedKcal: newBurned,
+        activeMinutes: newMins,
+        note: prev.note ? prev.note : `⌚ ${source}`
+      };
+      day.updatedAt = Date.now();
+
+      let weightUpdated = false;
+      const wNum = round1(Number(weight) || 0);
+      if (wNum >= 35 && wNum <= 280) {
+        state.profile.weight = wNum;
+        state.profile.updatedAt = Date.now();
+        state.weightHistory = state.weightHistory || [];
+        const existingIdx = state.weightHistory.findIndex(w => w.date === currentDate);
+        if (existingIdx >= 0) {
+          state.weightHistory[existingIdx].weight = wNum;
+          state.weightHistory[existingIdx].note = `⌚ ${source}`;
+        } else {
+          state.weightHistory.push({ id: uid('w'), date: currentDate, weight: wNum, note: `⌚ ${source}` });
+        }
+        weightUpdated = true;
+      }
+
+      saveState();
+      renderAll();
+
+      // Сразу пушим обновлённые данные часов на Cloudflare Worker, чтобы они появились и в Telegram, и в APK
+      try {
+        const proxyUrl = (AI_PROXY_URL || '').trim();
+        if (proxyUrl) {
+          await fetchWithTimeout(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Telegram-Init-Data': tg?.initData || '' },
+            body: JSON.stringify({
+              action: 'sync_watch',
+              userId: String(tgUserId),
+              date: currentDate,
+              steps: newSteps,
+              burnedKcal: newBurned,
+              activeMinutes: newMins,
+              weight: weightUpdated ? wNum : undefined,
+              source
+            })
+          }, 8000);
+        }
+      } catch (e) {}
+
+      return { newSteps, newBurned, newMins, weightUpdated, wNum };
+    }
+
+    async function syncSmartwatchData(manualClick = true) {
+      triggerHaptic('light');
+      updateWatchEnvIndicators();
+      const btn = document.getElementById('btnSyncWatchDirect');
+      const prevLabel = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳ Синхр...</span>';
+      }
+
+      try {
+        const plugin = getCapacitorHealthPlugin();
+        if (plugin) {
+          if (typeof plugin.requestAuthorization === 'function') {
+            await plugin.requestAuthorization({
+              read: ['steps', 'calories', 'weight', 'workouts'],
+              write: []
+            });
+          }
+
+          const parts = currentDate.split('-').map(Number);
+          const startOfDay = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0).toISOString();
+          const endOfDay = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59, 999).toISOString();
+
+          let stepsTotal = 0;
+          let burnedTotal = 0;
+          let activeMinsTotal = 0;
+          let latestWeight = 0;
+
+          if (typeof plugin.queryAggregated === 'function') {
+            try {
+              const stepAgg = await plugin.queryAggregated({ dataType: 'steps', startDate: startOfDay, endDate: endOfDay, bucket: 'day', aggregation: 'sum' });
+              const arr = stepAgg?.samples || stepAgg?.aggregatedData || [];
+              stepsTotal = arr.reduce((s, item) => s + (Number(item.value ?? item.quantity) || 0), 0);
+            } catch (e) {}
+            try {
+              const calAgg = await plugin.queryAggregated({ dataType: 'calories', startDate: startOfDay, endDate: endOfDay, bucket: 'day', aggregation: 'sum' });
+              const arr = calAgg?.samples || calAgg?.aggregatedData || [];
+              burnedTotal = arr.reduce((s, item) => s + (Number(item.value ?? item.quantity) || 0), 0);
+            } catch (e) {}
+          }
+
+          if (typeof plugin.readSamples === 'function') {
+            if (!stepsTotal) {
+              try {
+                const sRes = await plugin.readSamples({ dataType: 'steps', startDate: startOfDay, endDate: endOfDay, limit: 500 });
+                stepsTotal = (sRes?.samples || []).reduce((s, x) => s + (Number(x.value ?? x.quantity) || 0), 0);
+              } catch (e) {}
+            }
+            if (!burnedTotal) {
+              try {
+                const cRes = await plugin.readSamples({ dataType: 'calories', startDate: startOfDay, endDate: endOfDay, limit: 500 });
+                burnedTotal = (cRes?.samples || []).reduce((s, x) => s + (Number(x.value ?? x.quantity) || 0), 0);
+              } catch (e) {}
+            }
+            try {
+              const wRes = await plugin.readSamples({ dataType: 'weight', startDate: new Date(Date.now() - 14 * 86400000).toISOString(), endDate: endOfDay, limit: 10 });
+              const wSamples = wRes?.samples || [];
+              if (wSamples.length > 0) {
+                const lastSample = wSamples[wSamples.length - 1];
+                latestWeight = Number(lastSample.value ?? lastSample.quantity) || 0;
+              }
+            } catch (e) {}
+          }
+
+          if (typeof plugin.queryWorkouts === 'function') {
+            try {
+              const wOut = await plugin.queryWorkouts({ startDate: startOfDay, endDate: endOfDay });
+              const workouts = wOut?.workouts || [];
+              activeMinsTotal = workouts.reduce((s, w) => s + Math.round((Number(w.duration) || 0) / 60), 0);
+              if (!burnedTotal) {
+                burnedTotal = workouts.reduce((s, w) => s + (Number(w.totalEnergyBurned ?? w.calories) || 0), 0);
+              }
+            } catch (e) {}
+          }
+
+          const res = await applyWatchMetricsToDiary({
+            steps: stepsTotal,
+            burnedKcal: burnedTotal,
+            activeMinutes: activeMinsTotal,
+            weight: latestWeight,
+            source: 'Health Connect (Часы)'
+          });
+
+          triggerHaptic('success');
+          showNotice(`⌚ Синхронизировано с Health Connect: ${res.newSteps} шаг., ${res.newBurned} ккал${res.weightUpdated ? `, вес ${res.wNum} кг` : ''}`);
+          return;
+        }
+
+        await syncUserAccessFromServer(false);
+        const day = ensureDay(currentDate);
+        const act = day.activity || { steps: 0, burnedKcal: 0, activeMinutes: 0 };
+        if (manualClick) {
+          if ((Number(act.steps) || 0) > 0 || (Number(act.burnedKcal) || 0) > 0) {
+            showNotice(`☁️ Данные за ${currentDate} обновлены из облака: ${act.steps || 0} шаг., ${act.burnedKcal || 0} ккал`);
+          } else {
+            showNotice('Прикрепи скриншот из Huawei Health / Samsung Health / Apple Fitness кнопкой «📸 Скриншот часов» или настрой авто-синхронизацию в «⚙️ Настройка / APK»!');
+          }
+        }
+      } catch (err) {
+        if (manualClick) showNotice('Ошибка синхронизации с часами: ' + (err.message || err));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = prevLabel;
+        }
+      }
+    }
+
+    async function handleWatchScreenshotUpload(event) {
+      const file = event?.target?.files?.[0];
+      if (!file) return;
+      event.target.value = '';
+
+      const statusLine = document.getElementById('watchSyncStatusLine');
+      if (statusLine) statusLine.textContent = '⏳ ИИ распознаёт показатели со скриншота часов (Huawei / Samsung / Apple)...';
+      showNotice('⏳ Распознаю шаги, калории и активность со скриншота часов...');
+
+      try {
+        const base64Img = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const prompt = `Ты — точный парсер фитнес-приложений и смарт-часов (Huawei Health, Samsung Health, Apple Fitness / Apple Health, Mi Fitness / Zepp, Garmin).
+Внимательно изучи скриншот или фото циферблата часов и извлеки показатели за день или тренировку.
+Верни СТРОГО валидный JSON-объект без лишнего текста:
+{
+  "watchBrand": "Huawei Health | Samsung Health | Apple Watch | Смарт-часы",
+  "steps": число_шагов_за_день_или_0,
+  "burnedKcal": число_активных_сожженных_калорий_или_0,
+  "activeMinutes": число_минут_активности_или_тренировки_или_0,
+  "weight": вес_тела_в_кг_если_есть_на_экране_иначе_0,
+  "workoutNote": "краткое описание активности, если видно (например: Ходьба / Тренировка)"
+}`;
+
+        const { parsed } = await callAIJson(prompt, base64Img);
+        const steps = Math.max(0, Math.round(Number(parsed?.steps) || 0));
+        const burnedKcal = Math.max(0, Math.round(Number(parsed?.burnedKcal) || 0));
+        const activeMinutes = Math.max(0, Math.round(Number(parsed?.activeMinutes) || 0));
+        const weight = Number(parsed?.weight) || 0;
+        const brand = String(parsed?.watchBrand || 'Смарт-часы').trim();
+        const note = String(parsed?.workoutNote || '').trim();
+
+        if (!steps && !burnedKcal && !activeMinutes && !weight) {
+          throw new Error('Не удалось найти шаги, калории или вес на изображении');
+        }
+
+        const res = await applyWatchMetricsToDiary({
+          steps,
+          burnedKcal,
+          activeMinutes,
+          weight,
+          source: note ? `${brand} (${note})` : brand
+        });
+
+        if (statusLine) {
+          statusLine.textContent = `✓ Распознано (${brand}): ${res.newSteps} шаг., ${res.newBurned} ккал, ${res.newMins} мин${res.weightUpdated ? `, вес ${res.wNum} кг` : ''}`;
+        }
+        triggerHaptic('success');
+        showNotice(`⌚ Данные с часов (${brand}) добавлены: ${res.newSteps} шаг., ${res.newBurned} ккал!`);
+      } catch (err) {
+        if (statusLine) statusLine.textContent = '⚠️ Не удалось распознать скриншот часов. Попробуй другой снимок.';
+        showNotice('Не удалось распознать скриншот часов: ' + (err.message || err));
+      }
+    }
+
+    loadState(); loadSubscriptionAndConfig(); switchTab('diary'); updateWatchEnvIndicators();
   </script>
 </body>
 </html>
