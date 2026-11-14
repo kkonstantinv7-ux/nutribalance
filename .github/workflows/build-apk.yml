@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches: [ main, master ]
+    paths:
+      - '.github/workflows/build-apk.yml'
 
 jobs:
   build-android:
@@ -23,14 +25,14 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Prepare Capacitor 8 Android project
+      - name: Prepare Capacitor 8 Android project with Live GitHub Pages auto-update
         run: |
           mkdir -p www
           cp index.html www/index.html
           echo '<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>Privacy Policy</title></head><body><h1>NutriBalance</h1><p>Данные Health Connect используются только в личном дневнике питания пользователя.</p></body></html>' > www/privacypolicy.html
           npm init -y
           npm install @capacitor/core@^8.0.0 @capacitor/cli@^8.0.0 @capacitor/android@^8.0.0 @capgo/capacitor-health@^8.0.0 --legacy-peer-deps
-          npx cap init "NutriBalance" "com.konstantin.nutribalance" --web-dir www
+          node -e 'fs.writeFileSync("capacitor.config.json", JSON.stringify({ appId: "com.konstantin.nutribalance", appName: "NutriBalance", webDir: "www", server: { url: "https://kkonstantinv7-ux.github.io/nutribalance/", cleartext: true, allowNavigation: ["kkonstantinv7-ux.github.io", "*.workers.dev"] } }, null, 2))'
           npx cap add android
           sed -i 's/minSdkVersion = [0-9]*/minSdkVersion = 26/g' android/variables.gradle
           npx cap sync android
