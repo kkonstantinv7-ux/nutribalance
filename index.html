@@ -2162,17 +2162,31 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
         return 'local_browser_user';
       }
     }
-    // Если ранее в превью автоматически записался чужой ID без ключа — очищаем его
-    try {
-      if (!isTelegramMiniApp && localStorage.getItem(STANDALONE_TG_ID_KEY) === '939208462' && !localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE)) {
-        localStorage.removeItem(STANDALONE_TG_ID_KEY);
+
+
+        function computeClientSyncKey(uidStr) {
+      const clean = String(uidStr || '').trim();
+      let h1 = 0x811c9dc5;
+      const s = clean + ':NB_LIQUID_PRO_299_SALT';
+      for (let i = 0; i < s.length; i++) {
+        h1 ^= s.charCodeAt(i);
+        h1 = Math.imul(h1, 0x01000193) >>> 0;
       }
-    } catch (e) {}
+      return 'NBPRO-' + h1.toString(36).toUpperCase().padStart(6, '0').slice(0, 6);
+    }
+
+    const isNativeCapacitorApp = Boolean(
+      (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) ||
+      (window.Capacitor && window.Capacitor.Plugins) ||
+      /wv|Capacitor/i.test(navigator.userAgent || '')
+    );
+
+    // В установленном на телефон APK автоматически связываем базу с твоим Telegram ID 939208462 (а в обычном браузере на ПК — изолированный local_ ID)
     let tgUserId = tgUser?.id
       ? String(tgUser.id)
-      : (localStorage.getItem(STANDALONE_TG_ID_KEY) && localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE)
+      : (localStorage.getItem(STANDALONE_TG_ID_KEY)
           ? localStorage.getItem(STANDALONE_TG_ID_KEY)
-          : getOrCreateLocalDeviceId());
+          : (isNativeCapacitorApp ? '939208462' : getOrCreateLocalDeviceId()));
 
     if (tg) {
       try {
@@ -2564,7 +2578,7 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
       });
       merged.bodyMeasurements = Array.from(measMap.values()).sort((a, b) => String(a.date).localeCompare(String(b.date))).slice(-40);
 
-      // 5) Объединяем дни дневника по каждой дате
+      // 5) Поэлементное объединение каждого дня (приёмы пищи по ID, шаги, вода и заметки не затирают друг друга между APK и Telegram)
       const allDates = new Set([...Object.keys(loc.days || {}), ...Object.keys(rem.days || {})]);
       const mergedDays = {};
       allDates.forEach(d => {
@@ -2575,13 +2589,41 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
 
         const tsLoc = Number(dLoc.updatedAt) || 0;
         const tsRem = Number(dRem.updatedAt) || 0;
-        if (tsRem > tsLoc) {
-          mergedDays[d] = dRem;
-        } else if (tsLoc > tsRem) {
-          mergedDays[d] = dLoc;
-        } else {
-          mergedDays[d] = scoreDayCompleteness(dRem) >= scoreDayCompleteness(dLoc) ? dRem : dLoc;
-        }
+        const delItemIds = Array.from(new Set([...(dLoc.deletedItemIds || []), ...(dRem.deletedItemIds || [])])).slice(-100);
+        const delSet = new Set(delItemIds);
+
+        const itemMap = new Map();
+        const orderedSource = tsRem >= tsLoc ? [...(dLoc.items || []), ...(dRem.items || [])] : [...(dRem.items || []), ...(dLoc.items || [])];
+        orderedSource.forEach(it => {
+          if (!it || !it.name) return;
+          const itemKey = it.id || `${it.meal}_${it.name}_${it.grams}_${it.kcal}`;
+          if (delSet.has(itemKey)) return;
+          const prev = itemMap.get(itemKey);
+          if (!prev || (Number(it.updatedAt) || 0) >= (Number(prev.updatedAt) || 0)) {
+            itemMap.set(itemKey, it);
+          }
+        });
+
+        const actLoc = dLoc.activity || {};
+        const actRem = dRem.activity || {};
+        const newerDay = tsRem >= tsLoc ? dRem : dLoc;
+        const olderDay = tsRem >= tsLoc ? dLoc : dRem;
+
+        mergedDays[d] = {
+          water: (Number(newerDay.water) || 0) > 0 ? Number(newerDay.water) : Math.max(Number(dLoc.water) || 0, Number(dRem.water) || 0),
+          items: Array.from(itemMap.values()),
+          deletedItemIds: delItemIds,
+          activity: {
+            steps: Math.max(Number(actLoc.steps) || 0, Number(actRem.steps) || 0),
+            burnedKcal: Math.max(Number(actLoc.burnedKcal) || 0, Number(actRem.burnedKcal) || 0),
+            activeMinutes: Math.max(Number(actLoc.activeMinutes) || 0, Number(actRem.activeMinutes) || 0),
+            note: (newerDay.activity?.note || olderDay.activity?.note || '')
+          },
+          aiReview: newerDay.aiReview || olderDay.aiReview || null,
+          celebratedProtein: Boolean(dLoc.celebratedProtein || dRem.celebratedProtein),
+          celebratedKcal: Boolean(dLoc.celebratedKcal || dRem.celebratedKcal),
+          updatedAt: Math.max(tsLoc, tsRem)
+        };
       });
       merged.days = mergedDays;
       return merged;
@@ -2812,12 +2854,12 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
       if (isTelegramMiniApp) {
         await syncFromTelegramCloudAndMerge();
         loaded = Boolean(state.isConfigured);
-      } else {
-        try {
-          await syncUserAccessFromServer(false);
-          loaded = Boolean(state.isConfigured);
-        } catch (e) {}
       }
+      // Обязательно синхронизируемся с общим облаком Cloudflare Worker и в Telegram, и в APK!
+      try {
+        await syncUserAccessFromServer(false);
+        loaded = Boolean(state.isConfigured);
+      } catch (e) {}
 
       document.body.classList.toggle('battery-saver', Boolean(state.profile?.batterySaver));
 
@@ -4394,10 +4436,15 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
       const idx = day.items.findIndex(i => i.id === itemId);
       if (idx < 0) return;
       const removed = day.items.splice(idx, 1)[0];
+      if (!Array.isArray(day.deletedItemIds)) day.deletedItemIds = [];
+      if (removed?.id && !day.deletedItemIds.includes(removed.id)) day.deletedItemIds.push(removed.id);
       triggerHaptic('light');
       saveState();
       showNotice(`Удалено: «${removed.name}» (${removed.grams}г)`, () => {
         const d = ensureDay(currentDate);
+        if (Array.isArray(d.deletedItemIds)) {
+          d.deletedItemIds = d.deletedItemIds.filter(id => id !== removed.id);
+        }
         d.items.splice(Math.min(idx, d.items.length), 0, removed);
         saveState();
       });
@@ -4423,6 +4470,7 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
       if (mealChanged) {
         item.meal = newMealKey;
       }
+      item.updatedAt = Date.now();
 
       triggerHaptic('light');
       checkAndCelebrateGoals(day);
@@ -4943,6 +4991,11 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
     });
     window.addEventListener('pagehide', flushPending);
     setInterval(checkDateRollover, 60000);
+    setInterval(() => {
+      if (!document.hidden && !isTextInputFocused && !isTextEditableElement(document.activeElement)) {
+        syncUserAccessFromServer(false);
+      }
+    }, 10000);
 
     // =====================================================================
     // 13б. СКАНЕР ШТРИХКОДОВ (КАМЕРА + ФОТО + ИИ GEMINI VISION РЕЗЕРВ)
@@ -5895,8 +5948,9 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
     async function pushDiaryToServer() {
       const proxyUrl = (AI_PROXY_URL || '').trim();
       if (!proxyUrl || tgUserId === 'local_browser_user') return;
+      const autoSyncKey = localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || subState.proCode || computeClientSyncKey(tgUserId);
       try {
-        await fetchWithTimeout(proxyUrl, {
+        const resp = await fetchWithTimeout(proxyUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -5908,11 +5962,26 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
             name: tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : 'Пользователь',
             username: tgUser?.username ? `@${tgUser.username}` : '',
             trialStartTs: subState.trialStartTs,
-            proCode: subState.proCode || localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || '',
-            syncKey: localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || subState.proCode || '',
+            proCode: autoSyncKey,
+            syncKey: autoSyncKey,
             diarySync: buildCompactDiarySyncPayload()
           })
         }, 8000);
+        if (resp.ok) {
+          const data = await resp.json().catch(() => null);
+          if (data?.diarySync && typeof data.diarySync === 'object') {
+            const beforeStr = JSON.stringify(state);
+            state = mergeDiaryStates(state, data.diarySync);
+            if (JSON.stringify(state) !== beforeStr) {
+              persistLocal();
+              if (isTelegramMiniApp) saveToTelegramCloud(state);
+              if (!isTextInputFocused && !isTextEditableElement(document.activeElement)) {
+                renderAll();
+              }
+            }
+          }
+          updateBadge('Синхронизировано', true);
+        }
       } catch (e) {}
     }
 
@@ -5932,8 +6001,8 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
             name: tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : 'Пользователь',
             username: tgUser?.username ? `@${tgUser.username}` : '',
             trialStartTs: subState.trialStartTs,
-            proCode: subState.proCode || localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || '',
-            syncKey: localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || subState.proCode || '',
+            proCode: localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || subState.proCode || computeClientSyncKey(tgUserId),
+            syncKey: localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE) || subState.proCode || computeClientSyncKey(tgUserId),
             diarySync: buildCompactDiarySyncPayload()
           })
         }, 8000);
@@ -7613,16 +7682,7 @@ ${userFoodsPromptLines}
       }
     }
 
-    function computeClientSyncKey(uidStr) {
-      const clean = String(uidStr || '').trim();
-      let h1 = 0x811c9dc5;
-      const s = clean + ':NB_LIQUID_PRO_299_SALT';
-      for (let i = 0; i < s.length; i++) {
-        h1 ^= s.charCodeAt(i);
-        h1 = Math.imul(h1, 0x01000193) >>> 0;
-      }
-      return 'NBPRO-' + h1.toString(36).toUpperCase().padStart(6, '0').slice(0, 6);
-    }
+
 
     function openWatchSyncModal() {
       triggerHaptic('light');
