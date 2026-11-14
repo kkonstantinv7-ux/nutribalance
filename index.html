@@ -2148,10 +2148,15 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
     function getOrCreateLocalDeviceId() {
       try {
         let devId = localStorage.getItem(LOCAL_DEVICE_ID_KEY);
-        if (!devId || devId === '939208462') {
-          devId = 'local_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-          localStorage.setItem(LOCAL_DEVICE_ID_KEY, devId);
+        if (!devId) {
+          const m = document.cookie.match(/(?:^|;\s*)nb_dev_id=([^;]+)/);
+          if (m && m[1]) devId = decodeURIComponent(m[1]);
         }
+        if (!devId || devId === '939208462') {
+          devId = 'local_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+        }
+        localStorage.setItem(LOCAL_DEVICE_ID_KEY, devId);
+        document.cookie = `nb_dev_id=${encodeURIComponent(devId)}; path=/; max-age=315360000; SameSite=Lax`;
         return devId;
       } catch (e) {
         return 'local_browser_user';
@@ -2362,9 +2367,60 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
       { id: 'v96', name: 'Сывороточный протеин (порошок, 1 порция ≈ 30г)', kcal: 390, p: 78, f: 5.5, c: 7.5, servingGrams: 30, servingLabel: '1 скуп (30г)' }
     ];
 
+    const PRIMARY_STORAGE_KEY = 'nutribalance_state_v3_main';
     const STORAGE_KEY = `nutribalance_user_v3_${tgUserId}`;
     const LEGACY_PHOTO_KEY = `nutribalance_last_photo_${tgUserId}`;
     const MAX_DAYS_KEEP_LOCAL = 180;
+
+    function getDynamicStorageKey() {
+      return `nutribalance_user_v3_${tgUserId}`;
+    }
+
+    // Надёжное дублирование состояния в IndexedDB для Android WebView / APK
+    function idbSaveState(stateObj) {
+      try {
+        if (!window.indexedDB) return;
+        const req = indexedDB.open('NutriBalanceLocalDB', 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
+        };
+        req.onsuccess = (e) => {
+          try {
+            const db = e.target.result;
+            const tx = db.transaction('kv', 'readwrite');
+            tx.objectStore('kv').put(JSON.stringify(stateObj), PRIMARY_STORAGE_KEY);
+          } catch (err) {}
+        };
+      } catch (e) {}
+    }
+
+    function idbLoadState() {
+      return new Promise((resolve) => {
+        try {
+          if (!window.indexedDB) return resolve(null);
+          const req = indexedDB.open('NutriBalanceLocalDB', 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
+          };
+          req.onsuccess = (e) => {
+            try {
+              const db = e.target.result;
+              const tx = db.transaction('kv', 'readonly');
+              const getReq = tx.objectStore('kv').get(PRIMARY_STORAGE_KEY);
+              getReq.onsuccess = () => {
+                try {
+                  resolve(getReq.result ? JSON.parse(getReq.result) : null);
+                } catch (err) { resolve(null); }
+              };
+              getReq.onerror = () => resolve(null);
+            } catch (err) { resolve(null); }
+          };
+          req.onerror = () => resolve(null);
+        } catch (e) { resolve(null); }
+      });
+    }
 
     function defaultState() {
       return {
@@ -2709,20 +2765,58 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
     async function loadState() {
       let loaded = false;
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          state = normalizeState(JSON.parse(raw));
+        // 1) Проверяем главный единый ключ и ключ текущего пользователя в localStorage
+        const rawMain = localStorage.getItem(PRIMARY_STORAGE_KEY);
+        const rawDyn = localStorage.getItem(getDynamicStorageKey());
+        if (rawMain) {
+          state = normalizeState(JSON.parse(rawMain));
+          loaded = Boolean(state.isConfigured);
+        }
+        if (rawDyn) {
+          const parsedDyn = normalizeState(JSON.parse(rawDyn));
+          state = loaded ? mergeDiaryStates(state, parsedDyn) : parsedDyn;
+          loaded = Boolean(state.isConfigured);
+        }
+        // 2) Если в этих ключах пусто — проверяем все ключи nutribalance_user_v3_* в localStorage (чтобы не потерять данные при смене ID)
+        if (!loaded) {
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('nutribalance_user_v3_')) {
+              try {
+                const candidate = normalizeState(JSON.parse(localStorage.getItem(k)));
+                if (candidate && candidate.isConfigured) {
+                  state = mergeDiaryStates(state, candidate);
+                  loaded = true;
+                }
+              } catch (err) {}
+            }
+          }
+        }
+      } catch (e) {}
+
+      // 3) Проверяем резервную копию в IndexedDB (на случай очистки localStorage в WebView)
+      try {
+        const idbData = await idbLoadState();
+        if (idbData && (idbData.isConfigured || Object.keys(idbData.days || {}).length > 0)) {
+          state = loaded ? mergeDiaryStates(state, idbData) : normalizeState(idbData);
           loaded = Boolean(state.isConfigured);
         }
       } catch (e) {}
+
+      if (loaded) {
+        persistLocal();
+      }
 
       try { localStorage.removeItem(LEGACY_PHOTO_KEY); } catch (e) {}
 
       if (isTelegramMiniApp) {
         await syncFromTelegramCloudAndMerge();
         loaded = Boolean(state.isConfigured);
-      } else if (localStorage.getItem(STANDALONE_TG_ID_KEY) && localStorage.getItem(STANDALONE_SYNC_KEY_STORAGE)) {
-        try { await syncUserAccessFromServer(false); loaded = Boolean(state.isConfigured); } catch (e) {}
+      } else {
+        try {
+          await syncUserAccessFromServer(false);
+          loaded = Boolean(state.isConfigured);
+        } catch (e) {}
       }
 
       document.body.classList.toggle('battery-saver', Boolean(state.profile?.batterySaver));
@@ -2765,13 +2859,17 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
     let persistTimer = null;
     function persistLocal() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        const serialized = JSON.stringify(state);
+        localStorage.setItem(PRIMARY_STORAGE_KEY, serialized);
+        localStorage.setItem(getDynamicStorageKey(), serialized);
+        idbSaveState(state);
         updateBadge(isTelegramMiniApp ? 'Синхронизировано' : 'Сохранено', true);
       } catch (e) { updateBadge('Ошибка памяти', false); }
     }
 
     function flushPending() {
-      if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; persistLocal(); }
+      if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; }
+      persistLocal();
       if (cloudSaveTimer) {
         clearTimeout(cloudSaveTimer);
         cloudSaveTimer = null;
@@ -2786,14 +2884,11 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
       if (state.days && state.days[currentDate]) {
         state.days[currentDate].updatedAt = nowTs;
       }
-      if (debounced) {
-        clearTimeout(persistTimer);
-        persistTimer = setTimeout(() => { persistTimer = null; persistLocal(); }, 300);
-      } else {
-        clearTimeout(persistTimer); persistTimer = null;
-        persistLocal();
-      }
-      scheduleCloudSave(debounced ? 500 : 200);
+      // Всегда сохраняем локально мгновенно (без задержки 300 мс), чтобы при закрытии APK данные не терялись
+      clearTimeout(persistTimer);
+      persistTimer = null;
+      persistLocal();
+      scheduleCloudSave(debounced ? 400 : 150);
       if (!skipFullRender) renderAll();
     }
 
@@ -5799,7 +5894,7 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
 
     async function pushDiaryToServer() {
       const proxyUrl = (AI_PROXY_URL || '').trim();
-      if (!proxyUrl || String(tgUserId).startsWith('local_')) return;
+      if (!proxyUrl || tgUserId === 'local_browser_user') return;
       try {
         await fetchWithTimeout(proxyUrl, {
           method: 'POST',
