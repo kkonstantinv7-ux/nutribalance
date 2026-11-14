@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>NutriBalance Pro — Liquid Glass Edition</title>
+  <title>NutriBalance — Умный дневник питания</title>
   <!-- Telegram Mini Apps SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <!-- Barcode / QR Decoder (EAN-13, EAN-8, UPC) -->
@@ -108,6 +108,22 @@
     header.liquid-glass,
     #mobileBottomNav.liquid-glass {
       background: linear-gradient(135deg, rgba(15, 23, 42, 0.94) 0%, rgba(6, 11, 25, 0.96) 100%);
+    }
+    /* Отступ под системный статус-бар телефона (часы, вырез камеры, батарея) в установленном APK */
+    body.standalone-apk header.sticky {
+      padding-top: max(env(safe-area-inset-top, 0px), 38px) !important;
+    }
+    body.standalone-apk #mobileBottomNav {
+      bottom: max(env(safe-area-inset-bottom, 0px), 10px) !important;
+    }
+    body.standalone-apk #onboardingModal,
+    body.standalone-apk #paywallModal,
+    body.standalone-apk #adminModal,
+    body.standalone-apk #watchSyncModal,
+    body.standalone-apk #backupModal,
+    body.standalone-apk #shareDayModal,
+    body.standalone-apk #barcodeScannerModal {
+      padding-top: max(env(safe-area-inset-top, 0px), 44px) !important;
     }
 
     .liquid-pill {
@@ -1214,7 +1230,7 @@
         <p id="watchSyncKeyHint" class="text-[11px] text-slate-300 leading-snug">У каждого пользователя своя изолированная база. Чтобы связать установленный APK со своим Telegram-аккаунтом, введи свой Telegram ID и секретный ключ синхронизации (он виден только внутри твоего Telegram):</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <input type="text" id="watchLinkedTgIdInput" placeholder="Твой Telegram ID" class="liquid-input w-full rounded-xl px-3 py-1.5 text-xs font-mono text-white" />
-          <input type="text" id="watchLinkedSyncKeyInput" placeholder="Секретный ключ (NBPRO-...)" class="liquid-input w-full rounded-xl px-3 py-1.5 text-xs font-mono text-emerald-300 uppercase" />
+          <input type="text" id="watchLinkedSyncKeyInput" placeholder="Секретный ключ синхронизации" class="liquid-input w-full rounded-xl px-3 py-1.5 text-xs font-mono text-emerald-300 uppercase" />
         </div>
         <button type="button" onclick="saveLinkedTgIdForStandalone()" class="btn-spring liquid-btn-primary w-full py-1.5 rounded-xl font-bold text-xs">Привязать аккаунт по ключу</button>
       </div>
@@ -1474,13 +1490,9 @@
 
       <div id="admTab-settings" class="hidden space-y-3">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-          <div>
-            <label class="block text-slate-300 mb-1">Разовая цена PRO (в рублях)</label>
-            <input type="number" id="admCfgPrice" oninput="onAdminConfigInput()" value="299" min="1" max="50000" class="liquid-input w-full rounded-xl px-3 py-2 font-bold text-emerald-300" />
-          </div>
-          <div>
-            <label class="block text-slate-300 mb-1">Бесплатный триал ИИ (дней)</label>
-            <input type="number" id="admCfgTrialDays" oninput="onAdminConfigInput()" value="14" min="0" max="365" class="liquid-input w-full rounded-xl px-3 py-2 font-bold text-white" />
+          <div class="hidden">
+            <input type="number" id="admCfgPrice" value="0" />
+            <input type="number" id="admCfgTrialDays" value="999" />
           </div>
           <div>
             <label class="block text-slate-300 mb-1">Телефон / номер для перевода СБП</label>
@@ -1510,7 +1522,7 @@
 
         <div class="bg-slate-950/75 border border-emerald-400/25 rounded-2xl p-2.5 text-xs flex flex-wrap items-center justify-between gap-2">
           <div>
-            <span class="text-[10px] text-slate-400 block">Сейчас в окне оплаты отображается:</span>
+            <span class="text-[10px] text-slate-400 block">Сейчас в окне «Помощь» отображается:</span>
             <span id="admLivePreviewRequisites" class="font-mono font-bold text-emerald-300">+7 (999) 000-00-00 • Т-Банк / Сбербанк (СБП) • Константин К. • 299 ₽</span>
           </div>
           <span id="admAutoSaveIndicator" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">Автосохранение активно</span>
@@ -1518,7 +1530,7 @@
 
         <div class="flex flex-wrap gap-2">
           <button type="button" id="btnSaveAdminCfg" onclick="saveAdminPaymentConfig()" class="btn-spring liquid-btn-primary flex-1 py-2.5 px-3 rounded-xl font-extrabold text-xs">
-            Сохранить настройки оплаты СБП (299 ₽)
+            Сохранить реквизиты помощи СБП
           </button>
           <button type="button" id="btnTestTgNotify" onclick="testTelegramNotification()" class="btn-spring liquid-pill py-2.5 px-3.5 rounded-xl font-bold text-xs text-sky-300 border border-sky-400/40">
             🔔 Тест сообщения в ТГ
@@ -1528,15 +1540,7 @@
           <span>📥 Скачать готовый .HTML с вшитыми реквизитами (для загрузки на GitHub)</span>
         </button>
 
-        <div class="liquid-pill rounded-2xl p-3 space-y-2 border border-amber-400/30">
-          <div class="text-xs font-bold text-amber-300">Тестирование экрана оплаты (Симулятор статуса для тебя):</div>
-          <p class="text-[11px] text-slate-300">Позволяет проверить, как выглядит приложение в режиме триала, после окончания 14 дней и после покупки PRO:</p>
-          <div class="grid grid-cols-3 gap-1.5 text-xs">
-            <button type="button" onclick="setAdminTestViewMode('trial')" class="btn-spring liquid-pill py-2 rounded-xl font-semibold text-cyan-300">🎁 Триал (14 дн.)</button>
-            <button type="button" onclick="setAdminTestViewMode('expired')" class="btn-spring liquid-pill py-2 rounded-xl font-semibold text-rose-300">🔒 Триал истёк</button>
-            <button type="button" onclick="setAdminTestViewMode('pro')" class="btn-spring liquid-pill py-2 rounded-xl font-semibold text-emerald-300">💎 PRO активен</button>
-          </div>
-        </div>
+
       </div>
 
       <div id="admTab-logs" class="hidden space-y-3">
@@ -5443,30 +5447,8 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
       }
 
       const aiBanner = document.getElementById('aiAccessBanner');
-      const aiIcon = document.getElementById('aiAccessBannerIcon');
-      const aiTitle = document.getElementById('aiAccessBannerTitle');
-      const aiSub = document.getElementById('aiAccessBannerSub');
-      const aiBtn = document.getElementById('aiAccessBannerBtn');
-      if (aiBanner && aiTitle && aiSub && aiBtn) {
-        if (info.isPro) {
-          aiIcon.textContent = '💎';
-          aiTitle.textContent = 'NutriBalance PRO активен навсегда';
-          aiSub.textContent = 'Безлимитный доступ ко всем ИИ-функциям: распознавание по фото, тексту и разбор рациона';
-          aiBtn.textContent = 'PRO активен ✓';
-          aiBanner.className = 'liquid-glass rounded-3xl p-3.5 sm:p-4 max-w-xl mx-auto flex flex-wrap items-center justify-between gap-3 border border-emerald-400/40';
-        } else if (info.isTrial) {
-          aiIcon.textContent = '🎁';
-          aiTitle.textContent = `Бесплатный пробный период ИИ: осталось ${info.daysLeft} дн.`;
-          aiSub.textContent = `Первые ${paymentConfig.trialDays} дней все ИИ-функции бесплатны. Далее разовая покупка ${price} ₽ навсегда (без подписок).`;
-          aiBtn.textContent = `Открыть PRO • ${price} ₽`;
-          aiBanner.className = 'liquid-glass rounded-3xl p-3.5 sm:p-4 max-w-xl mx-auto flex flex-wrap items-center justify-between gap-3 border border-cyan-400/35';
-        } else {
-          aiIcon.textContent = '🔒';
-          aiTitle.textContent = 'Пробные 14 дней завершены — разблокируй ИИ навсегда';
-          aiSub.textContent = `Базовый дневник остаётся бесплатным. Открой ИИ-сканер по фото, тексту и разбор дня за ${price} ₽ (один раз и навсегда).`;
-          aiBtn.textContent = `Купить PRO по СБП • ${price} ₽`;
-          aiBanner.className = 'liquid-glass rounded-3xl p-3.5 sm:p-4 max-w-xl mx-auto flex flex-wrap items-center justify-between gap-3 border border-amber-400/50';
-        }
+      if (aiBanner) {
+        aiBanner.className = 'hidden';
       }
 
       const profBadge = document.getElementById('profProBadge');
@@ -5511,7 +5493,7 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
 
       const livePrev = document.getElementById('admLivePreviewRequisites');
       if (livePrev) {
-        livePrev.textContent = `${paymentConfig.sbpPhone || '—'} • ${paymentConfig.sbpBank || 'СБП'} • ${paymentConfig.sbpRecipient || '—'} • ${price} ₽`;
+        livePrev.textContent = `${paymentConfig.sbpPhone || '—'} • ${paymentConfig.sbpBank || 'СБП'} • ${paymentConfig.sbpRecipient || '—'}`;
       }
     }
 
@@ -5916,16 +5898,16 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
           if (!wasPro && subState.isPro) {
             launchGoalConfetti();
             closePaywallModal();
-            showNotice('💎 Оплата подтверждена! Пожизненный доступ NutriBalance PRO активирован!');
+            
             return;
           }
         }
         if (manualClick) {
-          showNotice(subState.isPro ? '💎 Статус PRO активен навсегда!' : 'Пока ожидает подтверждения администратором.');
+          showNotice('☁️ Данные успешно синхронизированы с облаком!');
         }
       } catch (e) {
         if (manualClick) {
-          showNotice(subState.isPro ? '💎 Статус PRO активен!' : 'Заявка в обработке. Также ты можешь активировать доступ персональным PRO-кодом ниже.');
+          showNotice('☁️ Синхронизация выполнена!');
         }
       }
     }
@@ -7071,7 +7053,7 @@ activeElement: ${describeEl(document.activeElement)} | hasFocus: ${document.hasF
         ? usualFoods.slice(0, 25).map((f, idx) => `${idx + 1}. "${f.name}" — на 100г: ${f.kcal100} ккал, Б:${f.p100}г, Ж:${f.f100}г, У:${f.c100}г (обычная порция ~${f.avgGrams}г, ел ${f.count} раз)`).join('\n')
         : 'История дневника пока пуста.';
 
-      const prompt = `Ты персональный ИИ-нутрициолог NutriBalance Pro.
+      const prompt = `Ты персональный ИИ-нутрициолог NutriBalance.
 Составь РОВНО 4 варианта приёма пищи ("${targetMealLabel}") под целевые КБЖУ пользователя (генерация #${_smartMealGenSeed}):
 - Варианты 1 и 2 ("type": "user_prefs") — НА ОСНОВЕ ПРЕДПОЧТЕНИЙ ПОЛЬЗОВАТЕЛЯ (из его привычных продуктов).
 - Варианты 3 и 4 ("type": "ai_fresh") — СВЕЖИЕ ИДЕИ ОТ ИИ БЕЗ ПРИВЯЗКИ К ПРЕДПОЧТЕНИЯМ ПОЛЬЗОВАТЕЛЯ (новые вкусные и доступные блюда для разнообразия рациона).
@@ -7389,7 +7371,7 @@ ${userFoodsPromptLines}
 
       ctx.fillStyle = '#34d399';
       ctx.font = '800 28px Inter, sans-serif';
-      ctx.fillText('NutriBalance Pro', 80, 105);
+      ctx.fillText('NutriBalance', 80, 105);
 
       const streak = calculateStreakDays();
       ctx.fillStyle = '#fbbf24';
@@ -7462,7 +7444,7 @@ ${userFoodsPromptLines}
       ctx.textAlign = 'center';
       ctx.fillStyle = '#64748b';
       ctx.font = '600 16px Inter, sans-serif';
-      ctx.fillText('NutriBalance Pro • Умный ИИ-дневник питания в Telegram', W / 2, 815);
+      ctx.fillText('NutriBalance • Умный ИИ-дневник питания', W / 2, 815);
       ctx.textAlign = 'left';
     }
 
@@ -7476,8 +7458,8 @@ ${userFoodsPromptLines}
           try {
             await navigator.share({
               files: [file],
-              title: 'Мой отчёт дня в NutriBalance Pro',
-              text: `Мой результат за ${currentDate} в NutriBalance Pro!`
+              title: 'Мой отчёт дня в NutriBalance',
+              text: `Мой результат за ${currentDate} в NutriBalance!`
             });
             return;
           } catch (e) {}
@@ -7508,6 +7490,11 @@ ${userFoodsPromptLines}
     }
 
     function updateWatchEnvIndicators() {
+      if (!isTelegramMiniApp) {
+        document.body.classList.add('standalone-apk');
+      } else {
+        document.body.classList.remove('standalone-apk');
+      }
       const badge = document.getElementById('watchSyncModeBadge');
       const statusLine = document.getElementById('watchSyncStatusLine');
       const sub = document.getElementById('watchModalEnvSubtitle');
